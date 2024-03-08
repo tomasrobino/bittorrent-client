@@ -3,6 +3,7 @@
 import fs from "fs";
 import bencode from "bencode";
 
-
 const torrent = bencode.decode(fs.readFileSync("example.torrent"));
-console.log(torrent.announce.toString("utf-8"));
+const decoder = new TextDecoder();
+//console.log(decoder.decode(torrent.announce));
+const torrentUrl = new URL(decoder.decode(torrent.announce));
