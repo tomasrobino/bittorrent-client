@@ -98,4 +98,8 @@ function buildAnnounceReq(connection_id, torrent) {
     crypto.randomBytes(4).copy(buffer, 12);
     infoHash(torrent).copy(buffer, 16);
     generateID().copy(buffer, 36);
+    //Amount already downloaded, for now leave it at 0
+    Buffer.alloc(8).copy(buffer, 56)
+    //Amount left to download
+    
 }
