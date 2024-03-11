@@ -2,7 +2,8 @@
 
 import dgram from "dgram";
 import crypto from "crypto";
-import { infoHash } from "./torrentParser";
+import { infoHash } from "./torrentParser.js";
+import { generateID } from "./peerID.js";
 
 
 export function getPeers(torrent, cb) {
@@ -96,5 +97,5 @@ function buildAnnounceReq(connection_id, torrent) {
     buffer.writeUint32BE(1, 8);
     crypto.randomBytes(4).copy(buffer, 12);
     infoHash(torrent).copy(buffer, 16);
-    
+    generateID().copy(buffer, 36);
 }
