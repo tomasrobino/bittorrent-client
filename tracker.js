@@ -2,6 +2,7 @@
 
 import dgram from "dgram";
 import crypto from "crypto";
+import { infoHash } from "./torrentParser";
 
 
 export function getPeers(torrent, cb) {
@@ -89,9 +90,11 @@ Offset  Size    Name    Value
 98
 
 */
-function buildAnnounceReq(connection_id) {
+function buildAnnounceReq(connection_id, torrent) {
     const buffer = Buffer.allocUnsafe(98);
     connection_id.copy(buffer);
     buffer.writeUint32BE(1, 8);
     crypto.randomBytes(4).copy(buffer, 12);
+    infoHash(torrent).copy(buffer, 16);
+    
 }
