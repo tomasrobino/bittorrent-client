@@ -87,19 +87,36 @@ Offset  Size    Name    Value
 84      32-bit integer  IP address      0 // default
 88      32-bit integer  key             ? // random
 92      32-bit integer  num_want        -1 // default
-96      16-bit integer  port            ? // should be betwee
+96      16-bit integer  port            ? // should be between 6681 and 6685
 98
 
 */
 function buildAnnounceReq(connection_id, torrent) {
     const buffer = Buffer.allocUnsafe(98);
     connection_id.copy(buffer);
+    //action
     buffer.writeUint32BE(1, 8);
+    //transaction_id
     crypto.randomBytes(4).copy(buffer, 12);
     infoHash(torrent).copy(buffer, 16);
     generateID().copy(buffer, 36);
     //Amount already downloaded, for now leave it at 0
     Buffer.alloc(8).copy(buffer, 56)
     //Amount left to download
-    
+    size(torrent).copy(buffer, 64);
+    //Uploaded so far, for now leave it at 0
+    Buffer.alloc(8).copy(buffer, 72);
+    //event, 0 is none
+    buffer.writeUint32BE(0, 80);
+    //ip, 0 is default
+    buffer.writeUint32BE(0, 84);
+    //key, random
+    crypto.randomBytes(4).copy(buffer, 88);
+    //num_want, -1 is default
+    buffer.writeInt32BE(-1, 92);
+    //port, between 6681 and 6685
+    buffer.writeUint16BE(6685, 96);
+
+
+    return buffer;
 }
