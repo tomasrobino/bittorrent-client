@@ -1,8 +1,7 @@
 "use strict"
 
-import fs from "fs";
-import bencode from "bencode";
 import { getPeers } from "./tracker.js";
+import { open } from "./torrentParser.js"
 
-const torrent = bencode.decode(fs.readFileSync("example.torrent"));
+const torrent = open("example.torrent");
 getPeers(torrent);
