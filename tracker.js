@@ -120,3 +120,39 @@ function buildAnnounceReq(connection_id, torrent) {
 
     return buffer;
 }
+
+/*
+Connect response format is the following:
+
+Offset      Size            Name            Value
+0           32-bit integer  action          1 // announce
+4           32-bit integer  transaction_id
+8           32-bit integer  interval
+12          32-bit integer  leechers
+16          32-bit integer  seeders
+20 + 6 * n  32-bit integer  IP address
+24 + 6 * n  16-bit integer  TCP port
+20 + 6 * N
+
+*/
+function parseAnnounceRes(res) {
+    function extract(buffer, step) {
+        let group = [];
+        for (let  i=0; i<buffer.length;i+=step) {
+            group.push({
+                ip: buffer.subarray(i, i+4),
+                port: buffer.subarray(i+4, i+step)
+            });
+        }
+        return group;
+    }
+
+    return {
+        action: res.readUInt32BE(0),
+        transaction_id: res.readUInt32BE(4),
+        interval: res.readUInt32BE(8),
+        leechers: res.readUInt32BE(12),
+        seeders: res.readUInt32BE(16),
+        peers: extract(res.subarray(20), 6)
+    }
+}
