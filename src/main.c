@@ -163,6 +163,7 @@ magnet_data* process_magnet(const char* magnet) {
     Magnet_Attributes current = null;
     magnet_data* data = malloc(sizeof(magnet_data));
     data->xt=nullptr;
+    fprintf(stdout, "magnet data:\n");
     for (int i = 0; i < length; ++i) {
         if (magnet[i] == '&' || magnet[i] == '?') {
             //Processing previous attribute
@@ -170,11 +171,14 @@ magnet_data* process_magnet(const char* magnet) {
                 switch (current) {
                     case xt:
                         if (strncmp(magnet+start, "urn:btmh:", 9) == 0 || (strncmp(magnet+start, "urn:btih:", 9) == 0 && data->xt == nullptr)) { //SHA-1
-                            data->xt = (char*) magnet+start+9;
+                            data->xt = malloc(sizeof(char)*(i-start-9 +1));
+                            strncpy(data->xt, magnet+start+9, i-start-9);
+                            data->xt[i-start-9] = '\0';
                         } else {
                             fprintf(stderr, "Invalid URN");
                             exit(1);
                         }
+                        fprintf(stdout, "xt:\n%s\n", data->xt);
                         break;
                     case dn:
                         data->dn = malloc(sizeof(char)*(i-start+1));
@@ -184,8 +188,11 @@ magnet_data* process_magnet(const char* magnet) {
                             } else data->dn[j] = magnet[start+j];
                         }
                         data->dn[i-start] = '\0';
+                        fprintf(stdout, "dn:\n%s\n", data->xt);
                         break;
                     case xl:
+                        data->xl = atoi(magnet+start);
+                        fprintf(stdout, "xl:\n%ld\n", data->xl);
                         break;
                     case tr:
                         break;
