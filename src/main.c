@@ -188,7 +188,7 @@ magnet_data* process_magnet(const char* magnet) {
                             } else data->dn[j] = magnet[start+j];
                         }
                         data->dn[i-start] = '\0';
-                        fprintf(stdout, "dn:\n%s\n", data->xt);
+                        fprintf(stdout, "dn:\n%s\n", data->dn);
                         break;
                     case xl:
                         data->xl = atoi(magnet+start);
