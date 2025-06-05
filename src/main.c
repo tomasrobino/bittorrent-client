@@ -16,11 +16,16 @@ typedef enum {
     so
 } Magnet_Attributes;
 
+typedef struct tr_ll {
+    struct tr_ll* next;
+    char* tracker;
+} tr_ll;
+
 typedef struct {
     char* xt; //URN containing file hash
     char* dn; //A filename to display to the user
     long xl;  //The file size, in bytes
-    char* tr; //Tracker URL
+    tr_ll* tr; //Tracker URL linked list
     char* ws; //The payload data served over HTTP(S)
     char* as; //Refers to a direct download from a web server
     char* xs; //Either an HTTP (or HTTPS, FTP, FTPS, etc.) download source for the file pointed to by the Magnet link,
@@ -160,15 +165,23 @@ int main(const int argc, char* argv[]) {
 magnet_data* process_magnet(const char* magnet) {
     int length = (int) strlen(magnet);
     int start = 4;
-    Magnet_Attributes current = null;
+    Magnet_Attributes current_attribute = null;
     magnet_data* data = malloc(sizeof(magnet_data));
     data->xt=nullptr;
     fprintf(stdout, "magnet data:\n");
-    for (int i = 0; i < length; ++i) {
-        if (magnet[i] == '&' || magnet[i] == '?') {
+
+    //Initializing tracker linked list
+    tr_ll* head = malloc(sizeof(tr_ll));
+    head->next = nullptr;
+    head->tracker = nullptr;
+    tr_ll* current = head;
+    int tracker_count = 0;
+
+    for (int i = 0; i <= length; ++i) {
+        if (magnet[i] == '&' || magnet[i] == '?' || magnet[i] == '\0') {
             //Processing previous attribute
-            if (current != null) {
-                switch (current) {
+            if (current_attribute != null) {
+                switch (current_attribute) {
                     case xt:
                         if (strncmp(magnet+start, "urn:btmh:", 9) == 0 || (strncmp(magnet+start, "urn:btih:", 9) == 0 && data->xt == nullptr)) { //SHA-1
                             data->xt = malloc(sizeof(char)*(i-start-9 +1));
@@ -195,6 +208,15 @@ magnet_data* process_magnet(const char* magnet) {
                         fprintf(stdout, "xl:\n%ld\n", data->xl);
                         break;
                     case tr:
+                        if (tracker_count > 0) {
+                            current->next = malloc(sizeof(tr_ll));
+                            current = current->next;
+                        }
+                        current->tracker = malloc(sizeof(char)*(i-start+1));
+                        strncpy(current->tracker, magnet+start, i-start);
+                        current->tracker[i-start] = '\0';
+                        tracker_count++;
+                        fprintf(stdout, "tr:\n%s\n", current->tracker);
                         break;
                     case ws:
                         break;
@@ -215,25 +237,25 @@ magnet_data* process_magnet(const char* magnet) {
             //Setting newly found attribute as current
 
             if (strncmp(magnet+i+1 , "xt", 2) == 0) {
-                current = xt;
+                current_attribute = xt;
             } else if (strncmp(magnet+i+1 , "dn", 2) == 0) {
-                current = dn;
+                current_attribute = dn;
             } else if (strncmp(magnet+i+1 , "xl", 2) == 0) {
-                current = xl;
+                current_attribute = xl;
             } else if (strncmp(magnet+i+1 , "tr", 2) == 0) {
-                current = tr;
+                current_attribute = tr;
             } else if (strncmp(magnet+i+1 , "ws", 2) == 0) {
-                current = ws;
+                current_attribute = ws;
             } else if (strncmp(magnet+i+1 , "as", 2) == 0) {
-                current = as;
+                current_attribute = as;
             } else if (strncmp(magnet+i+1 , "xs", 2) == 0) {
-                current = xs;
+                current_attribute = xs;
             } else if (strncmp(magnet+i+1 , "kt", 2) == 0) {
-                current = kt;
+                current_attribute = kt;
             } else if (strncmp(magnet+i+1 , "mt", 2) == 0) {
-                current = mt;
+                current_attribute = mt;
             } else if (strncmp(magnet+i+1 , "so", 2) == 0) {
-                current = so;
+                current_attribute = so;
             }
             start = i+4;
             i+=3;
