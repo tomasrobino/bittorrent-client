@@ -3,7 +3,7 @@
 #include <string.h>
 
 typedef enum {
-    null = NULL,
+    null = 20,
     xt,
     dn,
     xl,
@@ -177,6 +177,13 @@ magnet_data* process_magnet(const char* magnet) {
                         }
                         break;
                     case dn:
+                        data->dn = malloc(sizeof(char)*(i-start+1));
+                        for (int j = 0; j < i-start; ++j) {
+                            if (magnet[start+j] == '+') {
+                                data->dn[j] = ' ';
+                            } else data->dn[j] = magnet[start+j];
+                        }
+                        data->dn[i-start] = '\0';
                         break;
                     case xl:
                         break;
