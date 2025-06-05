@@ -168,6 +168,12 @@ magnet_data* process_magnet(const char* magnet) {
             if (current != null) {
                 switch (current) {
                     case xt:
+                        if (strncmp(magnet+start, "urn:btih:", 9) == 0) {
+
+                        } else {
+                            fprintf(stderr, "Invalid URN");
+                            exit(1);
+                        }
                         break;
                     case dn:
                         break;
