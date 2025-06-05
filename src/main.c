@@ -2,6 +2,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef enum {
+    null = NULL,
+    xt,
+    dn,
+    xl,
+    tr,
+    ws,
+    as,
+    xs,
+    kt,
+    mt,
+    so
+} Magnet_Attributes;
+
 typedef struct {
     char* xt; //URN containing file hash
     char* dn; //A filename to display to the user
@@ -16,7 +30,6 @@ typedef struct {
     char* mt; //Link to the metafile that contains a list of magnets
     char* so; //Lists specific files torrent clients should download,
               //indicated as individual or ranges (inclusive) of file indexes.
-    char* xpe;//Specifies fixed peer addresses to connect to
 } magnet_data;
 
 //Check if char is a digit
@@ -146,41 +159,63 @@ int main(const int argc, char* argv[]) {
 
 magnet_data* process_magnet(const char* magnet) {
     int length = (int) strlen(magnet);
-    int start = 0;
+    int start = 4;
+    Magnet_Attributes current = null;
     magnet_data* data = malloc(sizeof(magnet_data));
     for (int i = 0; i < length; ++i) {
         if (magnet[i] == '&' || magnet[i] == '?') {
-            start = i+4;
+            //Processing previous attribute
+            if (current != null) {
+                switch (current) {
+                    case xt:
+                        break;
+                    case dn:
+                        break;
+                    case xl:
+                        break;
+                    case tr:
+                        break;
+                    case ws:
+                        break;
+                    case as:
+                        break;
+                    case xs:
+                        break;
+                    case kt:
+                        break;
+                    case mt:
+                        break;
+                    case so:
+                        break;
+                    default: ;
+                }
+            }
+
+            //Setting newly found attribute as current
+
             if (strncmp(magnet+i+1 , "xt", 2) == 0) {
-
+                current = xt;
             } else if (strncmp(magnet+i+1 , "dn", 2) == 0) {
-
+                current = dn;
             } else if (strncmp(magnet+i+1 , "xl", 2) == 0) {
-
+                current = xl;
             } else if (strncmp(magnet+i+1 , "tr", 2) == 0) {
-
+                current = tr;
             } else if (strncmp(magnet+i+1 , "ws", 2) == 0) {
-
+                current = ws;
             } else if (strncmp(magnet+i+1 , "as", 2) == 0) {
-
+                current = as;
             } else if (strncmp(magnet+i+1 , "xs", 2) == 0) {
-
+                current = xs;
             } else if (strncmp(magnet+i+1 , "kt", 2) == 0) {
-
+                current = kt;
             } else if (strncmp(magnet+i+1 , "mt", 2) == 0) {
-
+                current = mt;
             } else if (strncmp(magnet+i+1 , "so", 2) == 0) {
-
+                current = so;
             }
-
-            // x.pe is not supported at the moment
-            /*
-            else if (strncmp(magnet+i+1 , "x.pe", 2) == 0) {
-
-            }
-            */
-        } else if (start != 0) { //Process parameter
-
+            start = i+4;
+            i+=3;
         }
     }
     return data;
