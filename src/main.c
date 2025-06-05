@@ -63,7 +63,7 @@ char* decode_bencode(const char* bencoded_value) {
     if (bencoded_value[0] == 'i') {
         const char* end_index = strchr(bencoded_value, 'e');
         if (end_index != NULL) {
-            int length = (int) (end_index - bencoded_value);
+            const int length = (int) (end_index - bencoded_value);
             char* decoded_str = malloc(length);
             strncpy(decoded_str, bencoded_value+1, length-1);
             decoded_str[length] = '\0';
