@@ -48,7 +48,7 @@ char* decode_bencode(const char* bencoded_value) {
         const char* colon_index = strchr(bencoded_value, ':');
         if (colon_index != NULL) {
             const char* start = colon_index + 1;
-            char* decoded_str = malloc(length + 3);
+            char* decoded_str = malloc(sizeof(char)*length + 3);
             decoded_str[0] = '"';
             strncpy(decoded_str+1, start, length);
             decoded_str[length+1] = '"';
@@ -64,7 +64,7 @@ char* decode_bencode(const char* bencoded_value) {
         const char* end_index = strchr(bencoded_value, 'e');
         if (end_index != NULL) {
             const int length = (int) (end_index - bencoded_value);
-            char* decoded_str = malloc(length);
+            char* decoded_str = malloc(sizeof(char)*length);
             strncpy(decoded_str, bencoded_value+1, length-1);
             decoded_str[length] = '\0';
             return decoded_str;
