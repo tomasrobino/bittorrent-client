@@ -59,6 +59,30 @@ char* decode_bencode(const char* bencoded_value) {
         exit(1);
     }
 
+    // Integers
+    if (bencoded_value[0] == 'i') {
+        const char* end_index = strchr(bencoded_value, 'e');
+        if (end_index != NULL) {
+            int length = (int) (end_index - bencoded_value);
+            char* decoded_str = malloc(length);
+            strncpy(decoded_str, bencoded_value+1, length-1);
+            decoded_str[length] = '\0';
+            return decoded_str;
+        }
+        fprintf(stderr, "Invalid encoded value: %s\n", bencoded_value);
+        exit(1);
+    }
+
+    //Lists
+    if (bencoded_value[0] == 'l') {
+
+    }
+
+    //Dictionaries
+    if (bencoded_value[0] == 'd') {
+
+    }
+
     fprintf(stderr, "Unsupported formatting\n");
     exit(1);
 }
