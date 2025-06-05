@@ -218,16 +218,35 @@ magnet_data* process_magnet(const char* magnet) {
                         fprintf(stdout, "tr:\n%s\n", current->tracker);
                         break;
                     case ws:
+                        data->ws = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
+                        fprintf(stdout, "ws:\n%s\n", data->ws);
                         break;
                     case as:
+                        data->as = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
+                        fprintf(stdout, "as:\n%s\n", data->as);
                         break;
                     case xs:
+                        data->xs = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
+                        fprintf(stdout, "xs:\n%s\n", data->xs);
                         break;
                     case kt:
+                        data->kt = malloc(sizeof(char)*(i-start+1));
+                        for (int j = 0; j < i-start; ++j) {
+                            if (magnet[start+j] == '+') {
+                                data->kt[j] = ' ';
+                            } else data->kt[j] = magnet[start+j];
+                        }
+                        data->kt[i-start] = '\0';
+                        fprintf(stdout, "kt:\n%s\n", data->kt);
                         break;
                     case mt:
+                        data->mt = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
+                        fprintf(stdout, "mt:\n%s\n", data->mt);
                         break;
                     case so:
+                        data->so = malloc(sizeof(char)*(i-start+1));
+                        strncpy(data->so, magnet+start, i-start);
+                        data->so[i-start] = '\0';
                         break;
                     default: ;
                 }
