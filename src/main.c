@@ -162,14 +162,15 @@ magnet_data* process_magnet(const char* magnet) {
     int start = 4;
     Magnet_Attributes current = null;
     magnet_data* data = malloc(sizeof(magnet_data));
+    data->xt=nullptr;
     for (int i = 0; i < length; ++i) {
         if (magnet[i] == '&' || magnet[i] == '?') {
             //Processing previous attribute
             if (current != null) {
                 switch (current) {
                     case xt:
-                        if (strncmp(magnet+start, "urn:btih:", 9) == 0) {
-
+                        if (strncmp(magnet+start, "urn:btmh:", 9) == 0 || (strncmp(magnet+start, "urn:btih:", 9) == 0 && data->xt == nullptr)) { //SHA-1
+                            data->xt = (char*) magnet+start+9;
                         } else {
                             fprintf(stderr, "Invalid URN");
                             exit(1);
