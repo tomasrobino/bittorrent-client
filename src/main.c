@@ -54,7 +54,8 @@ int main(const int argc, char* argv[]) {
 }
 */
 
-magnet_data* process_magnet(char* magnet);
+//Returns magnet_data struct of parsed magnet link
+magnet_data* process_magnet(const char* magnet);
 
 bool is_digit(const char c) {
     return c >= '0' && c <= '9';
@@ -129,8 +130,9 @@ int main(const int argc, char* argv[]) {
     if (strcmp(command, "magnet") == 0) {
         const char* magnet_link = argv[2];
         //Check if the link begins correctly
-        if (strncmp(magnet_link, "magnet:?", 8) == 0) {
-
+        if (strncmp(magnet_link, "magnet:", 7) == 0) {
+            magnet_data* data = process_magnet(magnet_link+7);
+            free(data);
         } else {
             fprintf(stderr, "Invalid link: %s\n", command);
             return 1;
@@ -142,6 +144,44 @@ int main(const int argc, char* argv[]) {
     return 0;
 }
 
-magnet_data* process_magnet(char* magnet) {
+magnet_data* process_magnet(const char* magnet) {
+    int length = (int) strlen(magnet);
+    int start = 0;
+    magnet_data* data = malloc(sizeof(magnet_data));
+    for (int i = 0; i < length; ++i) {
+        if (magnet[i] == '&' || magnet[i] == '?') {
+            start = i+4;
+            if (strncmp(magnet+i+1 , "xt", 2) == 0) {
 
+            } else if (strncmp(magnet+i+1 , "dn", 2) == 0) {
+
+            } else if (strncmp(magnet+i+1 , "xl", 2) == 0) {
+
+            } else if (strncmp(magnet+i+1 , "tr", 2) == 0) {
+
+            } else if (strncmp(magnet+i+1 , "ws", 2) == 0) {
+
+            } else if (strncmp(magnet+i+1 , "as", 2) == 0) {
+
+            } else if (strncmp(magnet+i+1 , "xs", 2) == 0) {
+
+            } else if (strncmp(magnet+i+1 , "kt", 2) == 0) {
+
+            } else if (strncmp(magnet+i+1 , "mt", 2) == 0) {
+
+            } else if (strncmp(magnet+i+1 , "so", 2) == 0) {
+
+            }
+
+            // x.pe is not supported at the moment
+            /*
+            else if (strncmp(magnet+i+1 , "x.pe", 2) == 0) {
+
+            }
+            */
+        } else if (start != 0) { //Process parameter
+
+        }
+    }
+    return data;
 }
