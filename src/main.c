@@ -32,6 +32,8 @@ int main(const int argc, char* argv[]) {
         fprintf(stderr, "Unknown command: %s\n", command);
         return 1;
     }
+    // Memory leak false positive
+    // ReSharper disable once CppDFAMemoryLeak
     return 0;
 }
 
