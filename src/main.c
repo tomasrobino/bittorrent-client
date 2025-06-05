@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <curl/curl.h>
 
 typedef enum {
     null = 20,
@@ -131,7 +132,6 @@ char* decode_bencode(const char* bencoded_value) {
 }
 */
 
-
 int main(const int argc, char* argv[]) {
     // Disable output buffering
     setbuf(stdout, nullptr);
@@ -213,8 +213,7 @@ magnet_data* process_magnet(const char* magnet) {
                             current = current->next;
                         }
                         current->tracker = malloc(sizeof(char)*(i-start+1));
-                        strncpy(current->tracker, magnet+start, i-start);
-                        current->tracker[i-start] = '\0';
+                        current->tracker = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
                         tracker_count++;
                         fprintf(stdout, "tr:\n%s\n", current->tracker);
                         break;
