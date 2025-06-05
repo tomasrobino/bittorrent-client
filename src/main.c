@@ -48,6 +48,8 @@ char* decode_bencode(const char* bencoded_value) {
         const char* colon_index = strchr(bencoded_value, ':');
         if (colon_index != NULL) {
             const char* start = colon_index + 1;
+            // Memory leak false positive
+            // ReSharper disable once CppDFAMemoryLeak
             char* decoded_str = malloc(sizeof(char)*length + 3);
             decoded_str[0] = '"';
             strncpy(decoded_str+1, start, length);
@@ -64,6 +66,8 @@ char* decode_bencode(const char* bencoded_value) {
         const char* end_index = strchr(bencoded_value, 'e');
         if (end_index != NULL) {
             const int length = (int) (end_index - bencoded_value);
+            // Memory leak false positive
+            // ReSharper disable once CppDFAMemoryLeak
             char* decoded_str = malloc(sizeof(char)*length);
             strncpy(decoded_str, bencoded_value+1, length-1);
             decoded_str[length] = '\0';
