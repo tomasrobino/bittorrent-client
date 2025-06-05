@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct {
+typedef struct {
     char* xt; //URN containing file hash
     char* dn; //A filename to display to the user
     long xl;  //The file size, in bytes
@@ -53,6 +53,8 @@ int main(const int argc, char* argv[]) {
     return 0;
 }
 */
+
+magnet_data* process_magnet(char* magnet);
 
 bool is_digit(const char c) {
     return c >= '0' && c <= '9';
@@ -126,10 +128,20 @@ int main(const int argc, char* argv[]) {
 
     if (strcmp(command, "magnet") == 0) {
         const char* magnet_link = argv[2];
+        //Check if the link begins correctly
+        if (strncmp(magnet_link, "magnet:?", 8) == 0) {
 
+        } else {
+            fprintf(stderr, "Invalid link: %s\n", command);
+            return 1;
+        }
     } else {
         fprintf(stderr, "Unknown command: %s\n", command);
         return 1;
     }
     return 0;
+}
+
+magnet_data* process_magnet(char* magnet) {
+
 }
