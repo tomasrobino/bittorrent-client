@@ -40,8 +40,6 @@ typedef struct {
 
 //Check if char is a digit
 bool is_digit(char c);
-//Decode magnet link
-
 
 //Decode bencoded string, returns decoded string
 char* decode_bencode(const char* bencoded_value);
