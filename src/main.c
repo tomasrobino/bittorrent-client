@@ -38,6 +38,30 @@ typedef struct {
               //indicated as individual or ranges (inclusive) of file indexes.
 } magnet_data;
 
+typedef struct files_ll {
+    struct files_ll* next;
+    long length;
+    char* path;
+} files_ll;
+
+typedef struct {
+    int piece_length;
+    long pieces;
+    bool private;
+    char* name;
+    long length;
+    files_ll* files;
+} info;
+
+typedef struct {
+    info* info;
+    char* announce;
+    int creation_date;
+    char* comment;
+    char* created_by;
+    char* encoding;
+} metainfo;
+
 //Check if char is a digit
 bool is_digit(char c);
 
