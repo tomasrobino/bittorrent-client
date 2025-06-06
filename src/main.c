@@ -192,7 +192,8 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
         if ( (metainfo->announce = strstr(bencoded_value, "announce")) != nullptr) {
             start = metainfo->announce-bencoded_value + 8;
             const int amount = atoi(bencoded_value+start);
-            start+=3;
+            //start+=3;
+            start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->announce = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->announce, bencoded_value+start, amount);
             metainfo->announce[amount] = '\0';
@@ -203,7 +204,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
         if ( (metainfo->announce_list = strstr(bencoded_value+start, "announce-list")) != nullptr) {
             start = metainfo->announce_list-bencoded_value + 13;
             const int amount = atoi(bencoded_value+start);
-            start+=3;
+            start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             /*
             metainfo->announce_list = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->announce_list, bencoded_value+start, amount);
@@ -211,6 +212,13 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
             */
             start+=amount;
         }
+
+        // Reading of creation date
+        char* creation_date_index = strstr(bencoded_value+start, "creation date");
+        if ( creation_date_index != nullptr) {
+            start = creation_date_index-bencoded_value + 13 + 1;
+            metainfo->creation_date = atoi(bencoded_value+start);
+        } else return nullptr;
 
         return metainfo;
     }
