@@ -55,6 +55,7 @@ typedef struct {
 
 typedef struct {
     char* announce;
+    char* announce_list;
     char* comment;
     char* created_by;
     int creation_date;
@@ -195,7 +196,21 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
             metainfo->announce = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->announce, bencoded_value+start, amount);
             metainfo->announce[amount] = '\0';
+            start+=amount;
         } else return nullptr;
+
+        //Reading announce-list
+        if ( (metainfo->announce_list = strstr(bencoded_value+start, "announce-list")) != nullptr) {
+            start = metainfo->announce_list-bencoded_value + 13;
+            const int amount = atoi(bencoded_value+start);
+            start+=3;
+            /*
+            metainfo->announce_list = malloc(sizeof(char)*amount+1);
+            strncpy(metainfo->announce_list, bencoded_value+start, amount);
+            metainfo->announce_list[amount] = '\0';
+            */
+            start+=amount;
+        }
 
         return metainfo;
     }
