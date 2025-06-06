@@ -54,19 +54,21 @@ typedef struct {
 } info;
 
 typedef struct {
-    info* info;
     char* announce;
-    int creation_date;
     char* comment;
     char* created_by;
+    int creation_date;
     char* encoding;
-} metainfo;
+    info* info;
+} metainfo_t;
 
 //Check if char is a digit
 bool is_digit(char c);
 
 //Decode bencoded string, returns decoded string
 char* decode_bencode(const char* bencoded_value);
+
+metainfo_t* parse_metainfo(const char* bencoded_value);
 
 //Returns magnet_data struct of parsed magnet link
 magnet_data* process_magnet(const char* magnet);
@@ -177,6 +179,27 @@ char* decode_bencode(const char* bencoded_value) {
 
     fprintf(stderr, "Unsupported formatting\n");
     exit(1);
+}
+
+metainfo_t* parse_metainfo(const char* bencoded_value) {
+    unsigned long length = strlen(bencoded_value);
+    // It MUST begin with 'd' and end with 'e'
+    if (bencoded_value[0] == 'd' && bencoded_value[length-1] == 'e') {
+        metainfo_t* metainfo = malloc(sizeof(metainfo_t));
+        unsigned long start = 0;
+        // Reading announce
+        if ( (metainfo->announce = strstr(bencoded_value, "announce")) != nullptr) {
+            start = metainfo->announce-bencoded_value + 8;
+            const int amount = atoi(bencoded_value+start);
+            start+=3;
+            metainfo->announce = malloc(sizeof(char)*amount+1);
+            strncpy(metainfo->announce, bencoded_value+start, amount);
+            metainfo->announce[amount] = '\0';
+        } else return nullptr;
+
+        return metainfo;
+    }
+    return nullptr;
 }
 
 magnet_data* process_magnet(const char* magnet) {
