@@ -70,7 +70,21 @@ int main(const int argc, char* argv[]) {
 
 
             //Freeing magnet data
-            free(data);
+            if (data->xt != nullptr) free(data->xt);
+            if (data->dn != nullptr) free(data->dn);
+            while (data->tr != nullptr) {
+                curl_free(data->tr->tracker);
+                tr_ll* next = data->tr->next;
+                free(data->tr);
+                data->tr = next;
+            }
+            if (data->ws != nullptr) curl_free(data->ws);
+            if (data->as != nullptr) curl_free(data->as);
+            if (data->xs != nullptr) curl_free(data->xs);
+            if (data->kt != nullptr) free(data->kt);
+            if (data->mt != nullptr) curl_free(data->mt);
+            if (data->so != nullptr) free(data->so);
+            if (data != nullptr) free(data);
         } else {
             fprintf(stderr, "Invalid link: %s\n", command);
             return 1;
@@ -192,6 +206,7 @@ magnet_data* process_magnet(const char* magnet) {
                         if (tracker_count > 0) {
                             current->next = malloc(sizeof(tr_ll));
                             current = current->next;
+                            current->next = nullptr;
                         }
                         current->tracker = malloc(sizeof(char)*(i-start+1));
                         current->tracker = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
