@@ -189,7 +189,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
         metainfo_t* metainfo = malloc(sizeof(metainfo_t));
         unsigned long start = 0;
         // Reading announce
-        if ( (metainfo->announce = strstr(bencoded_value, "announce")) != nullptr) {
+        if ( (metainfo->announce = strstr(bencoded_value+start, "announce")) != nullptr) {
             start = metainfo->announce-bencoded_value + 8;
             const int amount = atoi(bencoded_value+start);
             //start+=3;
@@ -214,7 +214,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
         }
 
         // Reading comment
-        if ( (metainfo->comment = strstr(bencoded_value, "comment")) != nullptr) {
+        if ( (metainfo->comment = strstr(bencoded_value+start, "comment")) != nullptr) {
             start = metainfo->comment-bencoded_value + 8;
             const int amount = atoi(bencoded_value+start);
             //start+=3;
@@ -223,10 +223,10 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
             strncpy(metainfo->comment, bencoded_value+start, amount);
             metainfo->comment[amount] = '\0';
             start+=amount;
-        } else return nullptr;
+        }
 
         // Reading created by
-        if ( (metainfo->created_by = strstr(bencoded_value, "comment")) != nullptr) {
+        if ( (metainfo->created_by = strstr(bencoded_value+start, "comment")) != nullptr) {
             start = metainfo->created_by-bencoded_value + 8;
             const int amount = atoi(bencoded_value+start);
             //start+=3;
@@ -235,13 +235,30 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
             strncpy(metainfo->created_by, bencoded_value+start, amount);
             metainfo->created_by[amount] = '\0';
             start+=amount;
-        } else return nullptr;
+        }
 
         // Reading of creation date
         char* creation_date_index = strstr(bencoded_value+start, "creation date");
         if ( creation_date_index != nullptr) {
             start = creation_date_index-bencoded_value + 13 + 1;
             metainfo->creation_date = atoi(bencoded_value+start);
+        }
+
+        // Reading encoding
+        if ( (metainfo->encoding = strstr(bencoded_value+start, "encoding")) != nullptr) {
+            start = metainfo->encoding-bencoded_value + 8;
+            const int amount = atoi(bencoded_value+start);
+            //start+=3;
+            start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
+            metainfo->encoding = malloc(sizeof(char)*amount+1);
+            strncpy(metainfo->encoding, bencoded_value+start, amount);
+            metainfo->encoding[amount] = '\0';
+            start+=amount;
+        }
+
+        char* info_index = strstr(bencoded_value+start, "info");
+        if (info_index != nullptr) {
+
         } else return nullptr;
 
         return metainfo;
