@@ -44,12 +44,15 @@ bool is_digit(char c);
 
 
 //Decode bencoded string, returns decoded string
-//char* decode_bencode(const char* bencoded_value);
-/*
+char* decode_bencode(const char* bencoded_value);
+
+//Returns magnet_data struct of parsed magnet link
+magnet_data* process_magnet(const char* magnet);
+
 int main(const int argc, char* argv[]) {
-	// Disable output buffering
-	setbuf(stdout, nullptr);
- 	setbuf(stderr, nullptr);
+    // Disable output buffering
+    setbuf(stdout, nullptr);
+    setbuf(stderr, nullptr);
 
     if (argc < 3) {
         fprintf(stderr, "Usage: bittorrent-client.sh <command> <args>\n");
@@ -57,8 +60,22 @@ int main(const int argc, char* argv[]) {
     }
 
     const char* command = argv[1];
+    fprintf(stderr, "Logging will appear here.\n");
 
-    if (strcmp(command, "decode") == 0) {
+    if (strcmp(command, "magnet") == 0) {
+        const char* magnet_link = argv[2];
+        //Check if the link begins correctly
+        if (strncmp(magnet_link, "magnet:", 7) == 0) {
+            magnet_data* data = process_magnet(magnet_link+7);
+
+
+            //Freeing magnet data
+            free(data);
+        } else {
+            fprintf(stderr, "Invalid link: %s\n", command);
+            return 1;
+        }
+    } else if (strcmp(command, "decode") == 0) {
         fprintf(stderr, "Logging will appear here.\n");
 
         const char* encoded_str = argv[2];
@@ -71,16 +88,11 @@ int main(const int argc, char* argv[]) {
     }
     return 0;
 }
-*/
-
-//Returns magnet_data struct of parsed magnet link
-magnet_data* process_magnet(const char* magnet);
 
 bool is_digit(const char c) {
     return c >= '0' && c <= '9';
 }
 
-/*
 char* decode_bencode(const char* bencoded_value) {
     // Byte strings
     if (is_digit(bencoded_value[0])) {
@@ -129,37 +141,6 @@ char* decode_bencode(const char* bencoded_value) {
 
     fprintf(stderr, "Unsupported formatting\n");
     exit(1);
-}
-*/
-
-int main(const int argc, char* argv[]) {
-    // Disable output buffering
-    setbuf(stdout, nullptr);
-    setbuf(stderr, nullptr);
-
-    if (argc < 3) {
-        fprintf(stderr, "Usage: bittorrent-client.sh <command> <args>\n");
-        return 1;
-    }
-
-    const char* command = argv[1];
-    fprintf(stderr, "Logging will appear here.\n");
-
-    if (strcmp(command, "magnet") == 0) {
-        const char* magnet_link = argv[2];
-        //Check if the link begins correctly
-        if (strncmp(magnet_link, "magnet:", 7) == 0) {
-            magnet_data* data = process_magnet(magnet_link+7);
-            free(data);
-        } else {
-            fprintf(stderr, "Invalid link: %s\n", command);
-            return 1;
-        }
-    } else {
-        fprintf(stderr, "Unknown command: %s\n", command);
-        return 1;
-    }
-    return 0;
 }
 
 magnet_data* process_magnet(const char* magnet) {
@@ -279,5 +260,6 @@ magnet_data* process_magnet(const char* magnet) {
             i+=3;
         }
     }
+    data->tr = head;
     return data;
 }
