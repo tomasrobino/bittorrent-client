@@ -45,13 +45,13 @@ typedef struct files_ll {
 } files_ll;
 
 typedef struct {
+    files_ll* files;
+    long length;
+    char* name;
     int piece_length;
     long pieces;
     bool private;
-    char* name;
-    long length;
-    files_ll* files;
-} info;
+} info_t;
 
 typedef struct {
     char* announce;
@@ -60,7 +60,7 @@ typedef struct {
     char* created_by;
     int creation_date;
     char* encoding;
-    info* info;
+    info_t* info;
 } metainfo_t;
 
 //Check if char is a digit
