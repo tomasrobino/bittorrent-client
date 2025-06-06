@@ -213,6 +213,30 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
             start+=amount;
         }
 
+        // Reading comment
+        if ( (metainfo->comment = strstr(bencoded_value, "comment")) != nullptr) {
+            start = metainfo->comment-bencoded_value + 8;
+            const int amount = atoi(bencoded_value+start);
+            //start+=3;
+            start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
+            metainfo->comment = malloc(sizeof(char)*amount+1);
+            strncpy(metainfo->comment, bencoded_value+start, amount);
+            metainfo->comment[amount] = '\0';
+            start+=amount;
+        } else return nullptr;
+
+        // Reading created by
+        if ( (metainfo->created_by = strstr(bencoded_value, "comment")) != nullptr) {
+            start = metainfo->created_by-bencoded_value + 8;
+            const int amount = atoi(bencoded_value+start);
+            //start+=3;
+            start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
+            metainfo->created_by = malloc(sizeof(char)*amount+1);
+            strncpy(metainfo->created_by, bencoded_value+start, amount);
+            metainfo->created_by[amount] = '\0';
+            start+=amount;
+        } else return nullptr;
+
         // Reading of creation date
         char* creation_date_index = strstr(bencoded_value+start, "creation date");
         if ( creation_date_index != nullptr) {
