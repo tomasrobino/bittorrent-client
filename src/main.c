@@ -69,7 +69,7 @@ bool is_digit(char c);
 //Decode bencoded string, returns decoded string
 char* decode_bencode(const char* bencoded_value);
 
-metainfo_t* parse_metainfo(const char* bencoded_value);
+metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
 
 //Returns magnet_data struct of parsed magnet link
 magnet_data* process_magnet(const char* magnet);
@@ -123,7 +123,7 @@ int main(const int argc, char* argv[]) {
         */
 
         char* buffer = nullptr;
-        long length;
+        unsigned long length = 0;
         FILE* f = fopen(argv[2], "r");
         if (f) {
             fseek (f, 0, SEEK_END);
@@ -136,8 +136,9 @@ int main(const int argc, char* argv[]) {
             fclose (f);
         } else fprintf(stderr, "Torrent file not found");
 
-        if (buffer) {
-            metainfo_t* metainfo = parse_metainfo(buffer);
+        if (buffer && length != 0) {
+            metainfo_t* metainfo = parse_metainfo(buffer, length);
+            free(buffer);
         } else fprintf(stderr, "File reading buffer error");
     } else {
         fprintf(stderr, "Unknown command: %s\n", command);
@@ -162,8 +163,6 @@ char* decode_bencode(const char* bencoded_value) {
         const char* colon_index = strchr(bencoded_value, ':');
         if (colon_index != NULL) {
             const char* start = colon_index + 1;
-            // Memory leak false positive
-            // ReSharper disable once CppDFAMemoryLeak
             char* decoded_str = malloc(sizeof(char)*length + 3);
             decoded_str[0] = '"';
             strncpy(decoded_str+1, start, length);
@@ -180,8 +179,6 @@ char* decode_bencode(const char* bencoded_value) {
         const char* end_index = strchr(bencoded_value, 'e');
         if (end_index != NULL) {
             const int length = (int) (end_index - bencoded_value);
-            // Memory leak false positive
-            // ReSharper disable once CppDFAMemoryLeak
             char* decoded_str = malloc(sizeof(char)*length);
             strncpy(decoded_str, bencoded_value+1, length-1);
             decoded_str[length] = '\0';
@@ -205,8 +202,7 @@ char* decode_bencode(const char* bencoded_value) {
     exit(1);
 }
 
-metainfo_t* parse_metainfo(const char* bencoded_value) {
-    unsigned long length = strlen(bencoded_value);
+metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long length) {
     // It MUST begin with 'd' and end with 'e'
     if (bencoded_value[0] == 'd' && bencoded_value[length-1] == 'e') {
         metainfo_t* metainfo = malloc(sizeof(metainfo_t));
@@ -309,9 +305,16 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
             start+=amount;
         }
 
+        // Reading info
         char* info_index = strstr(bencoded_value+start, "info");
+        // If info not found, invalid file
         if (info_index != nullptr) {
+            // Position of "d"
+            start = info_index-bencoded_value+4;
+            info_index = strstr(bencoded_value+start+3, "files");
+            if (info_index) {
 
+            }
         } else return nullptr;
 
         return metainfo;
