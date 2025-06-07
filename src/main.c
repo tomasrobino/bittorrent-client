@@ -118,13 +118,6 @@ int main(const int argc, char* argv[]) {
             return 1;
         }
     } else if (strcmp(command, "file") == 0) {
-        /*
-        const char* encoded_str = argv[2];
-        char* decoded_str = decode_bencode(encoded_str);
-        printf("%s\n", decoded_str);
-        free(decoded_str);
-        */
-
         char* buffer = nullptr;
         unsigned long length = 0;
         FILE* f = fopen(argv[2], "r");
