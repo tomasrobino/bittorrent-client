@@ -48,7 +48,7 @@ typedef struct {
     files_ll* files;
     long length;
     char* name;
-    int piece_length;
+    unsigned int piece_length;
     long pieces;
     bool private;
 } info_t;
@@ -58,7 +58,7 @@ typedef struct {
     char* announce_list;
     char* comment;
     char* created_by;
-    int creation_date;
+    unsigned int creation_date;
     char* encoding;
     info_t* info;
 } metainfo_t;
@@ -135,7 +135,12 @@ bool is_digit(const char c) {
 char* decode_bencode(const char* bencoded_value) {
     // Byte strings
     if (is_digit(bencoded_value[0])) {
-        const int length = atoi(bencoded_value);
+        char *endptr;
+        const int length = (int)strtol(bencoded_value, &endptr, 10);
+        if (endptr == bencoded_value) {
+            fprintf(stderr, "No valid number found\n");
+            exit(1);
+        }
         const char* colon_index = strchr(bencoded_value, ':');
         if (colon_index != NULL) {
             const char* start = colon_index + 1;
@@ -191,7 +196,12 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
         // Reading announce
         if ( (metainfo->announce = strstr(bencoded_value+start, "announce")) != nullptr) {
             start = metainfo->announce-bencoded_value + 8;
-            const int amount = atoi(bencoded_value+start);
+            char *endptr = nullptr;
+            const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
+            if (endptr == bencoded_value+start) {
+                fprintf(stderr, "No valid number found in announce section\n");
+                return nullptr;
+            }
             //start+=3;
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->announce = malloc(sizeof(char)*amount+1);
@@ -203,7 +213,12 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
         //Reading announce-list
         if ( (metainfo->announce_list = strstr(bencoded_value+start, "announce-list")) != nullptr) {
             start = metainfo->announce_list-bencoded_value + 13;
-            const int amount = atoi(bencoded_value+start);
+            char *endptr = nullptr;
+            const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
+            if (endptr == bencoded_value+start) {
+                fprintf(stderr, "No valid number found in announce-list section\n");
+                return nullptr;
+            }
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             /*
             metainfo->announce_list = malloc(sizeof(char)*amount+1);
@@ -216,7 +231,12 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
         // Reading comment
         if ( (metainfo->comment = strstr(bencoded_value+start, "comment")) != nullptr) {
             start = metainfo->comment-bencoded_value + 8;
-            const int amount = atoi(bencoded_value+start);
+            char *endptr = nullptr;
+            const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
+            if (endptr == bencoded_value+start) {
+                fprintf(stderr, "No valid number found in comment section\n");
+                return nullptr;
+            }
             //start+=3;
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->comment = malloc(sizeof(char)*amount+1);
@@ -228,7 +248,12 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
         // Reading created by
         if ( (metainfo->created_by = strstr(bencoded_value+start, "comment")) != nullptr) {
             start = metainfo->created_by-bencoded_value + 8;
-            const int amount = atoi(bencoded_value+start);
+            char *endptr = nullptr;
+            const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
+            if (endptr == bencoded_value+start) {
+                fprintf(stderr, "No valid number found in created by section\n");
+                return nullptr;
+            }
             //start+=3;
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->created_by = malloc(sizeof(char)*amount+1);
@@ -241,13 +266,23 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
         char* creation_date_index = strstr(bencoded_value+start, "creation date");
         if ( creation_date_index != nullptr) {
             start = creation_date_index-bencoded_value + 13 + 1;
-            metainfo->creation_date = atoi(bencoded_value+start);
+            char *endptr = nullptr;
+            metainfo->creation_date = (int)strtol(bencoded_value+start, &endptr, 10);
+            if (endptr == bencoded_value+start) {
+                fprintf(stderr, "No valid number found in creation date section\n");
+                return nullptr;
+            }
         }
 
         // Reading encoding
         if ( (metainfo->encoding = strstr(bencoded_value+start, "encoding")) != nullptr) {
             start = metainfo->encoding-bencoded_value + 8;
-            const int amount = atoi(bencoded_value+start);
+            char *endptr = nullptr;
+            const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
+            if (endptr == bencoded_value+start) {
+                fprintf(stderr, "No valid number found in encoding section\n");
+                return nullptr;
+            }
             //start+=3;
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->encoding = malloc(sizeof(char)*amount+1);
@@ -308,7 +343,12 @@ magnet_data* process_magnet(const char* magnet) {
                         fprintf(stdout, "dn:\n%s\n", data->dn);
                         break;
                     case xl:
-                        data->xl = atoi(magnet+start);
+                        char *endptr = nullptr;
+                        data->xl = strtol(magnet+start, &endptr, 10);
+                        if (endptr == magnet+start) {
+                            fprintf(stderr, "No valid number found for xl attribute\n");
+                            exit(1);
+                        }
                         fprintf(stdout, "xl:\n%ld\n", data->xl);
                         break;
                     case tr:
