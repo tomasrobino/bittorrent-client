@@ -13,3 +13,5 @@ add_executable(bittorrent ${SOURCE_FILES})
 
 # Link OpenSSL and CURL
 target_link_libraries(bittorrent PRIVATE OpenSSL::Crypto CURL::libcurl)
+
+configure_file(${CMAKE_SOURCE_DIR}/sample.torrent ${CMAKE_BINARY_DIR}/sample.torrent COPYONLY)

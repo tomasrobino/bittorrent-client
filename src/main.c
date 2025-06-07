@@ -114,13 +114,31 @@ int main(const int argc, char* argv[]) {
             fprintf(stderr, "Invalid link: %s\n", command);
             return 1;
         }
-    } else if (strcmp(command, "decode") == 0) {
-        fprintf(stderr, "Logging will appear here.\n");
-
+    } else if (strcmp(command, "file") == 0) {
+        /*
         const char* encoded_str = argv[2];
         char* decoded_str = decode_bencode(encoded_str);
         printf("%s\n", decoded_str);
         free(decoded_str);
+        */
+
+        char* buffer = nullptr;
+        long length;
+        FILE* f = fopen(argv[2], "r");
+        if (f) {
+            fseek (f, 0, SEEK_END);
+            length = ftell (f);
+            fseek (f, 0, SEEK_SET);
+            buffer = malloc(length);
+            if (buffer) {
+                fread (buffer, 1, length, f);
+            }
+            fclose (f);
+        } else fprintf(stderr, "Torrent file not found");
+
+        if (buffer) {
+            metainfo_t* metainfo = parse_metainfo(buffer);
+        } else fprintf(stderr, "File reading buffer error");
     } else {
         fprintf(stderr, "Unknown command: %s\n", command);
         return 1;
@@ -199,7 +217,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
             char *endptr = nullptr;
             const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
             if (endptr == bencoded_value+start) {
-                fprintf(stderr, "No valid number found in announce section\n");
+                fprintf(stderr, "Invalid length found in announce section\n");
                 return nullptr;
             }
             //start+=3;
@@ -216,7 +234,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
             char *endptr = nullptr;
             const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
             if (endptr == bencoded_value+start) {
-                fprintf(stderr, "No valid number found in announce-list section\n");
+                fprintf(stderr, "Invalid length found in announce-list section\n");
                 return nullptr;
             }
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
@@ -234,7 +252,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
             char *endptr = nullptr;
             const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
             if (endptr == bencoded_value+start) {
-                fprintf(stderr, "No valid number found in comment section\n");
+                fprintf(stderr, "Invalid length found in comment section\n");
                 return nullptr;
             }
             //start+=3;
@@ -246,12 +264,12 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
         }
 
         // Reading created by
-        if ( (metainfo->created_by = strstr(bencoded_value+start, "comment")) != nullptr) {
-            start = metainfo->created_by-bencoded_value + 8;
+        if ( (metainfo->created_by = strstr(bencoded_value+start, "created by")) != nullptr) {
+            start = metainfo->created_by-bencoded_value + 10;
             char *endptr = nullptr;
             const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
             if (endptr == bencoded_value+start) {
-                fprintf(stderr, "No valid number found in created by section\n");
+                fprintf(stderr, "Invalid length found in created by section\n");
                 return nullptr;
             }
             //start+=3;
@@ -280,7 +298,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value) {
             char *endptr = nullptr;
             const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
             if (endptr == bencoded_value+start) {
-                fprintf(stderr, "No valid number found in encoding section\n");
+                fprintf(stderr, "Invalid length found in encoding section\n");
                 return nullptr;
             }
             //start+=3;
@@ -346,7 +364,7 @@ magnet_data* process_magnet(const char* magnet) {
                         char *endptr = nullptr;
                         data->xl = strtol(magnet+start, &endptr, 10);
                         if (endptr == magnet+start) {
-                            fprintf(stderr, "No valid number found for xl attribute\n");
+                            fprintf(stderr, "Invalid length found for xl attribute\n");
                             exit(1);
                         }
                         fprintf(stdout, "xl:\n%ld\n", data->xl);
