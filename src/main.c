@@ -17,16 +17,16 @@ typedef enum {
     so
 } Magnet_Attributes;
 
-typedef struct tr_ll {
-    struct tr_ll* next;
-    char* tracker;
-} tr_ll;
+typedef struct ll {
+    struct ll* next;
+    char* val;
+} ll;
 
 typedef struct {
     char* xt; //URN containing file hash
     char* dn; //A filename to display to the user
     long xl;  //The file size, in bytes
-    tr_ll* tr; //Tracker URL linked list
+    ll* tr; //Tracker URL linked list
     char* ws; //The payload data served over HTTP(S)
     char* as; //Refers to a direct download from a web server
     char* xs; //Either an HTTP (or HTTPS, FTP, FTPS, etc.) download source for the file pointed to by the Magnet link,
@@ -69,6 +69,8 @@ bool is_digit(char c);
 //Decode bencoded string, returns decoded string
 char* decode_bencode(const char* bencoded_value);
 
+
+
 metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
 
 //Returns magnet_data struct of parsed magnet link
@@ -98,8 +100,8 @@ int main(const int argc, char* argv[]) {
             if (data->xt != nullptr) free(data->xt);
             if (data->dn != nullptr) free(data->dn);
             while (data->tr != nullptr) {
-                curl_free(data->tr->tracker);
-                tr_ll* next = data->tr->next;
+                curl_free(data->tr->val);
+                ll* next = data->tr->next;
                 free(data->tr);
                 data->tr = next;
             }
@@ -331,10 +333,10 @@ magnet_data* process_magnet(const char* magnet) {
     fprintf(stdout, "magnet data:\n");
 
     //Initializing tracker linked list
-    tr_ll* head = malloc(sizeof(tr_ll));
+    ll* head = malloc(sizeof(ll));
     head->next = nullptr;
-    head->tracker = nullptr;
-    tr_ll* current = head;
+    head->val = nullptr;
+    ll* current = head;
     int tracker_count = 0;
 
     for (int i = 0; i <= length; ++i) {
@@ -374,14 +376,14 @@ magnet_data* process_magnet(const char* magnet) {
                         break;
                     case tr:
                         if (tracker_count > 0) {
-                            current->next = malloc(sizeof(tr_ll));
+                            current->next = malloc(sizeof(ll));
                             current = current->next;
                             current->next = nullptr;
                         }
-                        current->tracker = malloc(sizeof(char)*(i-start+1));
-                        current->tracker = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
+                        current->val = malloc(sizeof(char)*(i-start+1));
+                        current->val = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
                         tracker_count++;
-                        fprintf(stdout, "tr:\n%s\n", current->tracker);
+                        fprintf(stdout, "tr:\n%s\n", current->val);
                         break;
                     case ws:
                         data->ws = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
