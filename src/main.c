@@ -46,7 +46,7 @@ typedef struct files_ll {
 
 typedef struct announce_list_ll {
     struct announce_list_ll* next;
-    ll* lists;
+    ll* list;
 } announce_list_ll;
 
 typedef struct {
@@ -72,9 +72,9 @@ typedef struct {
 bool is_digit(char c);
 
 // Decode bencoded list, returns linked list with elements
-ll* decode_bencode_list(const char* bencoded_list);
+ll* decode_bencode_list(const char* bencoded_list, unsigned int* length);
 
-// For decodeing announce-list
+// For decoding announce-list
 announce_list_ll* decode_announce_list(const char* announce_list);
 
 //Decode bencoded string, returns decoded string
@@ -156,7 +156,7 @@ bool is_digit(const char c) {
 }
 
 // Cannot handle lists of lists
-ll* decode_bencode_list(const char* bencoded_list) {
+ll* decode_bencode_list(const char* bencoded_list, unsigned int* length) {
     // Checking if the beginning is valid
     if (bencoded_list[0] == 'l') {
         unsigned long start = 1;
@@ -166,7 +166,6 @@ ll* decode_bencode_list(const char* bencoded_list) {
 
         // If the list isn't empty
         if (bencoded_list[1] != 'e') {
-            element_num++;
             head = malloc(sizeof(ll));
             head->val = nullptr;
             head->next = nullptr;
@@ -185,9 +184,10 @@ ll* decode_bencode_list(const char* bencoded_list) {
             // Copying data
 
             // True always except for the first element
-            if (element_num > 1) {
+            if (element_num > 0) {
                 current->next = malloc(sizeof(ll));
                 current = current->next;
+                current->next = nullptr;
             }
             current->val = malloc(sizeof(char) * (element_length + 1));
             strncpy(current->val, bencoded_list+start, element_length);
@@ -195,13 +195,42 @@ ll* decode_bencode_list(const char* bencoded_list) {
             element_num++;
             start+=element_length;
         }
+
+        // If passed a pointer as argument, stores end index in it
+        if (length != nullptr) *length = start;
         return head;
     }
     return nullptr;
 }
 
 announce_list_ll* decode_announce_list(const char* announce_list) {
+    if (announce_list[0] == 'l') {
+        announce_list_ll* head;
+        announce_list_ll* current;
+        // If the list isn't empty
+        if (announce_list[1] != 'e') {
+            head = malloc(sizeof(announce_list_ll));
+            head->list = nullptr;
+            head->next = nullptr;
+            current = head;
+        } else return nullptr;
 
+        unsigned int element_num = 0;
+        unsigned long start = 1;
+        while (announce_list[start] != 'e') {
+            if (element_num > 0) {
+                current->next = malloc(sizeof(announce_list_ll));
+                current = current->next;
+                current->next = nullptr;
+            }
+            unsigned int length = 0;
+            unsigned int* length_ptr = &length;
+            current->list = decode_bencode_list(announce_list+start, length_ptr);
+            start+=length+1;
+            element_num++;
+        }
+        return head;
+    }
     return nullptr;
 }
 
@@ -281,8 +310,8 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         //Reading announce-list
         if ( (metainfo->announce_list = strstr(bencoded_value+start, "announce-list")) != nullptr) {
             start = metainfo->announce_list-bencoded_value + 13;
-            ll* announce_list = decode_bencode_list(bencoded_value+start);
-
+            //ll* announce_list = decode_bencode_list(bencoded_value+start);
+            announce_list_ll* announce_list = decode_announce_list(bencoded_value+start);
         }
 
         // Reading comment
@@ -356,7 +385,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             start = info_index-bencoded_value+4;
             info_index = strstr(bencoded_value+start+3, "files");
             if (info_index) {
-                ll* info = decode_bencode_list(bencoded_value+start);
+                //ll* info = decode_bencode_list(bencoded_value+start);
             }
         } else return nullptr;
 
