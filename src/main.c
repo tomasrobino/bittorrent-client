@@ -60,7 +60,7 @@ typedef struct {
 
 typedef struct {
     char* announce;
-    char* announce_list;
+    announce_list_ll* announce_list;
     char* comment;
     char* created_by;
     unsigned int creation_date;
@@ -309,11 +309,11 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         } else return nullptr;
 
         //Reading announce-list
-        if ( (metainfo->announce_list = strstr(bencoded_value+start, "announce-list")) != nullptr) {
-            start = metainfo->announce_list-bencoded_value + 13;
+        char* announce_list_index;
+        if ( (announce_list_index = strstr(bencoded_value+start, "announce-list")) != nullptr) {
+            start = announce_list_index-bencoded_value + 13;
             unsigned long* start_ptr = &start;
-            announce_list_ll* announce_list = decode_announce_list(bencoded_value+start, start_ptr);
-
+            metainfo->announce_list = decode_announce_list(bencoded_value+start, start_ptr);
         }
 
         // Reading comment
