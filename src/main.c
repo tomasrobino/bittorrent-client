@@ -300,7 +300,6 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 fprintf(stderr, "Invalid length found in announce section\n");
                 return nullptr;
             }
-            //start+=3;
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->announce = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->announce, bencoded_value+start, amount);
@@ -325,7 +324,6 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 fprintf(stderr, "Invalid length found in comment section\n");
                 return nullptr;
             }
-            //start+=3;
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->comment = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->comment, bencoded_value+start, amount);
@@ -342,7 +340,6 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 fprintf(stderr, "Invalid length found in created by section\n");
                 return nullptr;
             }
-            //start+=3;
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->created_by = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->created_by, bencoded_value+start, amount);
@@ -371,7 +368,6 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 fprintf(stderr, "Invalid length found in encoding section\n");
                 return nullptr;
             }
-            //start+=3;
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->encoding = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->encoding, bencoded_value+start, amount);
@@ -385,9 +381,15 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         if (info_index != nullptr) {
             // Position of "d"
             start = info_index-bencoded_value+4;
-            info_index = strstr(bencoded_value+start+3, "files");
-            if (info_index) {
-                //ll* info = decode_bencode_list(bencoded_value+start);
+            // If multiple files
+            if (bencoded_value[start+1] == '5') {
+                info_index = strstr(bencoded_value+start+3, "files");
+                // Checking if file is valid
+                if (info_index) {
+
+                } else return nullptr;
+            } else {
+
             }
         } else return nullptr;
 
