@@ -318,7 +318,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
 
         // Reading comment
         if ( (metainfo->comment = strstr(bencoded_value+start, "comment")) != nullptr) {
-            start = metainfo->comment-bencoded_value + 8;
+            start = metainfo->comment-bencoded_value + 7;
             char *endptr = nullptr;
             const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
             if (endptr == bencoded_value+start) {
