@@ -44,6 +44,11 @@ typedef struct files_ll {
     char* path;
 } files_ll;
 
+typedef struct announce_list_ll {
+    struct announce_list_ll* next;
+    ll* lists;
+} announce_list_ll;
+
 typedef struct {
     files_ll* files;
     long length;
@@ -68,6 +73,8 @@ bool is_digit(char c);
 
 // Decode bencoded list, returns linked list with elements
 ll* decode_bencode_list(const char* bencoded_list);
+
+announce_list_ll* decode_announce_list(const char* announce_list);
 
 //Decode bencoded string, returns decoded string
 char* decode_bencode(const char* bencoded_value);
@@ -150,44 +157,48 @@ bool is_digit(const char c) {
 ll* decode_bencode_list(const char* bencoded_list) {
     // Checking if the beginning is valid
     if (bencoded_list[0] == 'l') {
-        unsigned long start = 1;
-        ll* head;
-        ll* current;
-        unsigned int element_num = 0;
+        // If nested list, do recursive call
+        if (bencoded_list[1] == 'l') {
+            decode_bencode_list(bencoded_list+1);
+        } else {
+            unsigned long start = 1;
+            ll* head;
+            ll* current;
+            unsigned int element_num = 0;
 
-        // If the list isn't empty
-        if (bencoded_list[1] != 'e') {
-            element_num++;
-            head = malloc(sizeof(ll));
-            head->val = nullptr;
-            head->next = nullptr;
-            current = head;
-        } else return nullptr;
+            // If the list isn't empty
+            if (bencoded_list[1] != 'e') {
+                element_num++;
+                head = malloc(sizeof(ll));
+                head->val = nullptr;
+                head->next = nullptr;
+                current = head;
+            } else return nullptr;
 
-        while (bencoded_list[start] != 'e') {
-            char *endptr;
-            int element_length = (int)strtol(bencoded_list+start, &endptr, 10);
-            if (endptr == bencoded_list) {
-                fprintf(stderr, "Invalid list element length\n");
-                exit(1);
+            while (bencoded_list[start] != 'e') {
+                char *endptr;
+                int element_length = (int)strtol(bencoded_list+start, &endptr, 10);
+                if (endptr == bencoded_list) {
+                    fprintf(stderr, "Invalid list element length\n");
+                    exit(1);
+                }
+                // endptr points to ":", start is moved to the character after it, which is where the data begins
+                start = endptr-bencoded_list+1;
+                // Copying data
+
+                // True always except for the first element
+                if (element_num > 1) {
+                    current->next = malloc(sizeof(ll));
+                    current = current->next;
+                }
+                current->val = malloc(sizeof(char) * (element_length + 1));
+                strncpy(current->val, bencoded_list+start, element_length);
+                current->val[element_length] = '\0';
+                element_num++;
+                start+=element_length;
             }
-            // endptr points to ":", start is moved to the character after it, which is where the data begins
-            start = endptr-bencoded_list+1;
-            // Copying data
-
-            // True always except for the first element
-            if (element_num > 1) {
-                current->next = malloc(sizeof(ll));
-                current = current->next;
-            }
-            current->val = malloc(sizeof(char) * (element_length + 1));
-            strncpy(current->val, bencoded_list+start, element_length);
-            current->val[element_length] = '\0';
-            element_num++;
-            start+=element_length;
+            return head;
         }
-
-        return head;
     }
     return nullptr;
 }
@@ -268,19 +279,8 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         //Reading announce-list
         if ( (metainfo->announce_list = strstr(bencoded_value+start, "announce-list")) != nullptr) {
             start = metainfo->announce_list-bencoded_value + 13;
-            char *endptr = nullptr;
-            const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
-            if (endptr == bencoded_value+start) {
-                fprintf(stderr, "Invalid length found in announce-list section\n");
-                return nullptr;
-            }
-            start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
-            /*
-            metainfo->announce_list = malloc(sizeof(char)*amount+1);
-            strncpy(metainfo->announce_list, bencoded_value+start, amount);
-            metainfo->announce_list[amount] = '\0';
-            */
-            start+=amount;
+            ll* announce_list = decode_bencode_list(bencoded_value+start);
+
         }
 
         // Reading comment
@@ -354,7 +354,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             start = info_index-bencoded_value+4;
             info_index = strstr(bencoded_value+start+3, "files");
             if (info_index) {
-
+                ll* info = decode_bencode_list(bencoded_value+start);
             }
         } else return nullptr;
 
