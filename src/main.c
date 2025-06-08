@@ -229,7 +229,7 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
             start+=length+1;
             element_num++;
         }
-        if (index != nullptr) *index = start;
+        if (index != nullptr) *index += start;
         return head;
     }
     return nullptr;
@@ -313,6 +313,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             start = metainfo->announce_list-bencoded_value + 13;
             unsigned long* start_ptr = &start;
             announce_list_ll* announce_list = decode_announce_list(bencoded_value+start, start_ptr);
+
         }
 
         // Reading comment
