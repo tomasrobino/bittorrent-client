@@ -155,6 +155,7 @@ bool is_digit(const char c) {
     return c >= '0' && c <= '9';
 }
 
+// Cannot handle lists of lists
 ll* decode_bencode_list(const char* bencoded_list) {
     // Checking if the beginning is valid
     if (bencoded_list[0] == 'l') {
