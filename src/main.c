@@ -75,7 +75,7 @@ bool is_digit(char c);
 ll* decode_bencode_list(const char* bencoded_list, unsigned int* length);
 
 // For decoding announce-list
-announce_list_ll* decode_announce_list(const char* announce_list);
+announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index);
 
 //Decode bencoded string, returns decoded string
 char* decode_bencode(const char* bencoded_value);
@@ -203,7 +203,7 @@ ll* decode_bencode_list(const char* bencoded_list, unsigned int* length) {
     return nullptr;
 }
 
-announce_list_ll* decode_announce_list(const char* announce_list) {
+announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index) {
     if (announce_list[0] == 'l') {
         announce_list_ll* head;
         announce_list_ll* current;
@@ -229,6 +229,7 @@ announce_list_ll* decode_announce_list(const char* announce_list) {
             start+=length+1;
             element_num++;
         }
+        if (index != nullptr) *index = start;
         return head;
     }
     return nullptr;
@@ -310,8 +311,8 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         //Reading announce-list
         if ( (metainfo->announce_list = strstr(bencoded_value+start, "announce-list")) != nullptr) {
             start = metainfo->announce_list-bencoded_value + 13;
-            //ll* announce_list = decode_bencode_list(bencoded_value+start);
-            announce_list_ll* announce_list = decode_announce_list(bencoded_value+start);
+            unsigned long* start_ptr = &start;
+            announce_list_ll* announce_list = decode_announce_list(bencoded_value+start, start_ptr);
         }
 
         // Reading comment
