@@ -74,6 +74,7 @@ bool is_digit(char c);
 // Decode bencoded list, returns linked list with elements
 ll* decode_bencode_list(const char* bencoded_list);
 
+// For decodeing announce-list
 announce_list_ll* decode_announce_list(const char* announce_list);
 
 //Decode bencoded string, returns decoded string
@@ -157,49 +158,49 @@ bool is_digit(const char c) {
 ll* decode_bencode_list(const char* bencoded_list) {
     // Checking if the beginning is valid
     if (bencoded_list[0] == 'l') {
-        // If nested list, do recursive call
-        if (bencoded_list[1] == 'l') {
-            decode_bencode_list(bencoded_list+1);
-        } else {
-            unsigned long start = 1;
-            ll* head;
-            ll* current;
-            unsigned int element_num = 0;
+        unsigned long start = 1;
+        ll* head;
+        ll* current;
+        unsigned int element_num = 0;
 
-            // If the list isn't empty
-            if (bencoded_list[1] != 'e') {
-                element_num++;
-                head = malloc(sizeof(ll));
-                head->val = nullptr;
-                head->next = nullptr;
-                current = head;
-            } else return nullptr;
+        // If the list isn't empty
+        if (bencoded_list[1] != 'e') {
+            element_num++;
+            head = malloc(sizeof(ll));
+            head->val = nullptr;
+            head->next = nullptr;
+            current = head;
+        } else return nullptr;
 
-            while (bencoded_list[start] != 'e') {
-                char *endptr;
-                int element_length = (int)strtol(bencoded_list+start, &endptr, 10);
-                if (endptr == bencoded_list) {
-                    fprintf(stderr, "Invalid list element length\n");
-                    exit(1);
-                }
-                // endptr points to ":", start is moved to the character after it, which is where the data begins
-                start = endptr-bencoded_list+1;
-                // Copying data
-
-                // True always except for the first element
-                if (element_num > 1) {
-                    current->next = malloc(sizeof(ll));
-                    current = current->next;
-                }
-                current->val = malloc(sizeof(char) * (element_length + 1));
-                strncpy(current->val, bencoded_list+start, element_length);
-                current->val[element_length] = '\0';
-                element_num++;
-                start+=element_length;
+        while (bencoded_list[start] != 'e') {
+            char *endptr;
+            int element_length = (int)strtol(bencoded_list+start, &endptr, 10);
+            if (endptr == bencoded_list) {
+                fprintf(stderr, "Invalid list element length\n");
+                exit(1);
             }
-            return head;
+            // endptr points to ":", start is moved to the character after it, which is where the data begins
+            start = endptr-bencoded_list+1;
+            // Copying data
+
+            // True always except for the first element
+            if (element_num > 1) {
+                current->next = malloc(sizeof(ll));
+                current = current->next;
+            }
+            current->val = malloc(sizeof(char) * (element_length + 1));
+            strncpy(current->val, bencoded_list+start, element_length);
+            current->val[element_length] = '\0';
+            element_num++;
+            start+=element_length;
         }
+        return head;
     }
+    return nullptr;
+}
+
+announce_list_ll* decode_announce_list(const char* announce_list) {
+
     return nullptr;
 }
 
