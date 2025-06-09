@@ -386,17 +386,30 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         char* info_index = strstr(bencoded_value+start, "info");
         // If info not found, invalid file
         if (info_index != nullptr) {
+            // Allocating space for info
+            metainfo->info = malloc(sizeof(info_t));
             // Position of "d"
             start = info_index-bencoded_value+4;
-            // If multiple files
-            if (bencoded_value[start+1] == '5') {
+            if (bencoded_value[start+1] == '5') { // If multiple files
                 info_index = strstr(bencoded_value+start+3, "files");
-                // Checking if file is valid
-                if (info_index) {
+                // Parsing files
 
-                } else return nullptr;
-            } else {
-
+            } else { // If single file
+                // Reading name
+                if ( (metainfo->info->name = strstr(bencoded_value+start, "name")) != nullptr) {
+                    start = metainfo->info->name-bencoded_value + 7;
+                    char *endptr = nullptr;
+                    const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
+                    if (endptr == bencoded_value+start) {
+                        fprintf(stderr, "Invalid length found in name section\n");
+                        return nullptr;
+                    }
+                    start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
+                    metainfo->info->name = malloc(sizeof(char)*amount+1);
+                    strncpy(metainfo->info->name, bencoded_value+start, amount);
+                    metainfo->info->name[amount] = '\0';
+                    start+=amount;
+                }
             }
         } else return nullptr;
 
