@@ -199,7 +199,7 @@ ll* decode_bencode_list(const char* bencoded_list, unsigned int* length) {
         }
 
         // If passed a pointer as argument, stores end index in it
-        if (length != nullptr) *length = start;
+        if (length != nullptr) *length += start;
         return head;
     }
     return nullptr;
@@ -324,6 +324,7 @@ files_ll* read_files(const char* bencode, bool multiple, unsigned long* index) {
             if ( (parse_index = strstr(bencode+start, "path")) != nullptr) {
                 start = parse_index-bencode + 4;
                 current->path = decode_bencode_list(bencode+start, start_ptr);
+                start+=2;
             } else return nullptr;
         } else { // Parsing name
             if ( (parse_index = strstr(bencode+start, "name")) != nullptr) {
@@ -359,6 +360,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
     if (bencoded_value[0] == 'd' && bencoded_value[length-1] == 'e') {
         metainfo_t* metainfo = malloc(sizeof(metainfo_t));
         unsigned long start = 0;
+        unsigned long* start_ptr = &start;
         // Reading announce
         if ( (metainfo->announce = strstr(bencoded_value+start, "announce")) != nullptr) {
             start = metainfo->announce-bencoded_value + 8;
@@ -379,7 +381,6 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         char* announce_list_index;
         if ( (announce_list_index = strstr(bencoded_value+start, "announce-list")) != nullptr) {
             start = announce_list_index-bencoded_value + 13;
-            unsigned long* start_ptr = &start;
             metainfo->announce_list = decode_announce_list(bencoded_value+start, start_ptr);
         }
 
@@ -451,27 +452,17 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             metainfo->info = malloc(sizeof(info_t));
             // Position of "d"
             start = info_index-bencoded_value+4;
-            if (bencoded_value[start+1] == '5') { // If multiple files
-                info_index = strstr(bencoded_value+start+3, "files");
-                // Parsing files
 
+            if (bencoded_value[start+1] == '5') { // If multiple files
+                files_ll* files = read_files(bencoded_value+start, true, start_ptr);
+                printf("dsadsa");
             } else { // If single file
-                // Reading name
-                if ( (metainfo->info->name = strstr(bencoded_value+start, "name")) != nullptr) {
-                    start = metainfo->info->name-bencoded_value + 7;
-                    char *endptr = nullptr;
-                    const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
-                    if (endptr == bencoded_value+start) {
-                        fprintf(stderr, "Invalid length found in name section\n");
-                        return nullptr;
-                    }
-                    start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
-                    metainfo->info->name = malloc(sizeof(char)*amount+1);
-                    strncpy(metainfo->info->name, bencoded_value+start, amount);
-                    metainfo->info->name[amount] = '\0';
-                    start+=amount;
-                }
+                files_ll* files = read_files(bencoded_value+start, false, start_ptr);
+                printf("dsadsasadsa");
             }
+
+
+
         } else return nullptr;
 
         return metainfo;
