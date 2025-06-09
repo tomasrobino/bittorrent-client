@@ -289,7 +289,7 @@ char* decode_bencode(const char* bencoded_value) {
 }
 
 files_ll* read_files(const char* bencode, bool multiple, unsigned long* index) {
-    files_ll *head = malloc(sizeof(bencode));
+    files_ll *head = malloc(sizeof(files_ll));
     head->path = nullptr;
     head->next = nullptr;
     files_ll *current = head;
@@ -299,7 +299,7 @@ files_ll* read_files(const char* bencode, bool multiple, unsigned long* index) {
 
     while (bencode[start] != 'e') {
         if (element_num > 0) {
-            current->next = malloc(sizeof(bencode));
+            current->next = malloc(sizeof(files_ll));
             current = current->next;
             current->next = nullptr;
             current->path = nullptr;
