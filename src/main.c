@@ -80,6 +80,8 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
 //Decode bencoded string, returns decoded string
 char* decode_bencode(const char* bencoded_value);
 
+files_ll* read_files(char* bencode, bool multiple);
+
 metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
 
 //Returns magnet_data struct of parsed magnet link
@@ -284,6 +286,11 @@ char* decode_bencode(const char* bencoded_value) {
 
     fprintf(stderr, "Unsupported formatting\n");
     exit(1);
+}
+
+files_ll* read_files(char* bencode, bool multiple) {
+    files_ll* files;
+    unsigned int start = 1;
 }
 
 metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long length) {
