@@ -316,7 +316,7 @@ files_ll* read_files(const char* bencode, bool multiple, unsigned long* index) {
                 return nullptr;
             }
             start = strchr(bencode+start, ':') - bencode + 1;
-        }
+        } else return nullptr;
 
         // Skipping possible md5sum
 
