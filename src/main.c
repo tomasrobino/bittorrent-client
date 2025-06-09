@@ -80,7 +80,7 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
 //Decode bencoded string, returns decoded string
 char* decode_bencode(const char* bencoded_value);
 
-files_ll* read_files(const char* bencode, unsigned long* index);
+files_ll* read_files(const char* bencode, bool multiple, unsigned long* index);
 
 metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
 
@@ -288,7 +288,7 @@ char* decode_bencode(const char* bencoded_value) {
     exit(1);
 }
 
-files_ll* read_files(const char* bencode, unsigned long* index) {
+files_ll* read_files(const char* bencode, bool multiple, unsigned long* index) {
     files_ll *head = malloc(sizeof(bencode));
     head->path = nullptr;
     head->next = nullptr;
@@ -318,13 +318,36 @@ files_ll* read_files(const char* bencode, unsigned long* index) {
             start = strchr(bencode+start, ':') - bencode + 1;
         }
 
-        // Parsing path
-        if ( (parse_index = strstr(bencode+start, "path")) != nullptr) {
-            start = parse_index-bencode + 4;
-            current->path = decode_bencode_list(bencode+start, start_ptr);
+        // Skipping possible md5sum
+
+        if (multiple) { // Parsing path
+            if ( (parse_index = strstr(bencode+start, "path")) != nullptr) {
+                start = parse_index-bencode + 4;
+                current->path = decode_bencode_list(bencode+start, start_ptr);
+            } else return nullptr;
+        } else { // Parsing name
+            if ( (parse_index = strstr(bencode+start, "name")) != nullptr) {
+                start = parse_index-bencode + 4;
+                char *endptr = nullptr;
+                const int amount = (int)strtol(bencode+start, &endptr, 10);
+                if (endptr == bencode+start) {
+                    fprintf(stderr, "Invalid length found in name section\n");
+                    return nullptr;
+                }
+
+                current->path = malloc(sizeof(ll));
+                current->path->next = nullptr;
+                current->path->val = malloc(sizeof(char)*(amount+1));
+                strncpy(current->path->val, endptr+1, amount);
+                current->path->val[amount] = '\0';
+                start+=amount;
+            } else return nullptr;
         }
 
+
         element_num++;
+
+        if (!multiple) break;
     }
 
     if (index != nullptr) *index += start;
