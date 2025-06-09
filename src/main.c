@@ -41,7 +41,7 @@ typedef struct {
 typedef struct files_ll {
     struct files_ll* next;
     long length;
-    char* path;
+    ll* path;
 } files_ll;
 
 typedef struct announce_list_ll {
@@ -294,7 +294,9 @@ files_ll* read_files(const char* bencode, unsigned long* index) {
     head->next = nullptr;
     files_ll *current = head;
     unsigned int start = 1;
+    unsigned int* start_ptr = &start;
     unsigned int element_num = 0;
+
     while (bencode[start] != 'e') {
         if (element_num > 0) {
             current->next = malloc(sizeof(bencode));
@@ -304,6 +306,7 @@ files_ll* read_files(const char* bencode, unsigned long* index) {
         }
 
         char* parse_index;
+        // Parsing length
         if ( (parse_index = strstr(bencode+start, "length")) != nullptr) {
             start = parse_index-bencode + 7;
             char *endptr = nullptr;
@@ -314,6 +317,13 @@ files_ll* read_files(const char* bencode, unsigned long* index) {
             }
             start = strchr(bencode+start, ':') - bencode + 1;
         }
+
+        // Parsing path
+        if ( (parse_index = strstr(bencode+start, "path")) != nullptr) {
+            start = parse_index-bencode + 4;
+            current->path = decode_bencode_list(bencode+start, start_ptr);
+        }
+
         element_num++;
     }
 
