@@ -80,7 +80,7 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
 //Decode bencoded string, returns decoded string
 char* decode_bencode(const char* bencoded_value);
 
-files_ll* read_files(char* bencode, bool multiple);
+files_ll* read_files(const char* bencode, unsigned long* index);
 
 metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
 
@@ -288,9 +288,37 @@ char* decode_bencode(const char* bencoded_value) {
     exit(1);
 }
 
-files_ll* read_files(char* bencode, bool multiple) {
-    files_ll* files;
+files_ll* read_files(const char* bencode, unsigned long* index) {
+    files_ll *head = malloc(sizeof(bencode));
+    head->path = nullptr;
+    head->next = nullptr;
+    files_ll *current = head;
     unsigned int start = 1;
+    unsigned int element_num = 0;
+    while (bencode[start] != 'e') {
+        if (element_num > 0) {
+            current->next = malloc(sizeof(bencode));
+            current = current->next;
+            current->next = nullptr;
+            current->path = nullptr;
+        }
+
+        char* parse_index;
+        if ( (parse_index = strstr(bencode+start, "length")) != nullptr) {
+            start = parse_index-bencode + 7;
+            char *endptr = nullptr;
+            current->length = (int)strtol(bencode+start, &endptr, 10);
+            if (endptr == bencode+start) {
+                fprintf(stderr, "Invalid length found in length section\n");
+                return nullptr;
+            }
+            start = strchr(bencode+start, ':') - bencode + 1;
+        }
+        element_num++;
+    }
+
+    if (index != nullptr) *index += start;
+    return head;
 }
 
 metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long length) {
