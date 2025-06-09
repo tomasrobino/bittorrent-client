@@ -78,7 +78,7 @@ ll* decode_bencode_list(const char* bencoded_list, unsigned int* length);
 announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index);
 
 //Decode bencoded string, returns decoded string
-char* decode_bencode(const char* bencoded_value);
+char* decode_bencode_string(const char* bencoded_value);
 
 int decode_bencode_int(const char* bencoded_value, char* endptr);
 
@@ -235,7 +235,7 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
     return nullptr;
 }
 
-char* decode_bencode(const char* bencoded_value) {
+char* decode_bencode_string(const char* bencoded_value) {
     // Byte strings
     if (is_digit(bencoded_value[0])) {
         char *endptr;
