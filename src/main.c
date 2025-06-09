@@ -448,18 +448,38 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         char* info_index = strstr(bencoded_value+start, "info");
         // If info not found, invalid file
         if (info_index != nullptr) {
+            bool multiple;
             // Allocating space for info
             metainfo->info = malloc(sizeof(info_t));
             // Position of "d"
             start = info_index-bencoded_value+4;
 
             if (bencoded_value[start+1] == '5') { // If multiple files
-                files_ll* files = read_files(bencoded_value+start, true, start_ptr);
-                printf("dsadsa");
+                multiple = true;
+                metainfo->info->files = read_files(bencoded_value+start, multiple, start_ptr);
+                // Reading directory name when multiple
+                if ( (info_index = strstr(bencoded_value+start, "name")) != nullptr) {
+                    start = info_index-bencoded_value + 4;
+                    char *endptr = nullptr;
+                    const int amount = (int)strtol(bencoded_value+start, &endptr, 10);
+                    if (endptr == bencoded_value+start) {
+                        fprintf(stderr, "Invalid length found in directory name section\n");
+                        return nullptr;
+                    }
+                    start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
+                    metainfo->info->name = malloc(sizeof(char)*amount+1);
+                    strncpy(metainfo->info->name, bencoded_value+start, amount);
+                    metainfo->info->name[amount] = '\0';
+                    start+=amount;
+                } else return nullptr;
+
             } else { // If single file
-                files_ll* files = read_files(bencoded_value+start, false, start_ptr);
-                printf("dsadsasadsa");
+                multiple = false;
+                metainfo->info->files = read_files(bencoded_value+start, multiple, start_ptr);
+
+                // Skipping md5sum
             }
+
 
 
 
