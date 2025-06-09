@@ -480,6 +480,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 // Skipping md5sum
             }
 
+            // Reading piece length
 
 
 
