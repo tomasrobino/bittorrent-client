@@ -6,6 +6,8 @@
 bool is_digit(char c);
 // Decode bencoded list, returns linked list with elements
 ll* decode_bencode_list(const char* bencoded_list, unsigned int* length);
+
+void free_bencode_list(ll* list);
 //Decode bencoded string, returns decoded string
 char* decode_bencode_string(const char* bencoded_value);
 

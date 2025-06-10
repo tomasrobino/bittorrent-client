@@ -53,6 +53,15 @@ ll* decode_bencode_list(const char* bencoded_list, unsigned int* length) {
     return nullptr;
 }
 
+void free_bencode_list(ll* list) {
+    while (list != nullptr) {
+        free(list->val);
+        ll* next = list->next;
+        free(list);
+        list = next;
+    }
+}
+
 char* decode_bencode_string(const char* bencoded_value) {
     // Byte strings
     if (is_digit(bencoded_value[0])) {
