@@ -149,6 +149,7 @@ void free_metainfo(metainfo_t* metainfo) {
             free_info_files_list(metainfo->info->files);
             if (metainfo->info->name != nullptr) free(metainfo->info->name);
             if (metainfo->info->pieces != nullptr) free(metainfo->info->pieces);
+            free(metainfo->info);
         }
         free(metainfo);
     }

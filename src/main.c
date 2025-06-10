@@ -49,6 +49,7 @@ int main(const int argc, char* argv[]) {
 
         if (buffer && length != 0) {
             metainfo_t* metainfo = parse_metainfo(buffer, length);
+            free_metainfo(metainfo);
             free(buffer);
         } else fprintf(stderr, "File reading buffer error");
     } else {
