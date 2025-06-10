@@ -84,7 +84,7 @@ int decode_bencode_int(const char* bencoded_value, char** endptr);
 
 files_ll* read_files(const char* bencode, bool multiple, unsigned long* index);
 
-metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
+metainfo_t* parse_metainfo(const char* bencoded_value);
 
 //Returns magnet_data struct of parsed magnet link
 magnet_data* process_magnet(const char* magnet);
@@ -332,7 +332,8 @@ files_ll* read_files(const char* bencode, bool multiple, unsigned long* index) {
     return head;
 }
 
-metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long length) {
+metainfo_t* parse_metainfo(const char* bencoded_value) {
+    unsigned long length = strlen(bencoded_value);
     // It MUST begin with 'd' and end with 'e'
     if (bencoded_value[0] == 'd' && bencoded_value[length-1] == 'e') {
         metainfo_t* metainfo = malloc(sizeof(metainfo_t));
@@ -432,7 +433,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             if ( info_index != nullptr) {
                 start = info_index-bencoded_value + 12 + 1;
                 metainfo->info->piece_length = decode_bencode_int(bencoded_value+start, nullptr);
-            }
+            } else return nullptr;
 
         } else return nullptr;
 
