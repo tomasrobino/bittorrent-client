@@ -12,7 +12,7 @@ find_package(CURL REQUIRED)
 add_executable(bittorrent ${SOURCE_FILES}
         src/structs.h
         src/parsing.c
-        src/whole_bencode.c
+        src/basic_bencode.c
         src/whole_bencode.h)
 
 # Link OpenSSL, CURL and Math library

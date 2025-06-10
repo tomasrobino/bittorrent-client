@@ -1,5 +1,5 @@
-#ifndef BASIC_BENCODE_H
-#define BASIC_BENCODE_H
+#ifndef WHOLE_BENCODE_H
+#define WHOLE_BENCODE_H
 #include "structs.h"
 
 //Check if char is a digit
@@ -20,4 +20,4 @@ metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
 magnet_data* process_magnet(const char* magnet);
 
 void free_magnet_data(magnet_data* magnet_data);
-#endif //BASIC_BENCODE_H
+#endif //WHOLE_BENCODE_H
