@@ -428,7 +428,11 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             }
 
             // Reading piece length
-
+            info_index = strstr(bencoded_value+start, "piece length");
+            if ( info_index != nullptr) {
+                start = info_index-bencoded_value + 12 + 1;
+                metainfo->info->piece_length = decode_bencode_int(bencoded_value+start, nullptr);
+            }
 
         } else return nullptr;
 
