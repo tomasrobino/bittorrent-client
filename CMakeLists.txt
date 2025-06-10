@@ -10,7 +10,9 @@ find_package(OpenSSL REQUIRED)
 find_package(CURL REQUIRED)
 
 add_executable(bittorrent ${SOURCE_FILES}
-        src/structs.h)
+        src/structs.h
+        src/parsing.c
+        src/parsing.h)
 
 # Link OpenSSL, CURL and Math library
 target_link_libraries(bittorrent PRIVATE OpenSSL::Crypto CURL::libcurl m)
