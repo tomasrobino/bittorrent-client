@@ -91,6 +91,8 @@ metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
 //Returns magnet_data struct of parsed magnet link
 magnet_data* process_magnet(const char* magnet);
 
+void free_magnet_data(magnet_data* magnet_data);
+
 int main(const int argc, char* argv[]) {
     // Disable output buffering
     setbuf(stdout, nullptr);
@@ -112,21 +114,7 @@ int main(const int argc, char* argv[]) {
 
 
             //Freeing magnet data
-            if (data->xt != nullptr) free(data->xt);
-            if (data->dn != nullptr) free(data->dn);
-            while (data->tr != nullptr) {
-                curl_free(data->tr->val);
-                ll* next = data->tr->next;
-                free(data->tr);
-                data->tr = next;
-            }
-            if (data->ws != nullptr) curl_free(data->ws);
-            if (data->as != nullptr) curl_free(data->as);
-            if (data->xs != nullptr) curl_free(data->xs);
-            if (data->kt != nullptr) free(data->kt);
-            if (data->mt != nullptr) curl_free(data->mt);
-            if (data->so != nullptr) free(data->so);
-            if (data != nullptr) free(data);
+            free_magnet_data(data);
         } else {
             fprintf(stderr, "Invalid link: %s\n", command);
             return 1;
@@ -583,4 +571,22 @@ magnet_data* process_magnet(const char* magnet) {
     }
     data->tr = head;
     return data;
+}
+
+void free_magnet_data(magnet_data* magnet_data) {
+    if (magnet_data->xt != nullptr) free(magnet_data->xt);
+    if (magnet_data->dn != nullptr) free(magnet_data->dn);
+    while (magnet_data->tr != nullptr) {
+        curl_free(magnet_data->tr->val);
+        ll* next = magnet_data->tr->next;
+        free(magnet_data->tr);
+        magnet_data->tr = next;
+    }
+    if (magnet_data->ws != nullptr) curl_free(magnet_data->ws);
+    if (magnet_data->as != nullptr) curl_free(magnet_data->as);
+    if (magnet_data->xs != nullptr) curl_free(magnet_data->xs);
+    if (magnet_data->kt != nullptr) free(magnet_data->kt);
+    if (magnet_data->mt != nullptr) curl_free(magnet_data->mt);
+    if (magnet_data->so != nullptr) free(magnet_data->so);
+    if (magnet_data != nullptr) free(magnet_data);
 }
