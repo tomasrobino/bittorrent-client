@@ -11,8 +11,8 @@ find_package(CURL REQUIRED)
 
 add_executable(bittorrent ${SOURCE_FILES})
 
-# Link OpenSSL and CURL
-target_link_libraries(bittorrent PRIVATE OpenSSL::Crypto CURL::libcurl)
+# Link OpenSSL, CURL and Math library
+target_link_libraries(bittorrent PRIVATE OpenSSL::Crypto CURL::libcurl m)
 
 configure_file(${CMAKE_SOURCE_DIR}/big-buck-bunny.torrent ${CMAKE_BINARY_DIR}/big-buck-bunny.torrent COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/cosmos-laundromat.torrent ${CMAKE_BINARY_DIR}/cosmos-laundromat.torrent COPYONLY)

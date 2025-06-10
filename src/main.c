@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,7 +55,8 @@ typedef struct {
     long length;
     char* name;
     unsigned int piece_length;
-    long pieces;
+    unsigned int piece_number;
+    char* pieces;
     bool private;
 } info_t;
 
@@ -343,7 +345,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             start = metainfo->announce-bencoded_value + 8;
             const int amount = decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
-            metainfo->announce = malloc(sizeof(char)*amount+1);
+            metainfo->announce = malloc(sizeof(char)*(amount+1));
             strncpy(metainfo->announce, bencoded_value+start, amount);
             metainfo->announce[amount] = '\0';
             start+=amount;
@@ -361,7 +363,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             start = metainfo->comment-bencoded_value + 7;
             const int amount = decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
-            metainfo->comment = malloc(sizeof(char)*amount+1);
+            metainfo->comment = malloc(sizeof(char)*(amount+1));
             strncpy(metainfo->comment, bencoded_value+start, amount);
             metainfo->comment[amount] = '\0';
             start+=amount;
@@ -372,7 +374,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             start = metainfo->created_by-bencoded_value + 10;
             const int amount = decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
-            metainfo->created_by = malloc(sizeof(char)*amount+1);
+            metainfo->created_by = malloc(sizeof(char)*(amount+1));
             strncpy(metainfo->created_by, bencoded_value+start, amount);
             metainfo->created_by[amount] = '\0';
             start+=amount;
@@ -390,7 +392,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             start = metainfo->encoding-bencoded_value + 8;
             const int amount = decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
-            metainfo->encoding = malloc(sizeof(char)*amount+1);
+            metainfo->encoding = malloc(sizeof(char)*(amount+1));
             strncpy(metainfo->encoding, bencoded_value+start, amount);
             metainfo->encoding[amount] = '\0';
             start+=amount;
@@ -414,7 +416,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                     start = info_index-bencoded_value + 4;
                     const int amount = decode_bencode_int(bencoded_value+start, nullptr);
                     start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
-                    metainfo->info->name = malloc(sizeof(char)*amount+1);
+                    metainfo->info->name = malloc(sizeof(char)*(amount+1));
                     strncpy(metainfo->info->name, bencoded_value+start, amount);
                     metainfo->info->name[amount] = '\0';
                     start+=amount;
@@ -432,8 +434,21 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             if ( info_index != nullptr) {
                 start = info_index-bencoded_value + 12 + 1;
                 metainfo->info->piece_length = decode_bencode_int(bencoded_value+start, nullptr);
-            }
+            } else return nullptr;
 
+            // Reading pieces
+            if ( (info_index = strstr(bencoded_value+start, "pieces")) != nullptr) {
+                start = info_index-bencoded_value + 6;
+                const int amount = decode_bencode_int(bencoded_value+start, nullptr);
+                start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
+                metainfo->info->piece_number = ceil((double) amount / metainfo->info->piece_length);
+                metainfo->info->pieces = malloc(sizeof(char)*(amount+1));
+                strncpy(metainfo->info->pieces, bencoded_value+start, amount);
+                metainfo->info->pieces[amount] = '\0';
+                start+=amount;
+            } else return nullptr;
+
+            // Skipping private
         } else return nullptr;
 
         return metainfo;
