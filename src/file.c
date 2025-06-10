@@ -5,6 +5,8 @@
 #include "structs.h"
 #include "whole_bencode.h"
 
+void free_info_files_list(files_ll* list);
+
 metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long length) {
     // It MUST begin with 'd' and end with 'e'
     if (bencoded_value[0] == 'd' && bencoded_value[length-1] == 'e') {
@@ -127,6 +129,15 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
     return nullptr;
 }
 
+void free_info_files_list(files_ll* list) {
+    while (list != nullptr) {
+        free_bencode_list(list->path);
+        files_ll* next = list->next;
+        free(list);
+        list = next;
+    }
+}
+
 void free_metainfo(metainfo_t* metainfo) {
     if (metainfo != nullptr) {
         if (metainfo->announce != nullptr) free(metainfo->announce);
@@ -135,7 +146,8 @@ void free_metainfo(metainfo_t* metainfo) {
         if (metainfo->created_by != nullptr) free(metainfo->created_by);
         if (metainfo->encoding != nullptr) free(metainfo->encoding);
         if (metainfo->info != nullptr) {
-
+            free_info_files_list(metainfo->info->files);
         }
+        free(metainfo);
     }
 }
