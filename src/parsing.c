@@ -36,6 +36,15 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
     return nullptr;
 }
 
+void free_announce_list(announce_list_ll* list) {
+    while (list != nullptr) {
+        free_bencode_list(list->list);
+        announce_list_ll* next = list->next;
+        free(list);
+        list = next;
+    }
+}
+
 files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* index) {
     files_ll *head = malloc(sizeof(files_ll));
     head->path = nullptr;

@@ -15,6 +15,8 @@ int decode_bencode_int(const char* bencoded_value, char** endptr);
 // For decoding announce-list
 announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index);
 
+void free_announce_list(announce_list_ll* list);
+
 files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* index);
 
 metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
