@@ -126,3 +126,16 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
     }
     return nullptr;
 }
+
+void free_metainfo(metainfo_t* metainfo) {
+    if (metainfo != nullptr) {
+        if (metainfo->announce != nullptr) free(metainfo->announce);
+        free_announce_list(metainfo->announce_list);
+        if (metainfo->comment != nullptr) free(metainfo->comment);
+        if (metainfo->created_by != nullptr) free(metainfo->created_by);
+        if (metainfo->encoding != nullptr) free(metainfo->encoding);
+        if (metainfo->info != nullptr) {
+
+        }
+    }
+}
