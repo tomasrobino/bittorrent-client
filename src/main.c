@@ -428,7 +428,6 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             }
 
             // Reading piece length
-            printf("fdsñpdsf");
 
 
         } else return nullptr;
