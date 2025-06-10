@@ -10,5 +10,14 @@ ll* decode_bencode_list(const char* bencoded_list, unsigned int* length);
 char* decode_bencode_string(const char* bencoded_value);
 
 int decode_bencode_int(const char* bencoded_value, char** endptr);
+// For decoding announce-list
+announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index);
 
+files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* index);
+
+metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
+//Returns magnet_data struct of parsed magnet link
+magnet_data* process_magnet(const char* magnet);
+
+void free_magnet_data(magnet_data* magnet_data);
 #endif //BASIC_BENCODE_H

@@ -1,6 +1,5 @@
 // Project header files
-#include "parsing.h"
-#include "basic_bencode.h"
+#include "whole_bencode.h"
 
 #include <curl/curl.h>
 #include <stdio.h>
