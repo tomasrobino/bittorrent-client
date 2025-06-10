@@ -1,9 +1,10 @@
+// Project header files
+#include "parsing.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// Project header files
-#include "parsing.h"
 
 int main(const int argc, char* argv[]) {
     // Disable output buffering
