@@ -80,7 +80,7 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
 //Decode bencoded string, returns decoded string
 char* decode_bencode(const char* bencoded_value);
 
-int decode_bencode_int(const char* bencoded_value, char* endptr);
+int decode_bencode_int(const char* bencoded_value, char** endptr);
 
 files_ll* read_files(const char* bencode, bool multiple, unsigned long* index);
 
@@ -177,8 +177,8 @@ ll* decode_bencode_list(const char* bencoded_list, unsigned int* length) {
         } else return nullptr;
 
         while (bencoded_list[start] != 'e') {
-            char *endptr = nullptr;
-            const int element_length = decode_bencode_int(bencoded_list+start, endptr);
+            char *endptr = (char*) bencoded_list+start;
+            const int element_length = decode_bencode_int(bencoded_list+start, &endptr);
             // endptr points to ":", start is moved to the character after it, which is where the data begins
             start = endptr-bencoded_list+1;
             // Copying data
@@ -261,16 +261,16 @@ char* decode_bencode(const char* bencoded_value) {
     exit(1);
 }
 
-int decode_bencode_int(const char* bencoded_value, char* endptr) {
+int decode_bencode_int(const char* bencoded_value, char** endptr) {
     if (is_digit(bencoded_value[0])) {
-        const int num = (int) strtol(bencoded_value, &endptr, 10);
-        if (endptr == bencoded_value) {
+        const int num = (int) strtol(bencoded_value, endptr, 10);
+        if (endptr != nullptr && *endptr == bencoded_value) {
             fprintf(stderr, "Invalid number\n");
             exit(1);
         }
         return num;
     }
-    endptr = nullptr;
+    *endptr = nullptr;
     exit(1);
 }
 
@@ -296,7 +296,7 @@ files_ll* read_files(const char* bencode, bool multiple, unsigned long* index) {
         if ( (parse_index = strstr(bencode+start, "length")) != nullptr) {
             start = parse_index-bencode + 7;
             char *endptr = nullptr;
-            current->length = decode_bencode_int(bencode+start, endptr);
+            current->length = decode_bencode_int(bencode+start, &endptr);
             start = strchr(bencode+start, ':') - bencode + 1;
         } else return nullptr;
 
@@ -312,7 +312,7 @@ files_ll* read_files(const char* bencode, bool multiple, unsigned long* index) {
             if ( (parse_index = strstr(bencode+start, "name")) != nullptr) {
                 start = parse_index-bencode + 4;
                 char *endptr = nullptr;
-                const int amount = decode_bencode_int(bencode+start, endptr);
+                const int amount = decode_bencode_int(bencode+start, &endptr);
                 current->path = malloc(sizeof(ll));
                 current->path->next = nullptr;
                 current->path->val = malloc(sizeof(char)*(amount+1));
@@ -341,8 +341,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         // Reading announce
         if ( (metainfo->announce = strstr(bencoded_value+start, "announce")) != nullptr) {
             start = metainfo->announce-bencoded_value + 8;
-            char *endptr = nullptr;
-            const int amount = decode_bencode_int(bencoded_value+start, endptr);
+            const int amount = decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->announce = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->announce, bencoded_value+start, amount);
@@ -360,8 +359,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         // Reading comment
         if ( (metainfo->comment = strstr(bencoded_value+start, "comment")) != nullptr) {
             start = metainfo->comment-bencoded_value + 7;
-            char *endptr = nullptr;
-            const int amount = decode_bencode_int(bencoded_value+start, endptr);
+            const int amount = decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->comment = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->comment, bencoded_value+start, amount);
@@ -372,8 +370,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         // Reading created by
         if ( (metainfo->created_by = strstr(bencoded_value+start, "created by")) != nullptr) {
             start = metainfo->created_by-bencoded_value + 10;
-            char *endptr = nullptr;
-            const int amount = decode_bencode_int(bencoded_value+start, endptr);
+            const int amount = decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->created_by = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->created_by, bencoded_value+start, amount);
@@ -385,15 +382,13 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         char* creation_date_index = strstr(bencoded_value+start, "creation date");
         if ( creation_date_index != nullptr) {
             start = creation_date_index-bencoded_value + 13 + 1;
-            char *endptr = nullptr;
-            metainfo->creation_date = decode_bencode_int(bencoded_value+start, endptr);
+            metainfo->creation_date = decode_bencode_int(bencoded_value+start, nullptr);
         }
 
         // Reading encoding
         if ( (metainfo->encoding = strstr(bencoded_value+start, "encoding")) != nullptr) {
             start = metainfo->encoding-bencoded_value + 8;
-            char *endptr = nullptr;
-            const int amount = decode_bencode_int(bencoded_value+start, endptr);
+            const int amount = decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->encoding = malloc(sizeof(char)*amount+1);
             strncpy(metainfo->encoding, bencoded_value+start, amount);
@@ -417,8 +412,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 // Reading directory name when multiple
                 if ( (info_index = strstr(bencoded_value+start, "name")) != nullptr) {
                     start = info_index-bencoded_value + 4;
-                    char *endptr = nullptr;
-                    const int amount = decode_bencode_int(bencoded_value+start, endptr);
+                    const int amount = decode_bencode_int(bencoded_value+start, nullptr);
                     start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
                     metainfo->info->name = malloc(sizeof(char)*amount+1);
                     strncpy(metainfo->info->name, bencoded_value+start, amount);
@@ -434,7 +428,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             }
 
             // Reading piece length
-
+            printf("fdsñpdsf");
 
 
         } else return nullptr;
@@ -486,8 +480,7 @@ magnet_data* process_magnet(const char* magnet) {
                         fprintf(stdout, "dn:\n%s\n", data->dn);
                         break;
                     case xl:
-                        char *endptr = nullptr;
-                        data->xl = decode_bencode_int(magnet+start, endptr);
+                        data->xl = decode_bencode_int(magnet+start, nullptr);
                         fprintf(stdout, "xl:\n%ld\n", data->xl);
                         break;
                     case tr:
