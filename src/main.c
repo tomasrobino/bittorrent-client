@@ -20,7 +20,7 @@ char* decode_bencode_string(const char* bencoded_value);
 
 int decode_bencode_int(const char* bencoded_value, char** endptr);
 
-files_ll* read_files(const char* bencode, bool multiple, unsigned long* index);
+files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* index);
 
 metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
 
@@ -200,7 +200,7 @@ int decode_bencode_int(const char* bencoded_value, char** endptr) {
     exit(1);
 }
 
-files_ll* read_files(const char* bencode, bool multiple, unsigned long* index) {
+files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* index) {
     files_ll *head = malloc(sizeof(files_ll));
     head->path = nullptr;
     head->next = nullptr;
@@ -334,7 +334,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
 
             if (bencoded_value[start+1] == '5') { // If multiple files
                 multiple = true;
-                metainfo->info->files = read_files(bencoded_value+start, multiple, start_ptr);
+                metainfo->info->files = read_info_files(bencoded_value+start, multiple, start_ptr);
                 // Reading directory name when multiple
                 if ( (info_index = strstr(bencoded_value+start, "name")) != nullptr) {
                     start = info_index-bencoded_value + 4;
@@ -348,7 +348,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
 
             } else { // If single file
                 multiple = false;
-                metainfo->info->files = read_files(bencoded_value+start, multiple, start_ptr);
+                metainfo->info->files = read_info_files(bencoded_value+start, multiple, start_ptr);
 
                 // Skipping md5sum
             }
