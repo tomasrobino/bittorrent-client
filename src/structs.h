@@ -15,6 +15,12 @@ typedef enum {
     so
 } Magnet_Attributes;
 
+typedef enum {
+    HTTP,
+    HTTPS,
+    UDP
+} Protocols;
+
 typedef struct ll {
     struct ll *next;
     char *val;
@@ -66,5 +72,11 @@ typedef struct {
     char* encoding;
     info_t* info;
 } metainfo_t;
+
+typedef struct {
+    char* host;
+    unsigned int port;
+    Protocols protocol;
+} address_t;
 
 #endif //STRUCTS_H
