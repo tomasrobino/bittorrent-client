@@ -15,7 +15,9 @@ add_executable(bittorrent ${SOURCE_FILES}
         src/basic_bencode.c
         src/whole_bencode.h
         src/magnet.c
-        src/file.c)
+        src/file.c
+        src/connection.c
+        src/connection.h)
 
 # Link OpenSSL, CURL and Math library
 target_link_libraries(bittorrent PRIVATE OpenSSL::Crypto CURL::libcurl m)
