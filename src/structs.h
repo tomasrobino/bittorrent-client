@@ -2,7 +2,7 @@
 #define STRUCTS_H
 
 typedef enum {
-    null = 20,
+    none = 20,
     xt,
     dn,
     xl,
