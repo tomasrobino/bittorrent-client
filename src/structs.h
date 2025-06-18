@@ -60,7 +60,7 @@ typedef struct {
     unsigned int piece_length;
     unsigned int piece_number;
     char* pieces;
-    bool private;
+    bool priv;
 } info_t;
 
 typedef struct {
