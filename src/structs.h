@@ -79,4 +79,16 @@ typedef struct {
     Protocols protocol;
 } address_t;
 
+typedef struct {
+    unsigned long long protocol_id;
+    unsigned long action;
+    unsigned long transaction_id;
+} connect_request_t;
+
+typedef struct {
+    unsigned long action;
+    unsigned long transaction_id;
+    unsigned long long connection_id;
+} connect_response_t;
+
 #endif //STRUCTS_H
