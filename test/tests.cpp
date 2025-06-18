@@ -12,6 +12,7 @@ TEST_CASE("parse_address detects protocol correctly") {
         REQUIRE(addr->protocol == UDP);
         REQUIRE(std::string(addr->host) == "example.com:1234");
         REQUIRE(addr->port == 1234);
+        free(addr->host);
         free(addr);
     }
 
@@ -20,6 +21,7 @@ TEST_CASE("parse_address detects protocol correctly") {
         REQUIRE(addr->protocol == HTTPS);
         REQUIRE(std::string(addr->host) == "secure.com:443");
         REQUIRE(addr->port == 443);
+        free(addr->host);
         free(addr);
     }
 
@@ -28,6 +30,7 @@ TEST_CASE("parse_address detects protocol correctly") {
         REQUIRE(addr->protocol == HTTP);
         REQUIRE(std::string(addr->host) == "plain.com:80");
         REQUIRE(addr->port == 80);
+        free(addr->host);
         free(addr);
     }
 }

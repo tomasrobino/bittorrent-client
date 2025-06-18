@@ -20,8 +20,12 @@ address_t* parse_address(const char* address) {
     } else {
         ret_address->protocol = HTTP;
     }
-    ret_address->host = strchr(address, '/') + 2;
-    ret_address->port = decode_bencode_int(strchr(ret_address->host, ':')+1, nullptr);
+    const char* start = strchr(address, '/') + 2;
+    const char* end = strchr(ret_address->host, ':');
+    ret_address->host = malloc(sizeof(char)*(end-start+1));
+    strncpy(ret_address->host, start, start-end);
+    ret_address->host[start-end] = '\0';
+    ret_address->port = decode_bencode_int(end+1, nullptr);
     return ret_address;
 }
 
