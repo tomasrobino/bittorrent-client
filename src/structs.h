@@ -80,15 +80,15 @@ typedef struct {
 } address_t;
 
 typedef struct {
-    unsigned long long protocol_id;
-    unsigned long action;
-    unsigned long transaction_id;
+    unsigned long long protocol_id; // 0x41727101980 magic constant
+    unsigned long action; // 0 connect
+    unsigned long transaction_id; // random
 } connect_request_t;
 
 typedef struct {
-    unsigned long action;
-    unsigned long transaction_id;
-    unsigned long long connection_id;
+    unsigned long action; // 0 connect
+    unsigned long transaction_id; // same as sent
+    unsigned long long connection_id; // assigned by tracker
 } connect_response_t;
 
 #endif //STRUCTS_H
