@@ -10,7 +10,7 @@
 #include "structs.h"
 #include "whole_bencode.h"
 
-address_t* parse_address(const char* address) {
+address_t* split_address(const char* address) {
     address_t* ret_address = malloc(sizeof(address_t));
 
     if (address[0] == 'u') {
@@ -22,10 +22,16 @@ address_t* parse_address(const char* address) {
     }
     const char* start = strchr(address, '/') + 2;
     const char* end = strchr(start, ':');
-    ret_address->host = malloc(sizeof(char)*(end-start+1));
-    strncpy(ret_address->host, start, end-start);
-    ret_address->host[end-start] = '\0';
-    ret_address->port = decode_bencode_int(end+1, nullptr);
+    if (!end) {
+        // no port
+        ret_address->port = -1;
+    } else {
+        // has port
+        ret_address->host = malloc(sizeof(char)*(end-start+1));
+        strncpy(ret_address->host, start, end-start);
+        ret_address->host[end-start] = '\0';
+        ret_address->port = decode_bencode_int(end+1, nullptr);
+    }
     return ret_address;
 }
 
