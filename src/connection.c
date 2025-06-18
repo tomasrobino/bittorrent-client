@@ -29,29 +29,20 @@ address_t* parse_address(const char* address) {
     return ret_address;
 }
 
-connect_response_t* connect_udp(struct sockaddr server_addr, int sockfd, connect_request_t req) {
-    if (req.protocol_id != 0x41727101980) {
-        // error
-        fprintf(stderr, "Invalid connect request protocol");
-        exit(1);
-    }
+connect_response_t* connect_udp(struct sockaddr* server_addr, int sockfd, unsigned int transaction_id) {
+    connect_request_t* req = malloc(sizeof(connect_request_t));
+    req->protocol_id = 0x41727101980;
+    req->action = 0;
+    req->transaction_id = transaction_id;
 
-    if (req.action != 0) {
-        // error
-        fprintf(stderr, "Invalid connect request action");
-        exit(1);
-    }
-
-    ssize_t sent = sendto(sockfd, &req, sizeof(connect_request_t), 0, &server_addr, sizeof(server_addr));
-
+    ssize_t sent = sendto(sockfd, req, sizeof(connect_request_t), 0, server_addr, sizeof(struct sockaddr));
+    free(req);
     if (sent < 0) {
         // error
         fprintf(stderr, "Can't send connect request");
         exit(1);
     }
     fprintf(stdout, "Sent %zd bytes\n", sent);
-    
-
 
     connect_response_t* res = malloc(sizeof(connect_response_t));
     return res;
