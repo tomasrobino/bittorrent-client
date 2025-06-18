@@ -16,7 +16,7 @@ TEST_CASE("parse_address detects protocol correctly") {
     }
 
     SECTION("HTTPS address") {
-        address_t* addr = parse_address("http**s**://secure.com:443");
+        address_t* addr = parse_address("https://secure.com:443");
         REQUIRE(addr->protocol == HTTPS);
         REQUIRE(std::string(addr->host) == "secure.com:443");
         REQUIRE(addr->port == 443);
