@@ -75,7 +75,7 @@ typedef struct {
 
 typedef struct {
     char* host;
-    unsigned int port;
+    char* port;
     Protocols protocol;
 } address_t;
 

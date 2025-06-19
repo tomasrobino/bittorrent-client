@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "connection.h"
+
 int main(const int argc, char* argv[]) {
     // Disable output buffering
     setbuf(stdout, nullptr);
@@ -49,6 +51,7 @@ int main(const int argc, char* argv[]) {
 
         if (buffer && length != 0) {
             metainfo_t* metainfo = parse_metainfo(buffer, length);
+            download(metainfo->announce);
 
             // Freeing memory
             free_metainfo(metainfo);

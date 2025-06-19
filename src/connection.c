@@ -13,7 +13,7 @@
 
 address_t* split_address(const char* address) {
     address_t* ret_address = malloc(sizeof(address_t));
-    *ret_address = {0};
+    memset(ret_address, 0, sizeof(address_t));
 
     if (strncmp(address, "udp", 3) == 0) {
         ret_address->protocol = UDP;
@@ -24,15 +24,19 @@ address_t* split_address(const char* address) {
     } else return nullptr;
     const char* start = strchr(address, '/') + 2;
     const char* end = strchr(start, ':');
-    if (!end) {
-        // no port
-        ret_address->port = -1;
-    } else {
+    if (end) {
         // has port
         ret_address->host = malloc(sizeof(char)*(end-start+1));
         strncpy(ret_address->host, start, end-start);
         ret_address->host[end-start] = '\0';
-        ret_address->port = decode_bencode_int(end+1, nullptr);
+
+        ret_address->port = (char*) end+1;
+        ret_address->port = malloc(sizeof(char)*strlen(ret_address->port));
+
+        //ret_address->port = decode_bencode_int(end+1, nullptr);
+    } else {
+        // no port
+        ret_address->port = nullptr;
     }
     return ret_address;
 }
@@ -43,7 +47,7 @@ char* url_to_ip(address_t address) {
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_DGRAM;
 
-        const int err = getaddrinfo(address.host, address.host, &hints, &res);
+        const int err = getaddrinfo(address.host, address.port, &hints, &res);
         if (err != 0) {
             fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err));
             return nullptr;
