@@ -64,7 +64,7 @@ char* url_to_ip(address_t address) {
     }
 }
 
-connect_response_t* connect_udp(const struct sockaddr* server_addr, int sockfd, unsigned int transaction_id) {
+connect_response_t* connect_udp(struct sockaddr* server_addr, int sockfd, unsigned int transaction_id) {
     connect_request_t* req = malloc(sizeof(connect_request_t));
     req->protocol_id = 0x41727101980;
     req->action = 0;
@@ -79,7 +79,17 @@ connect_response_t* connect_udp(const struct sockaddr* server_addr, int sockfd, 
     }
     fprintf(stdout, "Sent %zd bytes\n", sent);
 
-    connect_response_t* res = malloc(sizeof(connect_response_t));
+    connect_response_t* res = malloc(sizeof(connect_response_t)+1);
+    char* buffer = (char*) res;
+    socklen_t socklen = sizeof(*server_addr);
+    ssize_t recv_bytes = recvfrom(sockfd, buffer, sizeof(connect_response_t), 0, server_addr, &socklen);
+    if (recv_bytes < 0) {
+        fprintf(stderr, "No response");
+    } else {
+        buffer[sizeof(connect_response_t)] = '\0';
+        fprintf("Server response:\n%s", buffer);
+    }
+
     return res;
 }
 
