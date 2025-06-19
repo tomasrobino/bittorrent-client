@@ -13,6 +13,7 @@
 
 address_t* split_address(const char* address) {
     address_t* ret_address = malloc(sizeof(address_t));
+    *ret_address = {0};
 
     if (strncmp(address, "udp", 3) == 0) {
         ret_address->protocol = UDP;
