@@ -30,9 +30,13 @@ address_t* split_address(const char* address) {
         strncpy(ret_address->host, start, end-start);
         ret_address->host[end-start] = '\0';
 
-        ret_address->port = (char*) end+1;
-        ret_address->port = malloc(sizeof(char)*strlen(ret_address->port));
-        strcpy(ret_address->port, end+1);
+        start = end+1;
+        end = strchr(start, '/');
+        const long dif = end-start;
+        ret_address->port = (char*) start;
+        ret_address->port = malloc(sizeof(char)* (dif+1) );
+        strncpy(ret_address->port, start, dif);
+        ret_address->port[dif] = '\0';
     } else {
         // no port
         ret_address->port = nullptr;
@@ -107,7 +111,7 @@ void download(const char* raw_address) {
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(decode_bencode_int(split_addr->port, nullptr));
     server_addr.sin_addr.s_addr = inet_addr(ip);
-    connect_response_t* connect_response = connect_udp((const struct sockaddr*) &server_addr, sockfd, arc4random());
+    connect_response_t* connect_response = connect_udp((struct sockaddr*) &server_addr, sockfd, arc4random());
 
     free(connect_response);
     free(split_addr);
