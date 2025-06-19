@@ -38,14 +38,27 @@ TEST_CASE("parse_address detects protocol correctly") {
 
 
 TEST_CASE("url_to_ip resolves known hostname", "[network]") {
-    const address_t* address = split_address("udp://tracker.leechers-paradise.org:6969");
-    char* ip = url_to_ip(*address);
+    SECTION("No path") {
+        const address_t* address = split_address("udp://tracker.leechers-paradise.org:6969");
+        char* ip = url_to_ip(*address);
 
-    REQUIRE(ip != nullptr);
+        REQUIRE(ip != nullptr);
 
-    REQUIRE(
-        strcmp(ip, "199.59.243.228") == 0
-    );
+        REQUIRE(
+            strcmp(ip, "199.59.243.228") == 0
+        );
+        free(ip);
+    }
 
-    free(ip);
+    SECTION("With path") {
+        const address_t* address = split_address("udp://tracker.opentrackr.org:1337/announce");
+        char* ip = url_to_ip(*address);
+
+        REQUIRE(ip != nullptr);
+
+        REQUIRE(
+            strcmp(ip, "93.158.213.92") == 0
+        );
+        free(ip);
+    }
 }
