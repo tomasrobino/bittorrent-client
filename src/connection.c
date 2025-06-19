@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include "structs.h"
 #include "whole_bencode.h"
@@ -13,12 +14,12 @@
 address_t* split_address(const char* address) {
     address_t* ret_address = malloc(sizeof(address_t));
 
-    if (address[0] == 'u') {
+    if (strncmp(address, "udp", 3) == 0) {
         ret_address->protocol = UDP;
+    } else if (strncmp(address, "http", 4) == 0) {
+        ret_address->protocol = HTTP;
     } else if (address[4] == 's') {
         ret_address->protocol = HTTPS;
-    } else {
-        ret_address->protocol = HTTP;
     }
     const char* start = strchr(address, '/') + 2;
     const char* end = strchr(start, ':');
@@ -33,6 +34,30 @@ address_t* split_address(const char* address) {
         ret_address->port = decode_bencode_int(end+1, nullptr);
     }
     return ret_address;
+}
+
+char* url_to_ip(address_t address) {
+    if (address.protocol == UDP) {
+        struct addrinfo hints = {0}, *res;
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_DGRAM;
+
+        const int err = getaddrinfo(address.host, address.host, &hints, &res);
+        if (err != 0) {
+            fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err));
+            return nullptr;
+        }
+
+        // Print IP address
+        char* ip = malloc(INET_ADDRSTRLEN);
+        const struct in_addr* addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
+        inet_ntop(res->ai_family, addr, ip, INET_ADDRSTRLEN);
+        printf("Resolved IP: %s\n", ip);
+        freeaddrinfo(res);
+        return ip;
+    } else { // TODO other protocols besides UDP
+        return nullptr;
+    }
 }
 
 connect_response_t* connect_udp(struct sockaddr* server_addr, int sockfd, unsigned int transaction_id) {
@@ -54,7 +79,7 @@ connect_response_t* connect_udp(struct sockaddr* server_addr, int sockfd, unsign
     return res;
 }
 
-void send_data_udp(const unsigned short port, const char* ip, const char* data) {
+void socketize(const unsigned short port, const char* ip, const char* data) {
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
         // Error
@@ -67,4 +92,12 @@ void send_data_udp(const unsigned short port, const char* ip, const char* data) 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
     server_addr.sin_addr.s_addr = inet_addr(ip);
+}
+
+void download(const char* address) {
+    address_t* split_addr = split_address(address);
+
+
+
+    free(split_addr);
 }
