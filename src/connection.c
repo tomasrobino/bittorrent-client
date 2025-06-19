@@ -9,6 +9,7 @@
 #include <netdb.h>
 
 #include "structs.h"
+#include "whole_bencode.h"
 
 address_t* split_address(const char* address) {
     address_t* ret_address = malloc(sizeof(address_t));
@@ -69,7 +70,7 @@ connect_response_t* connect_udp(const struct sockaddr* server_addr, int sockfd, 
     req->action = 0;
     req->transaction_id = transaction_id;
 
-    ssize_t sent = sendto(sockfd, req, sizeof(connect_request_t), 0, server_addr, sizeof(struct sockaddr));
+    const ssize_t sent = sendto(sockfd, req, sizeof(connect_request_t), 0, server_addr, sizeof(struct sockaddr));
     free(req);
     if (sent < 0) {
         // error
@@ -82,25 +83,22 @@ connect_response_t* connect_udp(const struct sockaddr* server_addr, int sockfd, 
     return res;
 }
 
-void socketize(const unsigned short port, const char* ip, const char* data) {
+void download(const char* raw_address) {
+    address_t* split_addr = split_address(raw_address);
+    char* ip = url_to_ip(*split_addr);
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
         // Error
-        //TODO should retry connection or return instead of exiting
         fprintf(stderr, "Socket creation failed");
         exit(2);
     }
 
     struct sockaddr_in server_addr = {0};
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
+    server_addr.sin_port = htons(decode_bencode_int(split_addr->port, nullptr));
     server_addr.sin_addr.s_addr = inet_addr(ip);
-}
+    connect_response_t* connect_response = connect_udp((const struct sockaddr*) &server_addr, sockfd, arc4random());
 
-void download(const char* address) {
-    address_t* split_addr = split_address(address);
-    char* ip = url_to_ip(*split_addr);
-
-
+    free(connect_response);
     free(split_addr);
 }
