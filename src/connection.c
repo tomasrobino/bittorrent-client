@@ -32,7 +32,12 @@ address_t* split_address(const char* address) {
 
         start = end+1;
         end = strchr(start, '/');
-        const long dif = end-start;
+        int dif;
+        if (end == NULL) {
+            dif = (int) strlen(start);
+        } else {
+            dif = (int) (end-start);
+        }
         ret_address->port = (char*) start;
         ret_address->port = malloc(sizeof(char)* (dif+1) );
         strncpy(ret_address->port, start, dif);
