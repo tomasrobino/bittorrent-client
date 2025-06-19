@@ -9,7 +9,6 @@
 #include <netdb.h>
 
 #include "structs.h"
-#include "whole_bencode.h"
 
 address_t* split_address(const char* address) {
     address_t* ret_address = malloc(sizeof(address_t));
@@ -64,7 +63,7 @@ char* url_to_ip(address_t address) {
     }
 }
 
-connect_response_t* connect_udp(struct sockaddr* server_addr, int sockfd, unsigned int transaction_id) {
+connect_response_t* connect_udp(const struct sockaddr* server_addr, int sockfd, unsigned int transaction_id) {
     connect_request_t* req = malloc(sizeof(connect_request_t));
     req->protocol_id = 0x41727101980;
     req->action = 0;
