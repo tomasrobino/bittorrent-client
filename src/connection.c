@@ -20,7 +20,7 @@ address_t* split_address(const char* address) {
         ret_address->protocol = HTTP;
     } else if (address[4] == 's') {
         ret_address->protocol = HTTPS;
-    }
+    } else return nullptr;
     const char* start = strchr(address, '/') + 2;
     const char* end = strchr(start, ':');
     if (!end) {
