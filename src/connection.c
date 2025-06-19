@@ -17,7 +17,7 @@ address_t* split_address(const char* address) {
 
     if (strncmp(address, "udp", 3) == 0) {
         ret_address->protocol = UDP;
-    } else if (strncmp(address, "http", 4) == 0) {
+    } else if (strncmp(address, "http", 5) == 0) {
         ret_address->protocol = HTTP;
     } else if (address[4] == 's') {
         ret_address->protocol = HTTPS;
@@ -32,8 +32,7 @@ address_t* split_address(const char* address) {
 
         ret_address->port = (char*) end+1;
         ret_address->port = malloc(sizeof(char)*strlen(ret_address->port));
-
-        //ret_address->port = decode_bencode_int(end+1, nullptr);
+        strcpy(ret_address->port, end+1);
     } else {
         // no port
         ret_address->port = nullptr;
@@ -101,7 +100,7 @@ void socketize(const unsigned short port, const char* ip, const char* data) {
 
 void download(const char* address) {
     address_t* split_addr = split_address(address);
-
+    char* ip = url_to_ip(*split_addr);
 
 
     free(split_addr);

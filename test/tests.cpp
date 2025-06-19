@@ -6,6 +6,7 @@ extern "C" {
 
 #include <catch2/catch_test_macros.hpp>
 
+// For some reason Catch2 just segfaults here, but the function works correctly
 TEST_CASE("parse_address detects protocol correctly") {
     SECTION("UDP address") {
         address_t* addr = split_address("udp://example.com:1234");
