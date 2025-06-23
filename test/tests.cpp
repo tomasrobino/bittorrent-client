@@ -61,4 +61,16 @@ TEST_CASE("url_to_ip resolves known hostname", "[network]") {
         );
         free(ip);
     }
+
+    SECTION("UDP IPv6") {
+        const address_t* address = split_address("udp://tracker.torrent.eu.org:451/announce");
+        char* ip = url_to_ip(*address);
+
+        REQUIRE(ip != nullptr);
+
+        REQUIRE(
+            strcmp(ip, "2a03:7220:8083:cd00::1") == 0
+        );
+        free(ip);
+    }
 }

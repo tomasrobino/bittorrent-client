@@ -50,27 +50,47 @@ address_t* split_address(const char* address) {
 }
 
 char* url_to_ip(address_t address) {
+    struct addrinfo hints = {0}, *res;
+    hints.ai_family = AF_UNSPEC;
+    char* ip = nullptr;
     if (address.protocol == UDP) {
-        struct addrinfo hints = {0}, *res;
-        hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_DGRAM;
-
         const int err = getaddrinfo(address.host, address.port, &hints, &res);
         if (err != 0) {
             fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err));
             return nullptr;
         }
 
-        // Print IP address
-        char* ip = malloc(INET_ADDRSTRLEN);
-        const struct in_addr* addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
-        inet_ntop(res->ai_family, addr, ip, INET_ADDRSTRLEN);
-        printf("Resolved IP: %s\n", ip);
+        // Iterating over received IPs
+        for (struct addrinfo *rp = res; rp != nullptr; rp = rp->ai_next) {
+            void* addr_ptr;
+
+            //IPv6
+            if (rp->ai_family == AF_INET6) {
+                char buf[INET6_ADDRSTRLEN];
+                addr_ptr = &((struct sockaddr_in6 *)rp->ai_addr)->sin6_addr;
+                inet_ntop(rp->ai_family, addr_ptr, buf, sizeof(buf));
+                ip = malloc(INET6_ADDRSTRLEN);
+                if (ip) strcpy(ip, buf);
+                printf("Resolved IPv6: %s\n", ip);
+                break;
+            }
+
+            //IPv4. Doesn't break, trying to get an IPv6
+            if (rp->ai_family == AF_INET) {
+                char buf[INET_ADDRSTRLEN];
+                addr_ptr = &((struct sockaddr_in *)rp->ai_addr)->sin_addr;
+                inet_ntop(rp->ai_family, addr_ptr, buf, sizeof(buf));
+                ip = malloc(INET_ADDRSTRLEN);
+                if (ip) strcpy(ip, buf);
+                printf("Resolved IPv4: %s\n", ip);
+            }
+        }
         freeaddrinfo(res);
-        return ip;
-    } else { // TODO other protocols besides UDP
+    } else {
         return nullptr;
     }
+    return ip;
 }
 
 connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, unsigned int transaction_id) {
