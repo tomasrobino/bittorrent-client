@@ -77,10 +77,10 @@ connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, uns
     connect_request_t* req = malloc(sizeof(connect_request_t));
     memset(req, 0, sizeof(connect_request_t));
     req->protocol_id = htobe64(0x41727101980LL);
-    req->action = htonl(0);
-    req->transaction_id = htonl(transaction_id);
+    req->action = htobe32(0);
+    req->transaction_id = htobe32(transaction_id);
 
-    const ssize_t sent = sendto(sockfd, req, sizeof(connect_request_t), 0, (struct sockaddr*) server_addr, sizeof(struct sockaddr));
+    const ssize_t sent = sendto(sockfd, req, sizeof(connect_request_t), 0, (struct sockaddr*) server_addr, sizeof(struct sockaddr_in));
     free(req);
     if (sent < 0) {
         // error
@@ -91,7 +91,7 @@ connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, uns
 
     connect_response_t* res = malloc(sizeof(connect_response_t)+1);
     char* buffer = (char*) res;
-    socklen_t socklen = sizeof(struct sockaddr);
+    socklen_t socklen = sizeof(struct sockaddr_in);
     ssize_t recv_bytes = recvfrom(sockfd, buffer, sizeof(connect_response_t), 0, (struct sockaddr*) server_addr, &socklen);
     if (recv_bytes < 0) {
         fprintf(stderr, "No response");
@@ -105,7 +105,7 @@ connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, uns
 void download(const char* raw_address) {
     address_t* split_addr = split_address(raw_address);
     char* ip = url_to_ip(*split_addr);
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sockfd < 0) {
         // Error
         fprintf(stderr, "Socket creation failed");
