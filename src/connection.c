@@ -76,12 +76,16 @@ char* url_to_ip(address_t address) {
 connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, unsigned int transaction_id) {
     connect_request_t* req = malloc(sizeof(connect_request_t));
     memset(req, 0, sizeof(connect_request_t));
+    // Convert to network endianness
     req->protocol_id = htobe64(0x41727101980LL);
     req->action = htobe32(0);
     req->transaction_id = htobe32(transaction_id);
+    fprintf(stdout, "Connection request:\n");
+    fprintf(stdout, "action: %d\n", req->action);
+    fprintf(stdout, "transaction_id: %d\n", req->transaction_id);
+    fprintf(stdout, "protocol_id: %lu\n", req->protocol_id);
 
     const ssize_t sent = sendto(sockfd, req, sizeof(connect_request_t), 0, (struct sockaddr*) server_addr, sizeof(struct sockaddr_in));
-    free(req);
     if (sent < 0) {
         // error
         fprintf(stderr, "Can't send connect request");
@@ -89,21 +93,32 @@ connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, uns
     }
     fprintf(stdout, "Sent %zd bytes\n", sent);
 
-    connect_response_t* res = malloc(sizeof(connect_response_t)+1);
-    char* buffer = (char*) res;
+    connect_response_t* res = malloc(sizeof(connect_response_t));
     socklen_t socklen = sizeof(struct sockaddr_in);
-    ssize_t recv_bytes = recvfrom(sockfd, buffer, sizeof(connect_response_t), 0, (struct sockaddr*) server_addr, &socklen);
+    ssize_t recv_bytes = recvfrom(sockfd, res, sizeof(connect_response_t), 0, nullptr, &socklen);
     if (recv_bytes < 0) {
         fprintf(stderr, "No response");
     } else {
-        buffer[sizeof(connect_response_t)] = '\0';
-        printf("Server response:\n%s", buffer);
+        fprintf(stdout, "Server response:\n");
+        fprintf(stdout, "action: %d\n", res->action);
+        fprintf(stdout, "transaction_id: %d\n", res->transaction_id);
+        fprintf(stdout, "connection_id: %lu\n", res->connection_id);
+        if (req->transaction_id == res->transaction_id) {
+            // Convert back to host endianness
+            res->connection_id = htobe64(res->connection_id);
+            res->action = htobe32(res->action);
+            res->transaction_id = htobe32(res->transaction_id);
+        } else {
+            // Wrong server response
+            return nullptr;
+        }
     }
+    free(req);
     return res;
 }
 
 void download(const char* raw_address) {
-    address_t* split_addr = split_address(raw_address);
+    address_t* split_addr = split_address("udp://tracker.opentrackr.org:1337/announce");
     char* ip = url_to_ip(*split_addr);
     int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sockfd < 0) {
@@ -117,7 +132,6 @@ void download(const char* raw_address) {
     server_addr.sin_port = htons(decode_bencode_int(split_addr->port, nullptr));
     server_addr.sin_addr.s_addr = inet_addr(ip);
     connect_response_t* connect_response = connect_udp(&server_addr, sockfd, arc4random());
-    free(&server_addr);
     free(connect_response);
     free(split_addr);
 }
