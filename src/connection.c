@@ -17,7 +17,7 @@ address_t* split_address(const char* address) {
 
     if (strncmp(address, "udp", 3) == 0) {
         ret_address->protocol = UDP;
-    } else if (strncmp(address, "http", 5) == 0) {
+    } else if (strncmp(address, "http", 4) == 0 && address[4] != 's') {
         ret_address->protocol = HTTP;
     } else if (address[4] == 's') {
         ret_address->protocol = HTTPS;
@@ -55,41 +55,39 @@ char* url_to_ip(address_t address) {
     char* ip = nullptr;
     if (address.protocol == UDP) {
         hints.ai_socktype = SOCK_DGRAM;
-        const int err = getaddrinfo(address.host, address.port, &hints, &res);
-        if (err != 0) {
-            fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err));
-            return nullptr;
-        }
-
-        // Iterating over received IPs
-        for (struct addrinfo *rp = res; rp != nullptr; rp = rp->ai_next) {
-            void* addr_ptr;
-
-            //IPv6
-            if (rp->ai_family == AF_INET6) {
-                char buf[INET6_ADDRSTRLEN];
-                addr_ptr = &((struct sockaddr_in6 *)rp->ai_addr)->sin6_addr;
-                inet_ntop(rp->ai_family, addr_ptr, buf, sizeof(buf));
-                ip = malloc(INET6_ADDRSTRLEN);
-                if (ip) strcpy(ip, buf);
-                printf("Resolved IPv6: %s\n", ip);
-                break;
-            }
-
-            //IPv4. Doesn't break, trying to get an IPv6
-            if (rp->ai_family == AF_INET) {
-                char buf[INET_ADDRSTRLEN];
-                addr_ptr = &((struct sockaddr_in *)rp->ai_addr)->sin_addr;
-                inet_ntop(rp->ai_family, addr_ptr, buf, sizeof(buf));
-                ip = malloc(INET_ADDRSTRLEN);
-                if (ip) strcpy(ip, buf);
-                printf("Resolved IPv4: %s\n", ip);
-            }
-        }
-        freeaddrinfo(res);
-    } else {
+    } else hints.ai_socktype = SOCK_STREAM;
+    const int err = getaddrinfo(address.host, address.port, &hints, &res);
+    if (err != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err));
         return nullptr;
     }
+
+    // Iterating over received IPs
+    for (struct addrinfo *rp = res; rp != nullptr; rp = rp->ai_next) {
+        void* addr_ptr;
+
+        //IPv6
+        if (rp->ai_family == AF_INET6) {
+            char buf[INET6_ADDRSTRLEN];
+            addr_ptr = &((struct sockaddr_in6 *)rp->ai_addr)->sin6_addr;
+            inet_ntop(rp->ai_family, addr_ptr, buf, sizeof(buf));
+            ip = malloc(INET6_ADDRSTRLEN);
+            if (ip) strcpy(ip, buf);
+            printf("Resolved IPv6: %s\n", ip);
+            break;
+        }
+
+        //IPv4. Doesn't break, trying to get an IPv6
+        if (rp->ai_family == AF_INET) {
+            char buf[INET_ADDRSTRLEN];
+            addr_ptr = &((struct sockaddr_in *)rp->ai_addr)->sin_addr;
+            inet_ntop(rp->ai_family, addr_ptr, buf, sizeof(buf));
+            ip = malloc(INET_ADDRSTRLEN);
+            if (ip) strcpy(ip, buf);
+            printf("Resolved IPv4: %s\n", ip);
+        }
+    }
+    freeaddrinfo(res);
     return ip;
 }
 
@@ -138,7 +136,7 @@ connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, uns
 }
 
 void download(const char* raw_address) {
-    address_t* split_addr = split_address("udp://tracker.opentrackr.org:1337/announce");
+    address_t* split_addr = split_address(raw_address);
     char* ip = url_to_ip(*split_addr);
     int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sockfd < 0) {

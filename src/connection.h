@@ -6,6 +6,10 @@
 
 // Splits protocol, host and port into struct
 address_t* split_address(const char* address);
+/** Converts domain to IP. Supports UDP, HTTP, and HTTPS; IPv4 and IPv6
+ * @param address The domain as a string
+ * @returns The IP of the domain as a string
+ **/
 char* url_to_ip(address_t address);
 connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, unsigned int transaction_id);
 void download(const char* raw_address);
