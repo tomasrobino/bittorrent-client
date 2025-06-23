@@ -74,17 +74,13 @@ char* url_to_ip(address_t address) {
 }
 
 connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, unsigned int transaction_id) {
-    struct sockaddr_in* local_address = malloc(sizeof(struct sockaddr));
-    local_address->sin_family = server_addr->sin_family;
-    local_address->sin_port = server_addr->sin_port;
-    local_address->sin_addr.s_addr = server_addr->sin_addr.s_addr;
-
     connect_request_t* req = malloc(sizeof(connect_request_t));
-    req->protocol_id = 0x41727101980;
-    req->action = 0;
-    req->transaction_id = transaction_id;
+    memset(req, 0, sizeof(connect_request_t));
+    req->protocol_id = htobe64(0x41727101980LL);
+    req->action = htonl(0);
+    req->transaction_id = htonl(transaction_id);
 
-    const ssize_t sent = sendto(sockfd, req, sizeof(connect_request_t), 0, (struct sockaddr*)local_address, sizeof(struct sockaddr));
+    const ssize_t sent = sendto(sockfd, req, sizeof(connect_request_t), 0, (struct sockaddr*) server_addr, sizeof(struct sockaddr));
     free(req);
     if (sent < 0) {
         // error
@@ -96,14 +92,13 @@ connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, uns
     connect_response_t* res = malloc(sizeof(connect_response_t)+1);
     char* buffer = (char*) res;
     socklen_t socklen = sizeof(struct sockaddr);
-    ssize_t recv_bytes = recvfrom(sockfd, buffer, sizeof(connect_response_t), 0, (struct sockaddr*)local_address, &socklen);
+    ssize_t recv_bytes = recvfrom(sockfd, buffer, sizeof(connect_response_t), 0, (struct sockaddr*) server_addr, &socklen);
     if (recv_bytes < 0) {
         fprintf(stderr, "No response");
     } else {
         buffer[sizeof(connect_response_t)] = '\0';
         printf("Server response:\n%s", buffer);
     }
-    free(local_address);
     return res;
 }
 
@@ -122,7 +117,7 @@ void download(const char* raw_address) {
     server_addr.sin_port = htons(decode_bencode_int(split_addr->port, nullptr));
     server_addr.sin_addr.s_addr = inet_addr(ip);
     connect_response_t* connect_response = connect_udp(&server_addr, sockfd, arc4random());
-
+    free(&server_addr);
     free(connect_response);
     free(split_addr);
 }
