@@ -73,4 +73,64 @@ TEST_CASE("url_to_ip resolves known hostname", "[network]") {
         );
         free(ip);
     }
+
+    SECTION("HTTP IPv4") {
+        const address_t* address = split_address("http://tracker.mywaifu.best:6969/announce");
+        char* ip = url_to_ip(*address);
+
+        REQUIRE(ip != nullptr);
+
+        REQUIRE(
+            strcmp(ip, "95.217.167.10") == 0
+        );
+        free(ip);
+    }
+
+    SECTION("HTTP IPv6") {
+        const address_t* address = split_address("http://tracker.bt4g.com:2095/announce");
+        char* ip = url_to_ip(*address);
+
+        REQUIRE(ip != nullptr);
+
+        if (strcmp(ip, "2606:4700:3034::6815:39b6") == 0) {
+            REQUIRE(
+                strcmp(ip, "2606:4700:3034::6815:39b6") == 0
+            );
+        } else {
+            REQUIRE(
+                strcmp(ip, "2606:4700:3037::ac43:a548") == 0
+            );
+        }
+        free(ip);
+    }
+
+    SECTION("HTTPS IPv4") {
+        const address_t* address = split_address("https://tr-zhuqiy-1.dgj055.icu:443/announce");
+        char* ip = url_to_ip(*address);
+
+        REQUIRE(ip != nullptr);
+
+        if (strcmp(ip, "95.216.3.28") == 0) {
+            REQUIRE(
+                strcmp(ip, "95.216.3.28") == 0
+            );
+        } else {
+            REQUIRE(
+                strcmp(ip, "69.197.155.114") == 0
+            );
+        }
+        free(ip);
+    }
+
+    SECTION("HTTPS IPv6") {
+        const address_t* address = split_address("https://tracker.expli.top:443/announce");
+        char* ip = url_to_ip(*address);
+
+        REQUIRE(ip != nullptr);
+
+        REQUIRE(
+            strcmp(ip, "2001:41d0:700:1f37::1") == 0
+        );
+        free(ip);
+    }
 }
