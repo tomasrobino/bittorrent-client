@@ -92,7 +92,7 @@ char* url_to_ip(address_t* address) {
     return ip;
 }
 
-connect_response_t* connect_request_udp(const struct sockaddr* server_addr, int sockfd) {
+uint64_t connect_request_udp(const struct sockaddr *server_addr, const int sockfd) {
     connect_request_t* req = malloc(sizeof(connect_request_t));
     memset(req, 0, sizeof(connect_request_t));
     // Convert to network endianness
@@ -114,7 +114,7 @@ connect_response_t* connect_request_udp(const struct sockaddr* server_addr, int 
 
     connect_response_t* res = malloc(sizeof(connect_response_t));
     socklen_t socklen = sizeof(struct sockaddr);
-    ssize_t recv_bytes = recvfrom(sockfd, res, sizeof(connect_response_t), 0, nullptr, &socklen);
+    const ssize_t recv_bytes = recvfrom(sockfd, res, sizeof(connect_response_t), 0, nullptr, &socklen);
     if (recv_bytes < 0) {
         fprintf(stderr, "No response");
     } else {
@@ -129,11 +129,13 @@ connect_response_t* connect_request_udp(const struct sockaddr* server_addr, int 
             res->transaction_id = htobe32(res->transaction_id);
         } else {
             // Wrong server response
-            return nullptr;
+            return 0;
         }
     }
     free(req);
-    return res;
+    const uint64_t id = res->connection_id;
+    free(res);
+    return id;
 }
 
 void download(const char* raw_address) {
@@ -151,15 +153,13 @@ void download(const char* raw_address) {
         server_addr.sin_family = split_addr->ip_version;
         server_addr.sin_port = htons(decode_bencode_int(split_addr->port, nullptr));
         server_addr.sin_addr.s_addr = inet_addr(ip);
-        connect_response_t* connect_response = connect_request_udp((struct sockaddr*)&server_addr, sockfd);
-        free(connect_response);
+        const uint64_t connect_response = connect_request_udp((struct sockaddr*)&server_addr, sockfd);
     } else {
         struct sockaddr_in6 server_addr = {0};
         server_addr.sin6_family = split_addr->ip_version;
         server_addr.sin6_port = htons(decode_bencode_int(split_addr->port, nullptr));
         inet_pton(AF_INET6, ip, &server_addr.sin6_addr);
-        connect_response_t* connect_response = connect_request_udp((struct sockaddr*)&server_addr, sockfd);
-        free(connect_response);
+        const uint64_t connect_response = connect_request_udp((struct sockaddr*)&server_addr, sockfd);
     }
 
     free(split_addr);
