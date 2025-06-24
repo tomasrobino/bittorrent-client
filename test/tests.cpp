@@ -39,8 +39,8 @@ TEST_CASE("parse_address detects protocol correctly") {
 
 TEST_CASE("url_to_ip resolves known hostname", "[network]") {
     SECTION("No path") {
-        const address_t* address = split_address("udp://tracker.leechers-paradise.org:6969");
-        char* ip = url_to_ip(*address);
+        address_t* address = split_address("udp://tracker.leechers-paradise.org:6969");
+        char* ip = url_to_ip(address);
 
         REQUIRE(ip != nullptr);
 
@@ -51,8 +51,8 @@ TEST_CASE("url_to_ip resolves known hostname", "[network]") {
     }
 
     SECTION("With path") {
-        const address_t* address = split_address("udp://tracker.opentrackr.org:1337/announce");
-        char* ip = url_to_ip(*address);
+        address_t* address = split_address("udp://tracker.opentrackr.org:1337/announce");
+        char* ip = url_to_ip(address);
 
         REQUIRE(ip != nullptr);
 
@@ -63,8 +63,8 @@ TEST_CASE("url_to_ip resolves known hostname", "[network]") {
     }
 
     SECTION("UDP IPv6") {
-        const address_t* address = split_address("udp://tracker.torrent.eu.org:451/announce");
-        char* ip = url_to_ip(*address);
+        address_t* address = split_address("udp://tracker.torrent.eu.org:451/announce");
+        char* ip = url_to_ip(address);
 
         REQUIRE(ip != nullptr);
 
@@ -75,8 +75,8 @@ TEST_CASE("url_to_ip resolves known hostname", "[network]") {
     }
 
     SECTION("HTTP IPv4") {
-        const address_t* address = split_address("http://tracker.mywaifu.best:6969/announce");
-        char* ip = url_to_ip(*address);
+        address_t* address = split_address("http://tracker.mywaifu.best:6969/announce");
+        char* ip = url_to_ip(address);
 
         REQUIRE(ip != nullptr);
 
@@ -87,8 +87,8 @@ TEST_CASE("url_to_ip resolves known hostname", "[network]") {
     }
 
     SECTION("HTTP IPv6") {
-        const address_t* address = split_address("http://tracker.bt4g.com:2095/announce");
-        char* ip = url_to_ip(*address);
+        address_t* address = split_address("http://tracker.bt4g.com:2095/announce");
+        char* ip = url_to_ip(address);
 
         REQUIRE(ip != nullptr);
 
@@ -105,8 +105,8 @@ TEST_CASE("url_to_ip resolves known hostname", "[network]") {
     }
 
     SECTION("HTTPS IPv4") {
-        const address_t* address = split_address("https://tr-zhuqiy-1.dgj055.icu:443/announce");
-        char* ip = url_to_ip(*address);
+        address_t* address = split_address("https://tr-zhuqiy-1.dgj055.icu:443/announce");
+        char* ip = url_to_ip(address);
 
         REQUIRE(ip != nullptr);
 
@@ -123,8 +123,8 @@ TEST_CASE("url_to_ip resolves known hostname", "[network]") {
     }
 
     SECTION("HTTPS IPv6") {
-        const address_t* address = split_address("https://tracker.expli.top:443/announce");
-        char* ip = url_to_ip(*address);
+        address_t* address = split_address("https://tracker.expli.top:443/announce");
+        char* ip = url_to_ip(address);
 
         REQUIRE(ip != nullptr);
 
