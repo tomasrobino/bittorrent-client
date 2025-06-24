@@ -10,8 +10,8 @@ address_t* split_address(const char* address);
  * @param address The domain as a string
  * @returns The IP of the domain as a string
  **/
-char* url_to_ip(address_t address);
-connect_response_t* connect_request_udp(struct sockaddr_in* server_addr, int sockfd);
+char* url_to_ip(address_t* address);
+connect_response_t* connect_request_udp(const struct sockaddr* server_addr, int sockfd);
 void download(const char* raw_address);
 
 #endif //CONNECTION

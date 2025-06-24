@@ -49,14 +49,14 @@ address_t* split_address(const char* address) {
     return ret_address;
 }
 
-char* url_to_ip(address_t address) {
+char* url_to_ip(address_t* address) {
     struct addrinfo hints = {0}, *res;
     hints.ai_family = AF_UNSPEC;
     char* ip = nullptr;
-    if (address.protocol == UDP) {
+    if (address->protocol == UDP) {
         hints.ai_socktype = SOCK_DGRAM;
     } else hints.ai_socktype = SOCK_STREAM;
-    const int err = getaddrinfo(address.host, address.port, &hints, &res);
+    const int err = getaddrinfo(address->host, address->port, &hints, &res);
     if (err != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(err));
         return nullptr;
@@ -66,7 +66,7 @@ char* url_to_ip(address_t address) {
     for (struct addrinfo *rp = res; rp != nullptr; rp = rp->ai_next) {
         void* addr_ptr;
 
-        address.ip_version = rp->ai_family;
+        address->ip_version = rp->ai_family;
         //IPv6
         if (rp->ai_family == AF_INET6) {
             char buf[INET6_ADDRSTRLEN];
@@ -92,7 +92,7 @@ char* url_to_ip(address_t address) {
     return ip;
 }
 
-connect_response_t* connect_request_udp(struct sockaddr_in* server_addr, int sockfd) {
+connect_response_t* connect_request_udp(const struct sockaddr* server_addr, int sockfd) {
     connect_request_t* req = malloc(sizeof(connect_request_t));
     memset(req, 0, sizeof(connect_request_t));
     // Convert to network endianness
@@ -104,7 +104,7 @@ connect_response_t* connect_request_udp(struct sockaddr_in* server_addr, int soc
     fprintf(stdout, "transaction_id: %d\n", req->transaction_id);
     fprintf(stdout, "protocol_id: %lu\n", req->protocol_id);
 
-    const ssize_t sent = sendto(sockfd, req, sizeof(connect_request_t), 0, (struct sockaddr*) server_addr, sizeof(struct sockaddr_in));
+    const ssize_t sent = sendto(sockfd, req, sizeof(connect_request_t), 0, server_addr, sizeof(struct sockaddr));
     if (sent < 0) {
         // error
         fprintf(stderr, "Can't send connect request");
@@ -113,7 +113,7 @@ connect_response_t* connect_request_udp(struct sockaddr_in* server_addr, int soc
     fprintf(stdout, "Sent %zd bytes\n", sent);
 
     connect_response_t* res = malloc(sizeof(connect_response_t));
-    socklen_t socklen = sizeof(struct sockaddr_in);
+    socklen_t socklen = sizeof(struct sockaddr);
     ssize_t recv_bytes = recvfrom(sockfd, res, sizeof(connect_response_t), 0, nullptr, &socklen);
     if (recv_bytes < 0) {
         fprintf(stderr, "No response");
@@ -138,19 +138,29 @@ connect_response_t* connect_request_udp(struct sockaddr_in* server_addr, int soc
 
 void download(const char* raw_address) {
     address_t* split_addr = split_address(raw_address);
-    char* ip = url_to_ip(*split_addr);
-    int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    char* ip = url_to_ip(split_addr);
+    int sockfd = socket(split_addr->ip_version, SOCK_DGRAM, IPPROTO_UDP);
     if (sockfd < 0) {
         // Error
         fprintf(stderr, "Socket creation failed");
         exit(2);
     }
 
-    struct sockaddr_in server_addr = {0};
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(decode_bencode_int(split_addr->port, nullptr));
-    server_addr.sin_addr.s_addr = inet_addr(ip);
-    connect_response_t* connect_response = connect_request_udp(&server_addr, sockfd);
-    free(connect_response);
+    if (split_addr->ip_version == AF_INET) {
+        struct sockaddr_in server_addr = {0};
+        server_addr.sin_family = split_addr->ip_version;
+        server_addr.sin_port = htons(decode_bencode_int(split_addr->port, nullptr));
+        server_addr.sin_addr.s_addr = inet_addr(ip);
+        connect_response_t* connect_response = connect_request_udp((struct sockaddr*)&server_addr, sockfd);
+        free(connect_response);
+    } else {
+        struct sockaddr_in6 server_addr = {0};
+        server_addr.sin6_family = split_addr->ip_version;
+        server_addr.sin6_port = htons(decode_bencode_int(split_addr->port, nullptr));
+        inet_pton(AF_INET6, ip, &server_addr.sin6_addr);
+        connect_response_t* connect_response = connect_request_udp((struct sockaddr*)&server_addr, sockfd);
+        free(connect_response);
+    }
+
     free(split_addr);
 }
