@@ -93,4 +93,86 @@ typedef struct {
     uint64_t connection_id; // assigned by tracker
 } connect_response_t;
 
+
+/*
+Announce request
+
+Offset  Size    Name    Value
+0       64-bit integer  connection_id
+8       32-bit integer  action          1 // announce
+12      32-bit integer  transaction_id
+16      20-byte string  info_hash
+36      20-byte string  peer_id
+56      64-bit integer  downloaded
+64      64-bit integer  left
+72      64-bit integer  uploaded
+80      32-bit integer  event           0 // 0: none; 1: completed; 2: started; 3: stopped
+84      32-bit integer  IP address      0 // default. If using IPv6, should always be 0
+88      32-bit integer  key
+92      32-bit integer  num_want        -1 // default
+96      16-bit integer  port
+98
+*/
+typedef struct {
+    uint64_t connection_id;
+    uint32_t action;
+    uint32_t transaction_id;
+    char info_hash[20];
+    char peer_id[20];
+    uint64_t downloaded;
+    uint64_t left;
+    uint64_t uploaded;
+    uint32_t event;
+    uint32_t ip;
+    uint32_t key;
+    uint32_t num_want;
+    uint16_t port;
+} announce_request_t;
+
+// Represents an IPv4 peer as returned in an announce response
+typedef struct peer_v4_ll {
+    struct in_addr ip;
+    uint16_t port;
+    struct peer_v4_ll* next;
+} peer_v4_ll;
+
+
+/*
+IPv4 announce response
+
+Offset      Size            Name            Value
+0           32-bit integer  action          1 // announce
+4           32-bit integer  transaction_id
+8           32-bit integer  interval
+12          32-bit integer  leechers
+16          32-bit integer  seeders
+20 + 6 * n  32-bit integer  IP address
+24 + 6 * n  16-bit integer  TCP port
+20 + 6 * N
+*/
+typedef struct {
+    uint32_t action;
+    uint32_t transaction_id;
+    uint32_t interval;
+    uint32_t leechers;
+    uint32_t seeders;
+    peer_v4_ll peer_list;
+} announce_response_v4_t;
+
+// Represents an IPv6 peer as returned in an announce response
+typedef struct peer_v6_ll {
+    struct in6_addr ip;
+    uint16_t port;
+    struct peer_v6_ll* next;
+} peer_v6_ll;
+
+typedef struct {
+    uint32_t action;
+    uint32_t transaction_id;
+    uint32_t interval;
+    uint32_t leechers;
+    uint32_t seeders;
+    peer_v6_ll peer_list;
+} announce_response_v6_t;
+
 #endif //STRUCTS_H
