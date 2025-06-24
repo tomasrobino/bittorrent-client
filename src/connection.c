@@ -122,7 +122,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr, const int sockf
         fprintf(stdout, "action: %d\n", res->action);
         fprintf(stdout, "transaction_id: %d\n", res->transaction_id);
         fprintf(stdout, "connection_id: %lu\n", res->connection_id);
-        if (req->transaction_id == res->transaction_id) {
+        if (req->transaction_id == res->transaction_id && req->action == res->action) {
             // Convert back to host endianness
             res->connection_id = htobe64(res->connection_id);
             res->action = htobe32(res->action);
