@@ -92,7 +92,7 @@ char* url_to_ip(address_t address) {
     return ip;
 }
 
-connect_response_t* connect_udp(struct sockaddr_in* server_addr, int sockfd, unsigned int transaction_id) {
+connect_response_t* connect_request_udp(struct sockaddr_in* server_addr, int sockfd, unsigned int transaction_id) {
     connect_request_t* req = malloc(sizeof(connect_request_t));
     memset(req, 0, sizeof(connect_request_t));
     // Convert to network endianness
@@ -150,7 +150,7 @@ void download(const char* raw_address) {
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(decode_bencode_int(split_addr->port, nullptr));
     server_addr.sin_addr.s_addr = inet_addr(ip);
-    connect_response_t* connect_response = connect_udp(&server_addr, sockfd, arc4random());
+    connect_response_t* connect_response = connect_request_udp(&server_addr, sockfd, arc4random());
     free(connect_response);
     free(split_addr);
 }
