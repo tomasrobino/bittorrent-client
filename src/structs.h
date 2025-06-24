@@ -129,12 +129,12 @@ typedef struct {
     uint16_t port;
 } announce_request_t;
 
-// Represents an IPv4 peer as returned in an announce response
-typedef struct peer_v4_ll {
-    struct in_addr ip;
+// Represents a peer as returned in an announce response
+typedef struct peer_ll {
+    char* ip;
     uint16_t port;
-    struct peer_v4_ll* next;
-} peer_v4_ll;
+    struct peer_ll* next;
+} peer_ll;
 
 
 /*
@@ -149,6 +149,8 @@ Offset      Size            Name            Value
 20 + 6 * n  32-bit integer  IP address
 24 + 6 * n  16-bit integer  TCP port
 20 + 6 * N
+
+IPv6 has instead a stride size of 18, 16 of which belong to "IP address" and 2 to "TCP port"
 */
 typedef struct {
     uint32_t action;
@@ -156,23 +158,7 @@ typedef struct {
     uint32_t interval;
     uint32_t leechers;
     uint32_t seeders;
-    peer_v4_ll peer_list;
-} announce_response_v4_t;
-
-// Represents an IPv6 peer as returned in an announce response
-typedef struct peer_v6_ll {
-    struct in6_addr ip;
-    uint16_t port;
-    struct peer_v6_ll* next;
-} peer_v6_ll;
-
-typedef struct {
-    uint32_t action;
-    uint32_t transaction_id;
-    uint32_t interval;
-    uint32_t leechers;
-    uint32_t seeders;
-    peer_v6_ll peer_list;
-} announce_response_v6_t;
+    peer_ll peer_list;
+} announce_response_t;
 
 #endif //STRUCTS_H
