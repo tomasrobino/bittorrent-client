@@ -74,6 +74,7 @@ char* url_to_ip(address_t address) {
             ip = malloc(INET6_ADDRSTRLEN);
             if (ip) strcpy(ip, buf);
             printf("Resolved IPv6: %s\n", ip);
+            address.ip_version = IPv6;
             break;
         }
 
@@ -85,6 +86,7 @@ char* url_to_ip(address_t address) {
             ip = malloc(INET_ADDRSTRLEN);
             if (ip) strcpy(ip, buf);
             printf("Resolved IPv4: %s\n", ip);
+            address.ip_version = IPv4;
         }
     }
     freeaddrinfo(res);

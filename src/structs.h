@@ -22,6 +22,11 @@ typedef enum {
     UDP
 } Protocols;
 
+typedef enum {
+    IPv4,
+    IPv6
+} IPVersion;
+
 typedef struct ll {
     struct ll *next;
     char *val;
@@ -78,6 +83,7 @@ typedef struct {
     char* host;
     char* port;
     Protocols protocol;
+    IPVersion ip_version;
 } address_t;
 
 typedef struct {
