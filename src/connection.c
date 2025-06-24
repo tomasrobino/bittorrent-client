@@ -66,6 +66,7 @@ char* url_to_ip(address_t address) {
     for (struct addrinfo *rp = res; rp != nullptr; rp = rp->ai_next) {
         void* addr_ptr;
 
+        address.ip_version = rp->ai_family;
         //IPv6
         if (rp->ai_family == AF_INET6) {
             char buf[INET6_ADDRSTRLEN];
@@ -74,7 +75,6 @@ char* url_to_ip(address_t address) {
             ip = malloc(INET6_ADDRSTRLEN);
             if (ip) strcpy(ip, buf);
             printf("Resolved IPv6: %s\n", ip);
-            address.ip_version = IPv6;
             break;
         }
 
@@ -86,7 +86,6 @@ char* url_to_ip(address_t address) {
             ip = malloc(INET_ADDRSTRLEN);
             if (ip) strcpy(ip, buf);
             printf("Resolved IPv4: %s\n", ip);
-            address.ip_version = IPv4;
         }
     }
     freeaddrinfo(res);
