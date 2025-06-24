@@ -117,20 +117,21 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr, const int sockf
     const ssize_t recv_bytes = recvfrom(sockfd, res, sizeof(connect_response_t), 0, nullptr, &socklen);
     if (recv_bytes < 0) {
         fprintf(stderr, "No response");
+        return 0;
+    }
+
+    fprintf(stdout, "Server response:\n");
+    fprintf(stdout, "action: %d\n", res->action);
+    fprintf(stdout, "transaction_id: %d\n", res->transaction_id);
+    fprintf(stdout, "connection_id: %lu\n", res->connection_id);
+    if (req->transaction_id == res->transaction_id && req->action == res->action) {
+        // Convert back to host endianness
+        res->connection_id = htobe64(res->connection_id);
+        res->action = htobe32(res->action);
+        res->transaction_id = htobe32(res->transaction_id);
     } else {
-        fprintf(stdout, "Server response:\n");
-        fprintf(stdout, "action: %d\n", res->action);
-        fprintf(stdout, "transaction_id: %d\n", res->transaction_id);
-        fprintf(stdout, "connection_id: %lu\n", res->connection_id);
-        if (req->transaction_id == res->transaction_id && req->action == res->action) {
-            // Convert back to host endianness
-            res->connection_id = htobe64(res->connection_id);
-            res->action = htobe32(res->action);
-            res->transaction_id = htobe32(res->transaction_id);
-        } else {
-            // Wrong server response
-            return 0;
-        }
+        // Wrong server response
+        return 0;
     }
     free(req);
     const uint64_t id = res->connection_id;
@@ -144,7 +145,7 @@ void download(const char* raw_address) {
     int sockfd = socket(split_addr->ip_version, SOCK_DGRAM, IPPROTO_UDP);
     if (sockfd < 0) {
         // Error
-        fprintf(stderr, "Socket creation failed");
+        fprintf(stderr, "Socket creation failed\n");
         exit(2);
     }
 
@@ -154,12 +155,22 @@ void download(const char* raw_address) {
         server_addr.sin_port = htons(decode_bencode_int(split_addr->port, nullptr));
         server_addr.sin_addr.s_addr = inet_addr(ip);
         const uint64_t connect_response = connect_request_udp((struct sockaddr*)&server_addr, sockfd);
+        if (connect_response == 0) {
+            // Error
+            fprintf(stderr, "UDP connect request failed\n");
+            exit(2);
+        }
     } else {
         struct sockaddr_in6 server_addr = {0};
         server_addr.sin6_family = split_addr->ip_version;
         server_addr.sin6_port = htons(decode_bencode_int(split_addr->port, nullptr));
         inet_pton(AF_INET6, ip, &server_addr.sin6_addr);
         const uint64_t connect_response = connect_request_udp((struct sockaddr*)&server_addr, sockfd);
+        if (connect_response == 0) {
+            // Error
+            fprintf(stderr, "UDP connect request failed\n");
+            exit(2);
+        }
     }
 
     free(split_addr);
