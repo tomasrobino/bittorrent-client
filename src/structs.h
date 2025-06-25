@@ -158,7 +158,7 @@ typedef struct {
     uint32_t interval;
     uint32_t leechers;
     uint32_t seeders;
-    peer_ll peer_list;
+    peer_ll* peer_list;
 } announce_response_t;
 
 #endif //STRUCTS_H

@@ -12,6 +12,19 @@ address_t* split_address(const char* address);
  **/
 char* url_to_ip(address_t* address);
 uint64_t connect_request_udp(const struct sockaddr *server_addr, int sockfd);
+announce_response_t* announce_request_udp(
+    const struct sockaddr *server_addr,
+    int sockfd,
+    uint64_t connection_id,
+    char info_hash[],
+    char peer_id[],
+    uint64_t downloaded,
+    uint64_t left,
+    uint64_t uploaded,
+    uint32_t event,
+    uint32_t key,
+    uint16_t port
+);
 void download(const char* raw_address);
 
 #endif //CONNECTION
