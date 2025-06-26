@@ -201,17 +201,9 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     fprintf(stdout, "port: %hu\n", req->port);
 
 
-    const ssize_t sent = sendto(sockfd, req, sizeof(announce_request_t), 0, server_addr, sizeof(struct sockaddr));
-    if (sent < 0) {
-        // error
-        fprintf(stderr, "Can't send announce request");
-        exit(1);
-    }
-    fprintf(stdout, "Sent %zd bytes\n", sent);
-
-    announce_response_t* res = malloc(sizeof(announce_response_t));
-    memset(res, 0, sizeof(announce_response_t));
+    announce_response_t* res = nullptr;
     socklen_t socklen = sizeof(struct sockaddr);
+    try_request_udp(sockfd, req, sizeof(announce_request_t), res, sizeof(announce_response_t), server_addr);
 
     char buffer[1500];
     const ssize_t recv_bytes = recvfrom(sockfd, buffer, sizeof(announce_response_t), 0, nullptr, &socklen);
