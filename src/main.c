@@ -53,7 +53,7 @@ int main(const int argc, char* argv[]) {
             metainfo_t* metainfo = parse_metainfo(buffer, length);
             //download(metainfo->announce);
             // Temporarily i'm hardcoding the tracker address
-            download("udp://tracker.opentrackr.org:1337/announce");
+            download(*metainfo);
 
             // Freeing memory
             free_metainfo(metainfo);
