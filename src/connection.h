@@ -11,6 +11,7 @@ address_t* split_address(const char* address);
  * @returns The IP of the domain as a string
  **/
 char* url_to_ip(address_t* address);
+int try_request_udp(int sockfd, const void *req, size_t req_size, void* res, size_t res_size, struct sockaddr *server_addr);
 uint64_t connect_request_udp(const struct sockaddr *server_addr, int sockfd);
 announce_response_t* announce_request_udp(
     const struct sockaddr *server_addr,
