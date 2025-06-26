@@ -112,6 +112,10 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr, const int sockf
     }
     fprintf(stdout, "Sent %zd bytes\n", sent);
 
+    return req;
+}
+
+uint64_t connect_response_udp(connect_request_t* req, const int sockfd) {
     connect_response_t* res = malloc(sizeof(connect_response_t));
     socklen_t socklen = sizeof(struct sockaddr);
     const ssize_t recv_bytes = recvfrom(sockfd, res, sizeof(connect_response_t), 0, nullptr, &socklen);
@@ -263,7 +267,71 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     return res;
 }
 
-void download(const char* raw_address) {
+void download(metainfo_t metainfo) {
+    announce_list_ll* current = metainfo.announce_list;
+    int counter = 0;
+    // Counts the trackers
+    if (current != nullptr) {
+        while (current != nullptr) {
+            counter++;
+            current = current->next;
+        }
+        current = metainfo.announce_list;
+    } else {
+        counter = 1;
+        current = nullptr;
+    }
+    // Amount of lists of lists
+    address_t** split_addr_array[counter] = {nullptr};
+    char** ip_array[counter] = {nullptr};
+    int* sockfd_array[counter] = {nullptr};
+    int list_sizes[counter] = {0};
+    counter = 0;
+    int counter2 = 0;
+    // Splitting addresses, getting IPs, and creating sockets
+    while (current != nullptr) {
+        ll* head = current->list;
+        while (current->list != nullptr) {
+            current->list = current->list->next;
+            counter2++;
+            list_sizes[counter] = counter2;
+        }
+        current->list = head;
+
+        split_addr_array[counter] = malloc(sizeof(char*)*counter2);
+        ip_array[counter] = malloc(sizeof(char*)*counter2);
+        sockfd_array[counter] = malloc(sizeof(char*)*counter2);
+
+        counter2 = 0;
+        while (current->list != nullptr) {
+            split_addr_array[counter][counter2] = split_address(current->list->val);
+            ip_array[counter][counter2] = url_to_ip(split_addr_array[counter][counter2]);
+            sockfd_array[counter][counter2] = socket(split_addr_array[counter][counter2]->ip_version, SOCK_DGRAM, IPPROTO_UDP);
+            //char* ip = url_to_ip(split_addr);
+            //int sockfd = socket(split_addr->ip_version, SOCK_DGRAM, IPPROTO_UDP);
+
+            //TODO Try connecting to this group of trackers
+
+
+
+            current->list = current->list->next;
+            counter2++;
+        }
+        current->list = head;
+
+        current = current->next;
+        counter++;
+    }
+    current = metainfo.announce_list;
+
+    //TODO After successful connection, proceed to download
+
+
+
+
+
+
+    /*
     address_t* split_addr = split_address(raw_address);
     char* ip = url_to_ip(split_addr);
     int sockfd = socket(split_addr->ip_version, SOCK_DGRAM, IPPROTO_UDP);
@@ -278,6 +346,7 @@ void download(const char* raw_address) {
         server_addr.sin_family = split_addr->ip_version;
         server_addr.sin_port = htons(decode_bencode_int(split_addr->port, nullptr));
         server_addr.sin_addr.s_addr = inet_addr(ip);
+        // const connect_request_t* request_result = try_request_udp((  void*(*)()  )connect_request_udp, sockfd, (struct sockaddr*)&server_addr, sockfd);
         const uint64_t connect_response = connect_request_udp((struct sockaddr*)&server_addr, sockfd);
         if (connect_response == 0) {
             // Error
@@ -299,4 +368,5 @@ void download(const char* raw_address) {
 
 
     free(split_addr);
+    */
 }

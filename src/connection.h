@@ -25,6 +25,6 @@ announce_response_t* announce_request_udp(
     uint32_t key,
     uint16_t port
 );
-void download(const char* raw_address);
+void download(metainfo_t metainfo);
 
 #endif //CONNECTION
