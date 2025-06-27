@@ -93,7 +93,7 @@ char* url_to_ip(address_t* address) {
     return ip;
 }
 
-int* try_request_udp(const int amount, const int sockfd[], const void *req[], const size_t req_size, void* res[], const size_t res_size, const struct sockaddr *server_addr[]) {
+int* try_request_udp(const int amount, const int sockfd[], const void *req[], const size_t req_size, const struct sockaddr *server_addr[]) {
     struct pollfd pfd[amount] = {0};
     for (int i = 0; i < amount; ++i) {
         pfd[i].fd = sockfd[i];
@@ -117,12 +117,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
         // Wait for response
         ret = poll(pfd, 1, 15*pow(2, counter)*1000);
         if (ret > 0 && (pfd[0].revents & POLLIN)) {
-            /*
             // Data ready
-            socklen_t socklen = sizeof(struct sockaddr);
-            res = malloc(res_size);
-            return (int)recvfrom(sockfd, res, res_size, 0, nullptr, &socklen);
-            */
             int* sockfd_ret = malloc(sizeof(int)*ret);
             memset(sockfd_ret, 0, sizeof(int)*ret);
             for (int i = 0; i < amount; ++i) {
@@ -144,26 +139,35 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
     return nullptr;
 }
 
-uint64_t connect_request_udp(const struct sockaddr *server_addr, const int sockfd) {
-    connect_request_t* req = malloc(sizeof(connect_request_t));
-    memset(req, 0, sizeof(connect_request_t));
-    // Convert to network endianness
-    req->protocol_id = htobe64(0x41727101980LL);
-    req->action = htobe32(0);
-    req->transaction_id = htobe32(arc4random());
-    fprintf(stdout, "Connection request:\n");
-    fprintf(stdout, "action: %d\n", req->action);
-    fprintf(stdout, "transaction_id: %d\n", req->transaction_id);
-    fprintf(stdout, "protocol_id: %lu\n", req->protocol_id);
+uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int sockfd[], const int amount) {
+    connect_request_t* req_array[amount] = {nullptr};
+    for (int i = 0; i < amount; ++i) {
+        req_array[i] = malloc(sizeof(connect_request_t));
+        memset(req_array[i], 0, sizeof(connect_request_t));
+        // Convert to network endianness
+        req_array[i]->protocol_id = htobe64(0x41727101980LL);
+        req_array[i]->action = htobe32(0);
+        req_array[i]->transaction_id = htobe32(arc4random());
+        fprintf(stdout, "Connection request:\n");
+        fprintf(stdout, "action: %d\n", req_array[i]->action);
+        fprintf(stdout, "transaction_id: %d\n", req_array[i]->transaction_id);
+        fprintf(stdout, "protocol_id: %lu\n", req_array[i]->protocol_id);
+    }
 
+    int* available_connections = try_request_udp(amount, sockfd, req_array, sizeof(connect_request_t), server_addr);
+    int i = 0;
+    while (available_connections[i] != 0) {
+        i++;
+    }
+    socklen_t socklen = sizeof(struct sockaddr);
+    connect_response_t* res = malloc(sizeof(connect_response_t));
+    recvfrom(sockfd[i], res, sizeof(connect_response_t), 0, nullptr, &socklen);
 
-    connect_response_t* res = nullptr;
-    try_request_udp(sockfd, req, sizeof(connect_request_t), res, sizeof(connect_response_t), server_addr);
     fprintf(stdout, "Server response:\n");
     fprintf(stdout, "action: %d\n", res->action);
     fprintf(stdout, "transaction_id: %d\n", res->transaction_id);
     fprintf(stdout, "connection_id: %lu\n", res->connection_id);
-    if (req->transaction_id == res->transaction_id && req->action == res->action) {
+    if (req_array[i]->transaction_id == res->transaction_id && req_array[i]->action == res->action) {
         // Convert back to host endianness
         res->connection_id = htobe64(res->connection_id);
         res->action = htobe32(res->action);
@@ -172,7 +176,11 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr, const int sockf
         // Wrong server response
         return 0;
     }
-    free(req);
+
+    for (int j = 0; j < amount; ++j) {
+        free(available_connections);
+        free(req_array[j]);
+    }
     const uint64_t id = res->connection_id;
     free(res);
     return id;
