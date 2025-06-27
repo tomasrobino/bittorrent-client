@@ -155,6 +155,13 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     }
 
     int* available_connections = try_request_udp(amount, sockfd, req_array, sizeof(connect_request_t), server_addr);
+    if (available_connections == nullptr) {
+        // All connections failed
+        for (int j = 0; j < amount; ++j) {
+            free(req_array[j]);
+        }
+        return 0;
+    }
     int i = 0;
     while (available_connections[i] != 0) {
         i++;
@@ -229,7 +236,14 @@ announce_response_t* announce_request_udp(const int amount, const struct sockadd
 
     announce_response_t* res = nullptr;
     socklen_t socklen = sizeof(struct sockaddr);
-    int* available_connections = try_request_udp(amount, sockfd, req_array, sizeof(announce_request_t), server_addr);
+    const int* available_connections = try_request_udp(amount, sockfd, req_array, sizeof(announce_request_t), server_addr);
+    if (available_connections == nullptr) {
+        // All connections failed
+        for (int j = 0; j < amount; ++j) {
+            free(req_array[j]);
+        }
+        return nullptr;
+    }
     int i = 0;
     while (available_connections[i] != 0) {
         i++;
