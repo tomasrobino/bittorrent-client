@@ -124,7 +124,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
     while (ret <= 0 && counter < 9) {
         // Send request
         for (int i = 0; i < amount; ++i) {
-            const ssize_t sent = sendto(sockfd[i], req, req_size, 0, server_addr[i], sizeof(struct sockaddr));
+            const ssize_t sent = sendto(sockfd[i], req[i], req_size, 0, server_addr[i], sizeof(struct sockaddr));
             if (sent < 0) {
                 // error
                 fprintf(stderr, "Can't send connect request");
@@ -134,10 +134,11 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
         }
 
         // Wait for response
-        ret = poll(pfd, 1, 15*pow(2, counter)*1000);
-        if (ret > 0 && (pfd[0].revents & POLLIN)) {
+        int a = 15*pow(2, counter)*1000;
+        ret = poll(pfd, amount, a);
+        if (ret > 0 && pfd[0].revents & POLLIN) {
             // Data ready
-            int* sockfd_ret = malloc(sizeof(int)*ret);
+            int* sockfd_ret = malloc(sizeof(int)*amount);
             memset(sockfd_ret, 0, sizeof(int)*ret);
             for (int i = 0; i < amount; ++i) {
                 if (pfd[i].revents & POLLIN) {
