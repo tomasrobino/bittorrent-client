@@ -442,5 +442,28 @@ void download(metainfo_t metainfo) {
     }
     current = metainfo.announce_list;
 
+    // Memory cleanup
+    for (int i = 0; i < counter; i++) {
+        for (int j = 0; j < list_sizes[i]; j++) {
+            // Free split_address allocations
+            if (split_addr_array[i][j]) {
+                free(split_addr_array[i][j]->host);
+                free(split_addr_array[i][j]->port);
+                free(split_addr_array[i][j]);
+            }
+
+            // Free IP strings
+            if (ip_array[i][j]) {
+                free(ip_array[i][j]);
+            }
+        }
+
+        // Free the arrays themselves
+        free(split_addr_array[i]);
+        free(ip_array[i]);
+        free(sockfd_array[i]);
+        free(server_addr_array[i]);
+    }
+
     //TODO After successful connection, proceed to download
 }
