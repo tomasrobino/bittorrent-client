@@ -6,6 +6,7 @@
 
 // Splits protocol, host and port into struct
 address_t* split_address(const char* address);
+void shuffle_address_array(address_t* array[], int length);
 /** Converts domain to IP. Supports UDP, HTTP, and HTTPS; IPv4 and IPv6
  * @param address The domain as a string
  * @returns The IP of the domain as a string

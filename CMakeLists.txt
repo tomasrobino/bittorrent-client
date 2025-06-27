@@ -20,8 +20,7 @@ add_executable(bittorrent ${SOURCE_FILES}
         src/file.c
         src/connection.c
         src/connection.h
-        src/util.c
-        src/util.h)
+)
 
 # Link OpenSSL, CURL and Math library
 target_link_libraries(bittorrent PRIVATE OpenSSL::Crypto CURL::libcurl m)

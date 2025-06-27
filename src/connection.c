@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <tgmath.h>
+#include <time.h>
 
 #include "structs.h"
 
@@ -48,6 +49,22 @@ address_t* split_address(const char* address) {
         ret_address->port = nullptr;
     }
     return ret_address;
+}
+
+void shuffle_address_array(address_t* array[], const int length) {
+    if (length > 1) {
+        static unsigned int seed = 0;
+        if (seed == 0) {
+            seed = (unsigned int)time(nullptr);
+        }
+
+        for (size_t i = 0; i < length - 1; i++) {
+            const size_t j = i + rand_r(&seed) / (RAND_MAX / (length - i) + 1);
+            address_t* t = array[j];
+            array[j] = array[i];
+            array[i] = t;
+        }
+    }
 }
 
 char* url_to_ip(address_t* address) {
@@ -331,7 +348,7 @@ announce_response_t* announce_request_udp(const int amount, const struct sockadd
 void download(metainfo_t metainfo) {
     announce_list_ll* current = metainfo.announce_list;
     int counter = 0;
-    // Counts the trackers
+    // Get annnounce_list size
     if (current != nullptr) {
         while (current != nullptr) {
             counter++;
@@ -342,43 +359,54 @@ void download(metainfo_t metainfo) {
         counter = 1;
         current = nullptr;
     }
-    // Amount of lists of lists
+    // Creating outer list arrays
     address_t** split_addr_array[counter] = {nullptr};
     char** ip_array[counter] = {nullptr};
     int* sockfd_array[counter] = {nullptr};
+    // Stores the size of each inner list
     int list_sizes[counter] = {0};
+
     counter = 0;
     int counter2 = 0;
-    // Splitting addresses, getting IPs, and creating sockets
+    // Iterating over all lists
     while (current != nullptr) {
         ll* head = current->list;
+        // Get current->list size
         while (current->list != nullptr) {
             current->list = current->list->next;
             counter2++;
-            list_sizes[counter] = counter2;
         }
         current->list = head;
+        list_sizes[counter] = counter2;
 
+        // Allocating each inner list
         split_addr_array[counter] = malloc(sizeof(char*)*counter2);
         ip_array[counter] = malloc(sizeof(char*)*counter2);
         sockfd_array[counter] = malloc(sizeof(char*)*counter2);
 
+
         counter2 = 0;
+        // Iterating over inner lists again
         while (current->list != nullptr) {
+            // Splitting addresses
             split_addr_array[counter][counter2] = split_address(current->list->val);
+            current->list = current->list->next;
+            counter2++;
+        }
+        current->list = head;
+        // Shuffling (done now to not overwrite metainfo.announce_list)
+        shuffle_address_array(split_addr_array[counter], counter2);
+        // Iterating over inner lists' newly-created arrays
+        for (int i = 0; i < counter2; ++i) {
+            // Gettign IPs
             ip_array[counter][counter2] = url_to_ip(split_addr_array[counter][counter2]);
+            // Creating sockets
             sockfd_array[counter][counter2] = socket(split_addr_array[counter][counter2]->ip_version, SOCK_DGRAM, IPPROTO_UDP);
             //char* ip = url_to_ip(split_addr);
             //int sockfd = socket(split_addr->ip_version, SOCK_DGRAM, IPPROTO_UDP);
 
             //TODO Try connecting to this group of trackers
-
-
-
-            current->list = current->list->next;
-            counter2++;
         }
-        current->list = head;
 
         current = current->next;
         counter++;
