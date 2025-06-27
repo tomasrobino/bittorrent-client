@@ -186,54 +186,62 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     return id;
 }
 
-announce_response_t* announce_request_udp(const struct sockaddr *server_addr, const int sockfd, uint64_t connection_id, char info_hash[], char peer_id[], const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const uint16_t port) {
-    announce_request_t* req = malloc(sizeof(announce_request_t));
-    memset(req, 0, sizeof(announce_request_t));
-    // Convert to network endianness
-    req->connection_id = htobe64(connection_id);
-    req->action = htobe32(1);
-    req->transaction_id = htobe32(arc4random());
-    strncpy(req->info_hash, info_hash, 20);
-    strncpy(req->peer_id, peer_id, 20);
-    req->downloaded = htobe64(downloaded);
-    req->left = htobe64(left);
-    req->uploaded = htobe64(uploaded);
-    req->event = htobe32(event);
-    req->ip = htobe32(0);
-    req->key = htobe32(key);
-    req->num_want = htobe32(-1);
-    req->port = htobe16(port);
+announce_response_t* announce_request_udp(const int amount, const struct sockaddr *server_addr[], const int sockfd[], uint64_t connection_id, char info_hash[], char peer_id[], const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const uint16_t port) {
+    announce_request_t* req_array[amount];
+    for (int i = 0; i < amount; ++i) {
+        req_array[i] = malloc(sizeof(announce_request_t));
+        memset(req_array[i], 0, sizeof(announce_request_t));
+        // Convert to network endianness
+        req_array[i]->connection_id = htobe64(connection_id);
+        req_array[i]->action = htobe32(1);
+        req_array[i]->transaction_id = htobe32(arc4random());
+        strncpy(req_array[i]->info_hash, info_hash, 20);
+        strncpy(req_array[i]->peer_id, peer_id, 20);
+        req_array[i]->downloaded = htobe64(downloaded);
+        req_array[i]->left = htobe64(left);
+        req_array[i]->uploaded = htobe64(uploaded);
+        req_array[i]->event = htobe32(event);
+        req_array[i]->ip = htobe32(0);
+        req_array[i]->key = htobe32(key);
+        req_array[i]->num_want = htobe32(-1);
+        req_array[i]->port = htobe16(port);
 
-    fprintf(stdout, "Announce request:\n");
-    fprintf(stdout, "action: %d\n", req->action);
-    fprintf(stdout, "transaction_id: %d\n", req->transaction_id);
-    fprintf(stdout, "connection_id: %lu\n", req->connection_id);
-    fprintf(stdout, "info_hash: ");
-    for (int i = 0; i < 20; ++i) {
-        fprintf(stdout, "%c",req->info_hash[i]);
+        fprintf(stdout, "Announce request:\n");
+        fprintf(stdout, "action: %d\n", req_array[i]->action);
+        fprintf(stdout, "transaction_id: %d\n", req_array[i]->transaction_id);
+        fprintf(stdout, "connection_id: %lu\n", req_array[i]->connection_id);
+        fprintf(stdout, "info_hash: ");
+        for (int j = 0; j < 20; ++j) {
+            fprintf(stdout, "%c",req_array[j]->info_hash[j]);
+        }
+        fprintf(stdout, "\n");
+        fprintf(stdout, "peer_id: ");
+        for (int j = 0; j < 20; ++j) {
+            fprintf(stdout, "%d",req_array[j]->peer_id[j]);
+        }
+        fprintf(stdout, "\n");
+        fprintf(stdout, "downloaded: %lu\n", req_array[i]->downloaded);
+        fprintf(stdout, "left: %lu\n", req_array[i]->left);
+        fprintf(stdout, "uploaded: %lu\n", req_array[i]->uploaded);
+        fprintf(stdout, "key: %u\n", req_array[i]->key);
+        fprintf(stdout, "port: %hu\n", req_array[i]->port);
     }
-    fprintf(stdout, "\n");
-    fprintf(stdout, "peer_id: ");
-    for (int i = 0; i < 20; ++i) {
-        fprintf(stdout, "%d",req->peer_id[i]);
-    }
-    fprintf(stdout, "\n");
-    fprintf(stdout, "downloaded: %lu\n", req->downloaded);
-    fprintf(stdout, "left: %lu\n", req->left);
-    fprintf(stdout, "uploaded: %lu\n", req->uploaded);
-    fprintf(stdout, "key: %u\n", req->key);
-    fprintf(stdout, "port: %hu\n", req->port);
-
 
     announce_response_t* res = nullptr;
     socklen_t socklen = sizeof(struct sockaddr);
-    try_request_udp(sockfd, req, sizeof(announce_request_t), res, sizeof(announce_response_t), server_addr);
+    int* available_connections = try_request_udp(amount, sockfd, req_array, sizeof(announce_request_t), server_addr);
+    int i = 0;
+    while (available_connections[i] != 0) {
+        i++;
+    }
 
     char buffer[1500];
-    const ssize_t recv_bytes = recvfrom(sockfd, buffer, sizeof(announce_response_t), 0, nullptr, &socklen);
+    const ssize_t recv_bytes = recvfrom(sockfd[i], buffer, sizeof(announce_response_t), 0, nullptr, &socklen);
     if (recv_bytes < 0) {
         fprintf(stderr, "No response");
-        free(req);
+        for (int j = 0; j < amount; ++j) {
+            free(req_array[i]);
+        }
         free(res);
         return nullptr;
     }
@@ -241,12 +249,14 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
 
 
     int peer_size = 0;
-    if (server_addr->sa_family == AF_INET) {
+    if (server_addr[i]->sa_family == AF_INET) {
         peer_size = 6;
-    } else if (server_addr->sa_family == AF_INET6) peer_size = 18;
+    } else if (server_addr[i]->sa_family == AF_INET6) peer_size = 18;
 
-    if (req->transaction_id == res->transaction_id && req->action == res->action) {
-        free(req);
+    if (req_array[i]->transaction_id == res->transaction_id && req_array[i]->action == res->action) {
+        for (int j = 0; j < amount; ++j) {
+            free(req_array[i]);
+        }
         // Convert back to host endianness
         res->action = htobe32(res->action);
         res->transaction_id = htobe32(res->transaction_id);
@@ -275,7 +285,9 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
         }
     } else {
         // Wrong server response
-        free(req);
+        for (int j = 0; j < amount; ++j) {
+            free(req_array[i]);
+        }
         free(res);
         return nullptr;
     }
