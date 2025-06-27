@@ -402,8 +402,6 @@ void download(metainfo_t metainfo) {
             ip_array[counter][counter2] = url_to_ip(split_addr_array[counter][counter2]);
             // Creating sockets
             sockfd_array[counter][counter2] = socket(split_addr_array[counter][counter2]->ip_version, SOCK_DGRAM, IPPROTO_UDP);
-            //char* ip = url_to_ip(split_addr);
-            //int sockfd = socket(split_addr->ip_version, SOCK_DGRAM, IPPROTO_UDP);
 
             //TODO Try connecting to this group of trackers
         }
