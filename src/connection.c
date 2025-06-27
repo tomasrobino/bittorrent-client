@@ -93,29 +93,45 @@ char* url_to_ip(address_t* address) {
     return ip;
 }
 
-int try_request_udp(const int sockfd, const void *req, const size_t req_size, void* res, const size_t res_size, const struct sockaddr *server_addr) {
-    struct pollfd pfd[1] = {0};
-    pfd[0].fd = sockfd;
-    pfd[0].events = POLLIN;
+int* try_request_udp(const int amount, const int sockfd[], const void *req[], const size_t req_size, void* res[], const size_t res_size, const struct sockaddr *server_addr[]) {
+    struct pollfd pfd[amount] = {0};
+    for (int i = 0; i < amount; ++i) {
+        pfd[i].fd = sockfd[i];
+        pfd[i].events = POLLIN;
+    }
+
     int counter = 0;
     int ret = 0;
     while (ret <= 0 && counter < 9) {
         // Send request
-        const ssize_t sent = sendto(sockfd, req, req_size, 0, server_addr, sizeof(struct sockaddr));
-        if (sent < 0) {
-            // error
-            fprintf(stderr, "Can't send connect request");
-            exit(1);
+        for (int i = 0; i < amount; ++i) {
+            const ssize_t sent = sendto(sockfd[i], req, req_size, 0, server_addr[i], sizeof(struct sockaddr));
+            if (sent < 0) {
+                // error
+                fprintf(stderr, "Can't send connect request");
+                exit(1);
+            }
+            fprintf(stdout, "Sent %zd bytes\n", sent);
         }
-        fprintf(stdout, "Sent %zd bytes\n", sent);
 
         // Wait for response
         ret = poll(pfd, 1, 15*pow(2, counter)*1000);
         if (ret > 0 && (pfd[0].revents & POLLIN)) {
+            /*
             // Data ready
             socklen_t socklen = sizeof(struct sockaddr);
-            res = malloc(sizeof(connect_response_t));
-            return (int)recvfrom(sockfd, res, sizeof(connect_response_t), 0, nullptr, &socklen);
+            res = malloc(res_size);
+            return (int)recvfrom(sockfd, res, res_size, 0, nullptr, &socklen);
+            */
+            int* sockfd_ret = malloc(sizeof(int)*ret);
+            memset(sockfd_ret, 0, sizeof(int)*ret);
+            for (int i = 0; i < amount; ++i) {
+                if (pfd[i].revents & POLLIN) {
+                    // Data available to be read on pfd[i].fd
+                    sockfd_ret[i] = pfd[i].fd;
+                }
+            }
+            return sockfd_ret;
         }
         if (ret == 0) {
             fprintf(stderr, "Timeout #%d\n", counter);
@@ -125,7 +141,7 @@ int try_request_udp(const int sockfd, const void *req, const size_t req_size, vo
         counter++;
     }
     fprintf(stderr, "Final timeout");
-    return 0;
+    return nullptr;
 }
 
 uint64_t connect_request_udp(const struct sockaddr *server_addr, const int sockfd) {
