@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <poll.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -126,8 +127,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
         for (int i = 0; i < amount; ++i) {
             const ssize_t sent = sendto(sockfd[i], req[i], req_size, 0, server_addr[i], sizeof(struct sockaddr));
             if (sent < 0) {
-                // error
-                fprintf(stderr, "Can't send connect request");
+                fprintf(stderr, "Can't send connect request: %s (errno: %d)\n", strerror(errno), errno);
                 exit(1);
             }
             fprintf(stdout, "Sent %zd bytes\n", sent);
