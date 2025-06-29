@@ -30,4 +30,6 @@ configure_file(${CMAKE_SOURCE_DIR}/test-files/cosmos-laundromat.torrent ${CMAKE_
 configure_file(${CMAKE_SOURCE_DIR}/test-files/sample.torrent ${CMAKE_BINARY_DIR}/test-files/sample.torrent COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/test-files/sintel.torrent ${CMAKE_BINARY_DIR}/test-files/sintel.torrent COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/test-files/tears-of-steel.torrent ${CMAKE_BINARY_DIR}/test-files/tears-of-steel.torrent COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/test-files/torrentdyne_tolerant_goblin_http_ipv4.probe.torrent ${CMAKE_BINARY_DIR}/test-files/torrentdyne_tolerant_goblin_http_ipv4.probe.torrent COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/test-files/torrentdyne_tolerant_goblin_http_ipv6.probe.torrent ${CMAKE_BINARY_DIR}/test-files/torrentdyne_tolerant_goblin_http_ipv6.probe.torrent COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/test-files/wired-cd.torrent ${CMAKE_BINARY_DIR}/test-files/wired-cd.torrent COPYONLY)
