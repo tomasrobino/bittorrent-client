@@ -25,8 +25,12 @@ add_executable(bittorrent ${SOURCE_FILES}
 # Link OpenSSL, CURL and Math library
 target_link_libraries(bittorrent PRIVATE OpenSSL::Crypto CURL::libcurl m)
 
+configure_file("${CMAKE_SOURCE_DIR}/test-files/Antro [FitGirl Repack].torrent" "${CMAKE_BINARY_DIR}/test-files/Antro [FitGirl Repack].torrent" COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/test-files/big-buck-bunny.torrent ${CMAKE_BINARY_DIR}/test-files/big-buck-bunny.torrent COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/test-files/cosmos-laundromat.torrent ${CMAKE_BINARY_DIR}/test-files/cosmos-laundromat.torrent COPYONLY)
+configure_file("${CMAKE_SOURCE_DIR}/test-files/Dragons Reef [FitGirl Repack].torrent" "${CMAKE_BINARY_DIR}/test-files/Dragons Reef [FitGirl Repack].torrent" COPYONLY)
+configure_file("${CMAKE_SOURCE_DIR}/test-files/LIMINAL SHIFT [FitGirl Repack].torrent" "${CMAKE_BINARY_DIR}/test-files/LIMINAL SHIFT [FitGirl Repack].torrent" COPYONLY)
+configure_file("${CMAKE_SOURCE_DIR}/test-files/Parcel Simulator [FitGirl Repack].torrent" "${CMAKE_BINARY_DIR}/test-files/Parcel Simulator [FitGirl Repack].torrent" COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/test-files/sample.torrent ${CMAKE_BINARY_DIR}/test-files/sample.torrent COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/test-files/sintel.torrent ${CMAKE_BINARY_DIR}/test-files/sintel.torrent COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/test-files/tears-of-steel.torrent ${CMAKE_BINARY_DIR}/test-files/tears-of-steel.torrent COPYONLY)
