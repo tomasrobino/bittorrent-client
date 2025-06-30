@@ -169,8 +169,8 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
         req_array[i]->action = htobe32(0);
         req_array[i]->transaction_id = htobe32(arc4random());
         fprintf(stdout, "Connection request:\n");
-        fprintf(stdout, "action: %d\n", req_array[i]->action);
-        fprintf(stdout, "transaction_id: %d\n", req_array[i]->transaction_id);
+        fprintf(stdout, "action: %u\n", req_array[i]->action);
+        fprintf(stdout, "transaction_id: %u\n", req_array[i]->transaction_id);
         fprintf(stdout, "protocol_id: %lu\n", req_array[i]->protocol_id);
     }
 
@@ -188,7 +188,12 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     }
     socklen_t socklen = sizeof(struct sockaddr);
     connect_response_t* res = malloc(sizeof(connect_response_t));
-    recvfrom(sockfd[i], res, sizeof(connect_response_t), 0, nullptr, &socklen);
+    const ssize_t received = recvfrom(sockfd[i], res, sizeof(connect_response_t), 0, nullptr, &socklen);
+    if (received < 0) {
+        fprintf(stderr, "Error while receiving connect request: %s (errno: %d)\n", strerror(errno), errno);
+        return 0;
+    }
+    fprintf(stdout, "Received %ld bytes\n", received);
 
     fprintf(stdout, "Server response:\n");
     fprintf(stdout, "action: %d\n", res->action);
@@ -273,7 +278,7 @@ announce_response_t* announce_request_udp(const int amount, const struct sockadd
     char buffer[1500];
     const ssize_t recv_bytes = recvfrom(sockfd[i], buffer, sizeof(announce_response_t), 0, nullptr, &socklen);
     if (recv_bytes < 0) {
-        fprintf(stderr, "No response");
+        fprintf(stderr, "Error while receiving connect request: %s (errno: %d)\n", strerror(errno), errno);
         for (int j = 0; j < amount; ++j) {
             free(req_array[i]);
         }
