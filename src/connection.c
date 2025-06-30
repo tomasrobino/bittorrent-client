@@ -183,14 +183,14 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
         return 0;
     }
     int i = 0;
-    while (available_connections[i] != 0) {
+    while (available_connections[i] == 0) {
         i++;
     }
     socklen_t socklen = sizeof(struct sockaddr);
     connect_response_t* res = malloc(sizeof(connect_response_t));
     const ssize_t received = recvfrom(sockfd[i], res, sizeof(connect_response_t), 0, nullptr, &socklen);
     if (received < 0) {
-        fprintf(stderr, "Error while receiving connect request: %s (errno: %d)\n", strerror(errno), errno);
+        fprintf(stderr, "Error while receiving connect response: %s (errno: %d)\n", strerror(errno), errno);
         return 0;
     }
     fprintf(stdout, "Received %ld bytes\n", received);
