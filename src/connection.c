@@ -477,13 +477,13 @@ void download(metainfo_t metainfo) {
     }
 
     // Copying pointers of actually used connection
-    address_t* split_addr = split_addr_array[counter][successful_index];
-    char* ip = ip_array[counter][successful_index];
-    int sockfd = sockfd_array[counter][successful_index];
+    const address_t* split_addr = split_addr_array[counter][successful_index];
+    const char* ip = ip_array[counter][successful_index];
+    const int sockfd = sockfd_array[counter][successful_index];
     if (split_addr->ip_version == AF_INET) {
-        auto server_addr = (struct sockaddr_in*)server_addr_array[counter][successful_index];
+        const auto server_addr = (struct sockaddr_in*)server_addr_array[counter][successful_index];
     } if (split_addr->ip_version == AF_INET6) {
-        auto server_addr = (struct sockaddr_in6*)server_addr_array[counter][successful_index];
+        const auto server_addr = (struct sockaddr_in6*)server_addr_array[counter][successful_index];
     }
 
     // Freeing actually used connection
