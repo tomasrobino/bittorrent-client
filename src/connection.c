@@ -196,8 +196,8 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     fprintf(stdout, "Received %ld bytes\n", received);
 
     fprintf(stdout, "Server response:\n");
-    fprintf(stdout, "action: %d\n", res->action);
-    fprintf(stdout, "transaction_id: %d\n", res->transaction_id);
+    fprintf(stdout, "action: %u\n", res->action);
+    fprintf(stdout, "transaction_id: %u\n", res->transaction_id);
     fprintf(stdout, "connection_id: %lu\n", res->connection_id);
     if (req_array[i]->transaction_id == res->transaction_id && req_array[i]->action == res->action) {
         // Convert back to host endianness
