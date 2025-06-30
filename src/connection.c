@@ -149,7 +149,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
             return sockfd_ret;
         }
         if (ret == 0) {
-            fprintf(stderr, "Timeout #%d, %d seconds elapsed since last attempt\n", counter, timeoutDuration);
+            fprintf(stderr, "Timeout #%d, waited for %d seconds\n", counter+1, timeoutDuration/1000);
         } else {
             fprintf(stderr, "poll() error #%d\n", counter);
         }
@@ -159,7 +159,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
     return nullptr;
 }
 
-uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int sockfd[], const int amount, int* successful_socket) {
+uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int sockfd[], const int amount, int* successful_index) {
     connect_request_t* req_array[amount];
     for (int i = 0; i < amount; ++i) {
         req_array[i] = malloc(sizeof(connect_request_t));
@@ -215,7 +215,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     free(available_connections);
     const uint64_t id = res->connection_id;
     free(res);
-    if (successful_socket != nullptr) *successful_socket = sockfd[i];
+    if (successful_index != nullptr) *successful_index = i;
     return id;
 }
 
@@ -356,8 +356,8 @@ announce_response_t* announce_request_udp(const int amount, const struct sockadd
 
 void download(metainfo_t metainfo) {
     // For storing socket that successfully connected
-    int successful_socket = 0;
-    int* successful_socket_pt = &successful_socket;
+    int successful_index = 0;
+    int* successful_index_pt = &successful_index;
     // connection id from server response
     uint64_t connection_id;
     announce_list_ll* current = metainfo.announce_list;
@@ -446,7 +446,7 @@ void download(metainfo_t metainfo) {
         }
 
         // Atempting connection of all trackers in current list
-        connection_id = connect_request_udp((const struct sockaddr**)server_addr_array[counter], sockfd_array[counter], list_sizes[counter], successful_socket_pt);
+        connection_id = connect_request_udp((const struct sockaddr**)server_addr_array[counter], sockfd_array[counter], list_sizes[counter], successful_index_pt);
         if (connection_id != 0) {
             // Successful connection, exit loop
             break;
@@ -456,21 +456,46 @@ void download(metainfo_t metainfo) {
     }
     current = metainfo.announce_list;
 
-    // Memory cleanup
+    // Memory cleanup of unused connections
     for (int i = 0; i < counter+1; i++) {
         // Free inner arrays
         for (int j = 0; j < list_sizes[i]; ++j) {
+        // Avoid freeing data actually in use
+            if (i == counter && j == successful_index) continue;
             free(split_addr_array[i][j]->host);
             free(split_addr_array[i][j]->port);
             free(split_addr_array[i][j]);
             free(ip_array[i][j]);
         }
+        // Avoid freeing data actually in use
+        if (i == counter) continue;
         // Free outer arrays
         free(split_addr_array[i]);
         free(ip_array[i]);
         free(sockfd_array[i]);
         free(server_addr_array[i]);
     }
+
+    // Copying pointers of actually used connection
+    address_t* split_addr = split_addr_array[counter][successful_index];
+    char* ip = ip_array[counter][successful_index];
+    int sockfd = sockfd_array[counter][successful_index];
+    if (split_addr->ip_version == AF_INET) {
+        auto server_addr = (struct sockaddr_in*)server_addr_array[counter][successful_index];
+    } if (split_addr->ip_version == AF_INET6) {
+        auto server_addr = (struct sockaddr_in6*)server_addr_array[counter][successful_index];
+    }
+
+    // Freeing actually used connection
+    free(split_addr_array[counter][successful_index]->host);
+    free(split_addr_array[counter][successful_index]->port);
+    free(split_addr_array[counter][successful_index]);
+    free(ip_array[counter][successful_index]);
+
+    free(split_addr_array[counter]);
+    free(ip_array[counter]);
+    free(sockfd_array[counter]);
+    free(server_addr_array[counter]);
 
     //TODO After successful connection, proceed to download
 }
