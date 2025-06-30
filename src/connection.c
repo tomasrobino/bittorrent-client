@@ -278,7 +278,7 @@ announce_response_t* announce_request_udp(const int amount, const struct sockadd
     char buffer[1500];
     const ssize_t recv_bytes = recvfrom(sockfd[i], buffer, sizeof(announce_response_t), 0, nullptr, &socklen);
     if (recv_bytes < 0) {
-        fprintf(stderr, "Error while receiving connect request: %s (errno: %d)\n", strerror(errno), errno);
+        fprintf(stderr, "Error while receiving connect response: %s (errno: %d)\n", strerror(errno), errno);
         for (int j = 0; j < amount; ++j) {
             free(req_array[i]);
         }
