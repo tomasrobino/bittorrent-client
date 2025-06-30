@@ -28,6 +28,7 @@ announce_response_t* announce_request_udp(
     uint32_t key,
     uint16_t port
 );
+uint64_t connect_udp(int amount, announce_list_ll* current, int* successful_index_pt, connection_data_t* connection_data);
 void download(metainfo_t metainfo);
 
 #endif //CONNECTION

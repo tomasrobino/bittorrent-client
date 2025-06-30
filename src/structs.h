@@ -82,6 +82,13 @@ typedef struct {
 } address_t;
 
 typedef struct {
+    address_t* split_addr;
+    char* ip;
+    int sockfd;
+    struct sockaddr* server_addr;
+} connection_data_t;
+
+typedef struct {
     uint64_t protocol_id; // 0x41727101980 magic constant
     uint32_t action; // 0 connect
     uint32_t transaction_id; // random
