@@ -134,8 +134,8 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
         }
 
         // Wait for response
-        int a = 15*pow(2, counter)*1000;
-        ret = poll(pfd, amount, a);
+        const int timeoutDuration = 15*pow(2, counter)*1000;
+        ret = poll(pfd, amount, timeoutDuration);
         if (ret > 0 && pfd[0].revents & POLLIN) {
             // Data ready
             int* sockfd_ret = malloc(sizeof(int)*amount);
@@ -149,7 +149,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
             return sockfd_ret;
         }
         if (ret == 0) {
-            fprintf(stderr, "Timeout #%d\n", counter);
+            fprintf(stderr, "Timeout #%d, %d seconds elapsed since last attempt\n", counter, timeoutDuration);
         } else {
             fprintf(stderr, "poll() error #%d\n", counter);
         }
