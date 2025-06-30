@@ -457,15 +457,15 @@ void download(metainfo_t metainfo) {
     current = metainfo.announce_list;
 
     // Memory cleanup
-    for (int i = 0; i < counter; i++) {
-        for (int j = 0; j < list_sizes[i]; j++) {
-            // Free IP strings
-            if (ip_array[i][j]) {
-                free(ip_array[i][j]);
-            }
+    for (int i = 0; i < counter+1; i++) {
+        // Free inner arrays
+        for (int j = 0; j < list_sizes[i]; ++j) {
+            free(split_addr_array[i][j]->host);
+            free(split_addr_array[i][j]->port);
+            free(split_addr_array[i][j]);
+            free(ip_array[i][j]);
         }
-
-        // Free the arrays themselves
+        // Free outer arrays
         free(split_addr_array[i]);
         free(ip_array[i]);
         free(sockfd_array[i]);
