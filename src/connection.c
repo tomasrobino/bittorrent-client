@@ -87,7 +87,7 @@ char* url_to_ip(address_t* address) {
         void* addr_ptr;
 
         address->ip_version = rp->ai_family;
-        //IPv6
+        //IPv6. Doesn't break, trying to get an IPv4, because WSL doesn't support IPv6 connections
         if (rp->ai_family == AF_INET6) {
             char buf[INET6_ADDRSTRLEN];
             addr_ptr = &((struct sockaddr_in6 *)rp->ai_addr)->sin6_addr;
@@ -95,10 +95,9 @@ char* url_to_ip(address_t* address) {
             ip = malloc(INET6_ADDRSTRLEN);
             if (ip) strcpy(ip, buf);
             printf("Resolved IPv6: %s\n", ip);
-            break;
         }
 
-        //IPv4. Doesn't break, trying to get an IPv6
+        //IPv4
         if (rp->ai_family == AF_INET) {
             char buf[INET_ADDRSTRLEN];
             addr_ptr = &((struct sockaddr_in *)rp->ai_addr)->sin_addr;
@@ -106,6 +105,7 @@ char* url_to_ip(address_t* address) {
             ip = malloc(INET_ADDRSTRLEN);
             if (ip) strcpy(ip, buf);
             printf("Resolved IPv4: %s\n", ip);
+            break;
         }
     }
     freeaddrinfo(res);
