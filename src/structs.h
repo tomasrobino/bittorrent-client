@@ -1,6 +1,7 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 #include <stdint.h>
+#define CLIENT_ID "-IT0001-"
 
 typedef enum {
     none = 20,
@@ -124,8 +125,8 @@ typedef struct {
     uint64_t connection_id;
     uint32_t action;
     uint32_t transaction_id;
-    char info_hash[20];
-    char peer_id[20];
+    char info_hash[21];
+    char peer_id[21];
     uint64_t downloaded;
     uint64_t left;
     uint64_t uploaded;

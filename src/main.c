@@ -9,6 +9,11 @@
 #include "connection.h"
 
 int main(const int argc, char* argv[]) {
+    // Generating peer id
+    char peer_id[21] = CLIENT_ID;
+    peer_id[20] = '\0';
+    arc4random_buf(peer_id+8, 12);
+
     // Disable output buffering
     setbuf(stdout, nullptr);
     setbuf(stderr, nullptr);
@@ -51,9 +56,7 @@ int main(const int argc, char* argv[]) {
 
         if (buffer && length != 0) {
             metainfo_t* metainfo = parse_metainfo(buffer, length);
-            //download(metainfo->announce);
-            // Temporarily i'm hardcoding the tracker address
-            download(*metainfo);
+            download(*metainfo, peer_id);
 
             // Freeing memory
             free_metainfo(metainfo);
