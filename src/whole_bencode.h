@@ -11,7 +11,7 @@ void free_bencode_list(ll* list);
 //Decode bencoded string, returns decoded string
 char* decode_bencode_string(const char* bencoded_value);
 
-int decode_bencode_int(const char* bencoded_value, char** endptr);
+unsigned long decode_bencode_int(const char *bencoded_value, char **endptr);
 // For decoding announce-list
 announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index);
 

@@ -28,7 +28,7 @@ ll* decode_bencode_list(const char* bencoded_list, unsigned int* length) {
 
         while (bencoded_list[start] != 'e') {
             char *endptr = (char*) bencoded_list+start;
-            const int element_length = decode_bencode_int(bencoded_list+start, &endptr);
+            const int element_length = (int)decode_bencode_int(bencoded_list+start, &endptr);
             // endptr points to ":", start is moved to the character after it, which is where the data begins
             start = endptr-bencoded_list+1;
             // Copying data
@@ -88,9 +88,9 @@ char* decode_bencode_string(const char* bencoded_value) {
     exit(1);
 }
 
-int decode_bencode_int(const char* bencoded_value, char** endptr) {
+unsigned long decode_bencode_int(const char *bencoded_value, char **endptr) {
     if (is_digit(bencoded_value[0])) {
-        const int num = (int) strtol(bencoded_value, endptr, 10);
+        const unsigned long num = strtol(bencoded_value, endptr, 10);
         if (endptr != nullptr && *endptr == bencoded_value) {
             fprintf(stderr, "Invalid number\n");
             exit(1);
