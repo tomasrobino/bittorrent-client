@@ -163,7 +163,7 @@ void download(metainfo_t metainfo, const char* peer_id) {
 
     connection_data_t connection_data = {nullptr, nullptr, 0, nullptr};
     connection_id = connect_udp(counter, metainfo.announce_list, successful_index_pt, &connection_data);
-    uint64_t downloaded = 0, left = 0, uploaded = 0;
+    uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();
 
     announce_response_t* announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->pieces, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));

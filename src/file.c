@@ -78,12 +78,19 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             bool multiple;
             // Allocating space for info
             metainfo->info = malloc(sizeof(info_t));
+            metainfo->info->length = 0;
             // Position of "d"
             start = info_index-bencoded_value+4;
 
             if (bencoded_value[start+1] == '5') { // If multiple files
                 multiple = true;
                 metainfo->info->files = read_info_files(bencoded_value+start, multiple, start_ptr);
+                // Adding up total torrent size
+                files_ll* current = metainfo->info->files;
+                while (current != nullptr) {
+                    metainfo->info->length+=current->length;
+                    current = current->next;
+                }
                 // Reading directory name when multiple
                 if ( (info_index = strstr(bencoded_value+start, "name")) != nullptr) {
                     start = info_index-bencoded_value + 4;
@@ -94,11 +101,10 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                     metainfo->info->name[amount] = '\0';
                     start+=amount;
                 } else return nullptr;
-
             } else { // If single file
                 multiple = false;
                 metainfo->info->files = read_info_files(bencoded_value+start, multiple, start_ptr);
-
+                metainfo->info->length = metainfo->info->files->length;
                 // Skipping md5sum
             }
 

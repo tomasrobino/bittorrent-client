@@ -47,7 +47,7 @@ typedef struct {
 
 typedef struct files_ll {
     struct files_ll* next;
-    long length;
+    unsigned long length;
     ll* path;
 } files_ll;
 
@@ -58,7 +58,7 @@ typedef struct announce_list_ll {
 
 typedef struct {
     files_ll* files;
-    long length;
+    unsigned long length;
     char* name;
     unsigned int piece_length;
     unsigned int piece_number;
