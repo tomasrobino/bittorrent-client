@@ -16,7 +16,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         // Reading announce
         if ( (metainfo->announce = strstr(bencoded_value+start, "announce")) != nullptr) {
             start = metainfo->announce-bencoded_value + 8;
-            const int amount = decode_bencode_int(bencoded_value+start, nullptr);
+            const int amount = (int) decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->announce = malloc(sizeof(char)*(amount+1));
             strncpy(metainfo->announce, bencoded_value+start, amount);
@@ -34,7 +34,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         // Reading comment
         if ( (metainfo->comment = strstr(bencoded_value+start, "comment")) != nullptr) {
             start = metainfo->comment-bencoded_value + 7;
-            const int amount = decode_bencode_int(bencoded_value+start, nullptr);
+            const int amount = (int) decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->comment = malloc(sizeof(char)*(amount+1));
             strncpy(metainfo->comment, bencoded_value+start, amount);
@@ -45,7 +45,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         // Reading created by
         if ( (metainfo->created_by = strstr(bencoded_value+start, "created by")) != nullptr) {
             start = metainfo->created_by-bencoded_value + 10;
-            const int amount = decode_bencode_int(bencoded_value+start, nullptr);
+            const int amount = (int) decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->created_by = malloc(sizeof(char)*(amount+1));
             strncpy(metainfo->created_by, bencoded_value+start, amount);
@@ -63,7 +63,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         // Reading encoding
         if ( (metainfo->encoding = strstr(bencoded_value+start, "encoding")) != nullptr) {
             start = metainfo->encoding-bencoded_value + 8;
-            const int amount = decode_bencode_int(bencoded_value+start, nullptr);
+            const int amount = (int) decode_bencode_int(bencoded_value+start, nullptr);
             start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
             metainfo->encoding = malloc(sizeof(char)*(amount+1));
             strncpy(metainfo->encoding, bencoded_value+start, amount);
@@ -94,7 +94,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 // Reading directory name when multiple
                 if ( (info_index = strstr(bencoded_value+start, "name")) != nullptr) {
                     start = info_index-bencoded_value + 4;
-                    const int amount = decode_bencode_int(bencoded_value+start, nullptr);
+                    const int amount = (int) decode_bencode_int(bencoded_value+start, nullptr);
                     start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
                     metainfo->info->name = malloc(sizeof(char)*(amount+1));
                     strncpy(metainfo->info->name, bencoded_value+start, amount);
@@ -118,7 +118,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             // Reading pieces
             if ( (info_index = strstr(bencoded_value+start, "pieces")) != nullptr) {
                 start = info_index-bencoded_value + 6;
-                const int amount = decode_bencode_int(bencoded_value+start, nullptr);
+                const int amount = (int) decode_bencode_int(bencoded_value+start, nullptr);
                 start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
                 metainfo->info->piece_number = ceil((double) amount / metainfo->info->piece_length);
                 metainfo->info->pieces = malloc(sizeof(char)*(amount+1));

@@ -83,7 +83,7 @@ files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* ind
             if ( (parse_index = strstr(bencode+start, "name")) != nullptr) {
                 start = parse_index-bencode + 4;
                 char *endptr = nullptr;
-                const int amount = decode_bencode_int(bencode+start, &endptr);
+                const int amount = (int) decode_bencode_int(bencode+start, &endptr);
                 current->path = malloc(sizeof(ll));
                 current->path->next = nullptr;
                 current->path->val = malloc(sizeof(char)*(amount+1));

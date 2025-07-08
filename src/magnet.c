@@ -56,7 +56,7 @@ magnet_data* process_magnet(const char* magnet) {
                         fprintf(stdout, "dn:\n%s\n", data->dn);
                         break;
                     case xl:
-                        data->xl = decode_bencode_int(magnet+start, nullptr);
+                        data->xl = (int) decode_bencode_int(magnet+start, nullptr);
                         fprintf(stdout, "xl:\n%ld\n", data->xl);
                         break;
                     case tr:
