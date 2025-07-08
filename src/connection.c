@@ -259,7 +259,6 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     fprintf(stdout, "port: %hu\n", req.port);
 
 
-    announce_response_t* res = nullptr;
     socklen_t socklen = sizeof(struct sockaddr);
     const ssize_t sent = sendto(sockfd, &req, sizeof(announce_request_t), 0, server_addr, sizeof(struct sockaddr));
     if (sent < 0) {
@@ -275,7 +274,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
         fprintf(stderr, "Error while receiving connect response: %s (errno: %d)\n", strerror(errno), errno);
         return nullptr;
     }
-    res = malloc(recv_bytes);
+    announce_response_t *res = malloc(recv_bytes);
     memcpy(res, buffer, 20);
 
     int peer_size = 0;
@@ -396,18 +395,18 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
             // Creating sockaddr for each inner-list element
             if (split_addr_array[counter][i]->ip_version == AF_INET) {
                 // For IPv4
-                struct sockaddr_in server_addr = {0};
-                server_addr.sin_family = split_addr_array[counter][i]->ip_version;
-                server_addr.sin_port = htons(decode_bencode_int(split_addr_array[counter][i]->port, nullptr));
-                server_addr.sin_addr.s_addr = inet_addr(ip_array[counter][i]);
-                server_addr_array[counter][i] = (struct sockaddr*)&server_addr;
+                struct sockaddr_in* server_addr = malloc(sizeof(struct sockaddr_in));
+                server_addr->sin_family = split_addr_array[counter][i]->ip_version;
+                server_addr->sin_port = htons(decode_bencode_int(split_addr_array[counter][i]->port, nullptr));
+                server_addr->sin_addr.s_addr = inet_addr(ip_array[counter][i]);
+                server_addr_array[counter][i] = (struct sockaddr*)server_addr;
             } else {
                 // For IPv6
-                struct sockaddr_in6 server_addr = {0};
-                server_addr.sin6_family = split_addr_array[counter][i]->ip_version;
-                server_addr.sin6_port = htons(decode_bencode_int(split_addr_array[counter][i]->port, nullptr));
-                inet_pton(AF_INET6, ip_array[counter][i], &server_addr.sin6_addr);
-                server_addr_array[counter][i] = (struct sockaddr*)&server_addr;
+                struct sockaddr_in6* server_addr = malloc(sizeof(struct sockaddr_in6));
+                server_addr->sin6_family = split_addr_array[counter][i]->ip_version;
+                server_addr->sin6_port = htons(decode_bencode_int(split_addr_array[counter][i]->port, nullptr));
+                inet_pton(AF_INET6, ip_array[counter][i], &server_addr->sin6_addr);
+                server_addr_array[counter][i] = (struct sockaddr*)server_addr;
             }
         }
 
@@ -415,7 +414,6 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
         uint64_t connection_id = connect_request_udp((const struct sockaddr**)server_addr_array[counter], sockfd_array[counter], list_sizes[counter], successful_index_pt);
         if (connection_id != 0) {
             // Successful connection, exit loop
-
 
             // Memory cleanup of unused connections
             for (int i = 0; i < counter+1; i++) {
@@ -432,6 +430,7 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
                         free(split_addr_array[i][j]->port);
                         free(split_addr_array[i][j]);
                         free(ip_array[i][j]);
+                        free(server_addr_array[i][j]);
                     }
                 }
                 // Free outer arrays
@@ -480,6 +479,7 @@ void download(metainfo_t metainfo, const char* peer_id) {
     free(connection_data.split_addr->port);
     free(connection_data.split_addr);
     free(connection_data.ip);
+    free(connection_data.server_addr);
 
     //TODO After successful connection, proceed to download
 }
