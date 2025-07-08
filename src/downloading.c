@@ -1,14 +1,14 @@
-#include "downloading.h"
-
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <bits/socket.h>
 #include <sys/socket.h>
 
+#include "downloading.h"
 #include "connection.h"
 #include "whole_bencode.h"
+
+#define ANNOUNCE_REQUEST_SIZE 98
 
 announce_response_t* announce_request_udp(const struct sockaddr *server_addr, const int sockfd, uint64_t connection_id, const char info_hash[], const char peer_id[], const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const uint16_t port) {
     announce_request_t req = {0};
@@ -17,9 +17,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     req.action = htobe32(1);
     req.transaction_id = htobe32(arc4random());
     strncpy(req.info_hash, info_hash, 20);
-    req.info_hash[20] = '\0';
     strncpy(req.peer_id, peer_id, 20);
-    req.peer_id[20] = '\0';
     req.downloaded = htobe64(downloaded);
     req.left = htobe64(left);
     req.uploaded = htobe64(uploaded);
@@ -48,21 +46,37 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     fprintf(stdout, "uploaded: %lu\n", req.uploaded);
     fprintf(stdout, "key: %u\n", req.key);
     fprintf(stdout, "port: %hu\n", req.port);
+    char req_buffer[ANNOUNCE_REQUEST_SIZE];
+    memcpy(req_buffer, &req.connection_id, 8);
+    memcpy(req_buffer+8, &req.action, 4);
+    memcpy(req_buffer+12, &req.transaction_id, 4);
+    memcpy(req_buffer+16, &req.info_hash, 20);
+    memcpy(req_buffer+36, &req.peer_id, 20);
+    memcpy(req_buffer+56, &req.downloaded, 8);
+    memcpy(req_buffer+64, &req.left, 8);
+    memcpy(req_buffer+72, &req.uploaded, 8);
+    memcpy(req_buffer+80, &req.event, 4);
+    memcpy(req_buffer+84, &req.ip, 4);
+    memcpy(req_buffer+88, &req.key, 4);
+    memcpy(req_buffer+92, &req.num_want, 4);
+    memcpy(req_buffer+96, &req.port, 2);
 
 
     socklen_t socklen = sizeof(struct sockaddr);
-    const ssize_t sent = sendto(sockfd, &req, sizeof(announce_request_t), 0, server_addr, sizeof(struct sockaddr));
-    if (sent < 0) {
-        // error
-        fprintf(stderr, "Can't send announce request: %s (errno: %d)\n", strerror(errno), errno);
-        exit(1);
+    int* announce_res_socket = try_request_udp(1, &sockfd, (const void**)req_buffer, ANNOUNCE_REQUEST_SIZE, &server_addr);
+    if (announce_res_socket == nullptr) {
+        fprintf(stderr, "Error while receiving announce response\n");
+        return nullptr;
     }
-    fprintf(stdout, "Sent %zd bytes\n", sent);
 
     char buffer[1500];
-    const ssize_t recv_bytes = recvfrom(sockfd, buffer, sizeof(announce_response_t), 0, nullptr, &socklen);
+    const ssize_t recv_bytes = recvfrom(sockfd, buffer, ANNOUNCE_REQUEST_SIZE, 0, nullptr, &socklen);
     if (recv_bytes < 0) {
-        fprintf(stderr, "Error while receiving connect response: %s (errno: %d)\n", strerror(errno), errno);
+        fprintf(stderr, "Error while receiving announce response: %s (errno: %d)\n", strerror(errno), errno);
+        return nullptr;
+    }
+    if (recv_bytes < 20) {
+        fprintf(stderr, "Invalid announce response\n");
         return nullptr;
     }
     announce_response_t *res = malloc(recv_bytes);
