@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "connection.h"
+#include "downloading.h"
 
 int main(const int argc, char* argv[]) {
     // Generating peer id

@@ -8,7 +8,6 @@
 #include "connection.h"
 #include "whole_bencode.h"
 
-#define ANNOUNCE_REQUEST_SIZE 98
 
 announce_response_t* announce_request_udp(const struct sockaddr *server_addr, const int sockfd, uint64_t connection_id, const char info_hash[], const char peer_id[], const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const uint16_t port) {
     announce_request_t req = {0};
@@ -46,7 +45,8 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     fprintf(stdout, "uploaded: %lu\n", req.uploaded);
     fprintf(stdout, "key: %u\n", req.key);
     fprintf(stdout, "port: %hu\n", req.port);
-    char req_buffer[ANNOUNCE_REQUEST_SIZE];
+    // Explicit malloc to avoid sendto() error
+    char* req_buffer = malloc(ANNOUNCE_REQUEST_SIZE);
     memcpy(req_buffer, &req.connection_id, 8);
     memcpy(req_buffer+8, &req.action, 4);
     memcpy(req_buffer+12, &req.transaction_id, 4);
@@ -63,7 +63,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
 
 
     socklen_t socklen = sizeof(struct sockaddr);
-    int* announce_res_socket = try_request_udp(1, &sockfd, (const void**)req_buffer, ANNOUNCE_REQUEST_SIZE, &server_addr);
+    int* announce_res_socket = try_request_udp(1, &sockfd, (const void**)&req_buffer, ANNOUNCE_REQUEST_SIZE, &server_addr);
     if (announce_res_socket == nullptr) {
         fprintf(stderr, "Error while receiving announce response\n");
         return nullptr;
