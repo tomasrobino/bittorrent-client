@@ -188,7 +188,6 @@ void download(metainfo_t metainfo, const char* peer_id) {
             free(announce_response->peer_list);
             announce_response->peer_list = aux;
         }
-        free(announce_response);
         // Freeing actually used connection
         free(connection_data.split_addr->host);
         free(connection_data.split_addr->port);
@@ -196,4 +195,5 @@ void download(metainfo_t metainfo, const char* peer_id) {
         free(connection_data.ip);
         free(connection_data.server_addr);
     } while (announce_response == nullptr);
+    free(announce_response);
 }
