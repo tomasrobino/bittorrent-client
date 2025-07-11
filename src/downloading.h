@@ -32,5 +32,5 @@ announce_response_t* announce_request_udp(
     uint32_t key,
     uint16_t port
 );
-void download(metainfo_t metainfo, const char* peer_id);
+int download(metainfo_t metainfo, const char* peer_id);
 #endif //DOWNLOADING_H

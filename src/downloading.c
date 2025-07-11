@@ -154,7 +154,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     return res;
 }
 
-void download(metainfo_t metainfo, const char* peer_id) {
+int download(metainfo_t metainfo, const char* peer_id) {
     // For storing socket that successfully connected
     int successful_index = 0;
     int* successful_index_pt = &successful_index;
@@ -174,26 +174,30 @@ void download(metainfo_t metainfo, const char* peer_id) {
         current = nullptr;
     }
     announce_response_t* announce_response;
+    connection_data_t connection_data = {nullptr, nullptr, 0, nullptr};
     do {
-        connection_data_t connection_data = {nullptr, nullptr, 0, nullptr};
         connection_id = connect_udp(counter, metainfo.announce_list, successful_index_pt, &connection_data);
+        if (connection_id == 0) {
+            // Couldn't connect to anyy tracker
+            return -1;
+        }
         uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
         uint32_t event = 0, key = arc4random();
 
         announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->pieces, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));
-
-        // Freeing announce response
-        while (announce_response->peer_list != nullptr) {
-            peer_ll* aux = announce_response->peer_list->next;
-            free(announce_response->peer_list);
-            announce_response->peer_list = aux;
-        }
-        // Freeing actually used connection
-        free(connection_data.split_addr->host);
-        free(connection_data.split_addr->port);
-        free(connection_data.split_addr);
-        free(connection_data.ip);
-        free(connection_data.server_addr);
     } while (announce_response == nullptr);
+
+    // Freeing announce response
+    while (announce_response->peer_list != nullptr) {
+        peer_ll* aux = announce_response->peer_list->next;
+        free(announce_response->peer_list);
+        announce_response->peer_list = aux;
+    }
     free(announce_response);
+    // Freeing actually used connection
+    free(connection_data.split_addr->host);
+    free(connection_data.split_addr->port);
+    free(connection_data.split_addr);
+    free(connection_data.ip);
+    free(connection_data.server_addr);
 }
