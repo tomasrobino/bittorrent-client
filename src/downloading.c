@@ -65,10 +65,13 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
 
     socklen_t socklen = sizeof(struct sockaddr);
     int* announce_res_socket = try_request_udp(1, &sockfd, (const void**)&req_buffer, ANNOUNCE_REQUEST_SIZE, &server_addr);
+    free(req_buffer);
     if (announce_res_socket == nullptr) {
         fprintf(stderr, "Error while receiving announce response\n");
+        free(announce_res_socket);
         return nullptr;
     }
+    free(announce_res_socket);
 
     unsigned char buffer[MAX_RESPONSE_SIZE];
     const ssize_t recv_bytes = recvfrom(sockfd, buffer, MAX_RESPONSE_SIZE, 0, nullptr, &socklen);
@@ -179,6 +182,11 @@ void download(metainfo_t metainfo, const char* peer_id) {
     announce_response_t* announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->pieces, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));
 
     // Freeing announce response
+    while (announce_response->peer_list != nullptr) {
+        peer_ll* aux = announce_response->peer_list->next;
+        free(announce_response->peer_list);
+        announce_response->peer_list = aux;
+    }
     free(announce_response);
     // Freeing actually used connection
     free(connection_data.split_addr->host);

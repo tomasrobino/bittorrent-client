@@ -177,6 +177,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     int* available_connections = try_request_udp(amount, sockfd, (const void**)req_array, sizeof(connect_request_t), server_addr);
     if (available_connections == nullptr) {
         // All connections failed
+        free(available_connections);
         for (int j = 0; j < amount; ++j) {
             free(req_array[j]);
         }
