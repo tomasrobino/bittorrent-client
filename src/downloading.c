@@ -88,6 +88,8 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
         peer_size = 6;
     } else if (server_addr->sa_family == AF_INET6) peer_size = 18;
 
+    peer_ll* head = nullptr;
+
     if (req.transaction_id == res->transaction_id && req.action == res->action) {
         // Convert back to host endianness
         res->action = htobe32(res->action);
@@ -95,11 +97,12 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
         res->interval = htobe32(res->interval);
         res->leechers = htobe32(res->leechers);
         res->seeders = htobe32(res->seeders);
+        res->peer_list = nullptr;
 
         int peer_amount = (int)recv_bytes-20;
         peer_amount/=peer_size;
         if (peer_amount > 0) {
-            peer_ll* head = malloc(sizeof(peer_ll));
+            head = malloc(sizeof(peer_ll));
             res->peer_list = head;
             int counter = 0;
             while (res->peer_list != nullptr) {
@@ -138,15 +141,13 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     fprintf(stdout, "peer_list: \n");
     int counter = 0;
     while (res->peer_list != nullptr) {
-        fprintf(stdout, "peer #%d: \n", counter);
-        peer_ll* current = res->peer_list;
-        while (current != nullptr) {
-            fprintf(stdout, "id: %s\n",current->ip);
-            fprintf(stdout, "port: %d\n",current->port);
-            current = current->next;
-        }
+        fprintf(stdout, "peer #%d: \n", counter+1);
+        fprintf(stdout, "id: %s\n",res->peer_list->ip);
+        fprintf(stdout, "port: %d\n",res->peer_list->port);
         counter++;
+        res->peer_list = res->peer_list->next;
     }
+    res->peer_list = head;
     return res;
 }
 
