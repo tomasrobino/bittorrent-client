@@ -3,6 +3,7 @@
 #include <stdint.h>
 #define CLIENT_ID "-IT0001-"
 #define ANNOUNCE_REQUEST_SIZE 98
+#define MAX_RESPONSE_SIZE 1500
 
 typedef enum {
     none = 20,

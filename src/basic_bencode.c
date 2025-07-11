@@ -93,10 +93,9 @@ unsigned long decode_bencode_int(const char *bencoded_value, char **endptr) {
         const unsigned long num = strtol(bencoded_value, endptr, 10);
         if (endptr != nullptr && *endptr == bencoded_value) {
             fprintf(stderr, "Invalid number\n");
-            exit(1);
+            return 0;
         }
         return num;
     }
-    *endptr = nullptr;
-    exit(1);
+    return 0;
 }

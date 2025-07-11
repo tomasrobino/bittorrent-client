@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include "downloading.h"
 #include "connection.h"
@@ -69,8 +70,8 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
         return nullptr;
     }
 
-    char buffer[1500];
-    const ssize_t recv_bytes = recvfrom(sockfd, buffer, ANNOUNCE_REQUEST_SIZE, 0, nullptr, &socklen);
+    unsigned char buffer[MAX_RESPONSE_SIZE];
+    const ssize_t recv_bytes = recvfrom(sockfd, buffer, MAX_RESPONSE_SIZE, 0, nullptr, &socklen);
     if (recv_bytes < 0) {
         fprintf(stderr, "Error while receiving announce response: %s (errno: %d)\n", strerror(errno), errno);
         return nullptr;
@@ -79,7 +80,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
         fprintf(stderr, "Invalid announce response\n");
         return nullptr;
     }
-    announce_response_t *res = malloc(recv_bytes);
+    announce_response_t *res = malloc(sizeof(announce_response_t));
     memcpy(res, buffer, 20);
 
     int peer_size = 0;
@@ -102,14 +103,19 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
             res->peer_list = head;
             int counter = 0;
             while (res->peer_list != nullptr) {
-                res->peer_list->ip = malloc(sizeof(char)*(peer_size-2+1));
-                memcpy(res->peer_list->ip, buffer+20 + peer_size*counter, peer_size-2);
-                res->peer_list->ip[peer_size-2] = '\0';
-                memcpy(res->peer_list, buffer+20 + peer_size-2 + peer_size*counter, 2);
+                // res->peer_list->ip = malloc(sizeof(char)*(peer_size-2+1));
+                // memcpy(res->peer_list->ip, buffer+20 + peer_size*counter, peer_size-2);
+                // res->peer_list->ip[peer_size-2] = '\0';
+                struct in_addr addr;
+                memcpy(&addr.s_addr, buffer+20 + peer_size*counter, 4);
+                res->peer_list->ip = inet_ntoa(addr);
+
+                memcpy(&res->peer_list->port, buffer+20 + peer_size-2 + peer_size*counter, 2);
                 res->peer_list->port = htobe16(res->peer_list->port);
                 if (counter<peer_amount-1) {
                     res->peer_list->next = malloc(sizeof(peer_ll));
                 } else res->peer_list->next = nullptr;
+                res->peer_list = res->peer_list->next;
                 counter++;
             }
             res->peer_list = head;
