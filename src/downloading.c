@@ -108,6 +108,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
                 // Checking if ip is 0
                 if (addr.s_addr == 0) {
                     peer_amount--;
+                    counter++;
                     continue;
                 }
                 res->peer_list->ip = inet_ntoa(addr);
