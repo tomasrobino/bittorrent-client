@@ -103,11 +103,13 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
             res->peer_list = head;
             int counter = 0;
             while (res->peer_list != nullptr) {
-                // res->peer_list->ip = malloc(sizeof(char)*(peer_size-2+1));
-                // memcpy(res->peer_list->ip, buffer+20 + peer_size*counter, peer_size-2);
-                // res->peer_list->ip[peer_size-2] = '\0';
                 struct in_addr addr;
                 memcpy(&addr.s_addr, buffer+20 + peer_size*counter, 4);
+                // Checking if ip is 0
+                if (addr.s_addr == 0) {
+                    peer_amount--;
+                    continue;
+                }
                 res->peer_list->ip = inet_ntoa(addr);
 
                 memcpy(&res->peer_list->port, buffer+20 + peer_size-2 + peer_size*counter, 2);
