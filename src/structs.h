@@ -171,4 +171,51 @@ typedef struct {
     peer_ll* peer_list;
 } announce_response_t;
 
+/*
+Offset          Size            Name            Value
+0               64-bit integer  connection_id
+8               32-bit integer  action          2 // scrape
+12              32-bit integer  transaction_id
+16 + 20 * n     20-byte string  info_hash
+16 + 20 * N
+*/
+typedef struct {
+    uint64_t connection_id;
+    uint32_t action;
+    uint32_t transaction_id;
+    char* info_hash_list;
+} scrape_request_t;
+
+/*
+Offset      Size            Name            Value
+0           32-bit integer  action          1 // announce
+4           32-bit integer  transaction_id
+8           32-bit integer  interval
+12          32-bit integer  leechers
+16          32-bit integer  seeders
+20 + 6 * n  32-bit integer  IP address
+24 + 6 * n  16-bit integer  TCP port
+20 + 6 * N
+*/
+typedef struct {
+    uint32_t action;
+    uint32_t transaction_id;
+    uint32_t interval;
+    uint32_t leechers;
+    uint32_t seeders;
+    peer_ll* peer;
+} scrape_response_t;
+
+/*
+Offset  Size            Name            Value
+0       32-bit integer  action          3 // error
+4       32-bit integer  transaction_id
+8       string  message
+*/
+typedef struct {
+    uint32_t action;
+    uint32_t transaction_id;
+    char* message;
+} error_response;
+
 #endif //STRUCTS_H

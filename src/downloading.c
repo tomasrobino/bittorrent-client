@@ -187,6 +187,9 @@ int download(metainfo_t metainfo, const char* peer_id) {
         announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->pieces, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));
     } while (announce_response == nullptr);
 
+    //TODO Actual download
+
+
     // Freeing announce response
     while (announce_response->peer_list != nullptr) {
         peer_ll* aux = announce_response->peer_list->next;
