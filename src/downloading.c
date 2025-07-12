@@ -184,7 +184,7 @@ int download(metainfo_t metainfo, const char* peer_id) {
         uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
         uint32_t event = 0, key = arc4random();
 
-        announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->pieces, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));
+        announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));
     } while (announce_response == nullptr);
 
     //TODO Actual download
@@ -203,4 +203,5 @@ int download(metainfo_t metainfo, const char* peer_id) {
     free(connection_data.split_addr);
     free(connection_data.ip);
     free(connection_data.server_addr);
+    return 0;
 }

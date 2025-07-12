@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <tgmath.h>
+#include <openssl/sha.h>
 
 #include "structs.h"
 #include "whole_bencode.h"
@@ -81,6 +82,13 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             metainfo->info->length = 0;
             // Position of "d"
             start = info_index-bencoded_value+4;
+            // Storing info_hash
+            const unsigned long info_length = length - start;
+            // Creates the SHA1 hash from info data and then copies it into metainfo.info.hash
+            memcpy(metainfo->info->hash,
+                SHA1((const unsigned char*) bencoded_value+start, info_length, nullptr),
+                20);
+            metainfo->info->hash[20] = '\0';
 
             if (bencoded_value[start+1] == '5') { // If multiple files
                 multiple = true;

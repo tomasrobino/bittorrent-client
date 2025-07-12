@@ -65,6 +65,7 @@ typedef struct {
     unsigned int piece_number;
     char* pieces;
     bool priv;
+    char hash[21];
 } info_t;
 
 typedef struct {
