@@ -269,7 +269,7 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     }
 
     // Receive response
-    char res[68];
+    char* res = malloc(68);
     const ssize_t bytes_received = recv(sockfd, res, 68, 0);
     if (bytes_received < 0) {
         fprintf(stderr, "Erorr in handshake for socket: %d", sockfd);
