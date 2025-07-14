@@ -184,27 +184,28 @@ typedef struct {
     uint64_t connection_id;
     uint32_t action;
     uint32_t transaction_id;
-    char* info_hash_list;
+    const char* info_hash_list;
 } scrape_request_t;
 
 /*
 Offset      Size            Name            Value
-0           32-bit integer  action          1 // announce
+0           32-bit integer  action          2 // scrape
 4           32-bit integer  transaction_id
-8           32-bit integer  interval
-12          32-bit integer  leechers
-16          32-bit integer  seeders
-20 + 6 * n  32-bit integer  IP address
-24 + 6 * n  16-bit integer  TCP port
-20 + 6 * N
+8 + 12 * n  32-bit integer  seeders
+12 + 12 * n 32-bit integer  completed
+16 + 12 * n 32-bit integer  leechers
+8 + 12 * N
 */
+typedef struct {
+    uint32_t seeders;
+    uint32_t completed;
+    uint32_t leechers;
+} scraped_data_t;
+
 typedef struct {
     uint32_t action;
     uint32_t transaction_id;
-    uint32_t interval;
-    uint32_t leechers;
-    uint32_t seeders;
-    peer_ll* peer;
+    scraped_data_t* scraped_data_array[];
 } scrape_response_t;
 
 /*
