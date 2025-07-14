@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 #include "downloading.h"
 #include "connection.h"
@@ -241,6 +242,39 @@ scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, const 
         fprintf(stdout, "seeders: %d\n", res->scraped_data_array[i].seeders);
         fprintf(stdout, "completed: %d\n", res->scraped_data_array[i].completed);
         fprintf(stdout, "leechers: %d\n", res->scraped_data_array[i].leechers);
+    }
+    return res;
+}
+
+char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info_hash, const char* peer_id) {
+    char buffer[68] = {0};
+    buffer[0] = 19;
+    memcpy(buffer+1, "BitTorrent protocol", 19);
+    memcpy(buffer+28, info_hash, 20);
+    memcpy(buffer+48, peer_id, 20);
+    const socklen_t socklen = sizeof(struct sockaddr);
+    // Try connecting
+    if (connect(sockfd, server_addr, socklen) < 0) {
+        fprintf(stderr, "Erorr in connect for socket: %d", sockfd);
+        close(sockfd);
+        return nullptr;
+    }
+
+    // Send handshake request
+    ssize_t bytes_sent = send(sockfd, buffer, 68, 0);
+    if (bytes_sent < 0) {
+        fprintf(stderr, "Erorr in handshake for socket: %d", sockfd);
+        close(sockfd);
+        return nullptr;
+    }
+
+    // Receive response
+    char res[68];
+    const ssize_t bytes_received = recv(sockfd, res, 68, 0);
+    if (bytes_received < 0) {
+        fprintf(stderr, "Erorr in handshake for socket: %d", sockfd);
+        close(sockfd);
+        return nullptr;
     }
     return res;
 }

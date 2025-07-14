@@ -43,6 +43,16 @@ announce_response_t* announce_request_udp(
  * @return The data returned or nullptr if there's an error
  */
 scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, int sockfd, uint64_t connection_id, const char info_hash[], unsigned int torrent_amount);
+
+/**
+ * Attempts to get a handshake with a peer to download the torrent passed in the info_hash
+ * @param server_addr Server address
+ * @param sockfd Socket file descriptor
+ * @param info_hash Info hash the torrent
+ * @param peer_id This client's peer_id
+ * @returns The 20-byte peer_id of the peer; or nullptr if unsuccessful
+ */
+char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info_hash, const char* peer_id);
 /**
  * Downloads & uploads torrent
  * @param metainfo The torrent metainfo extracted from the .torrent file
