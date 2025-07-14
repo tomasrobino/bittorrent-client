@@ -245,7 +245,7 @@ scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, const 
     return res;
 }
 
-int download(metainfo_t metainfo, const char* peer_id) {
+int torrent(metainfo_t metainfo, const char* peer_id) {
     // For storing socket that successfully connected
     int successful_index = 0;
     int* successful_index_pt = &successful_index;
@@ -278,7 +278,7 @@ int download(metainfo_t metainfo, const char* peer_id) {
         announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));
     } while (announce_response == nullptr);
 
-    scrape_response_t* scrape_response = scrape_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, 1);
+    //scrape_response_t* scrape_response = scrape_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, 1);
 
     //TODO Actual download
 

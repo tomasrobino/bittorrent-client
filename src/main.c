@@ -57,7 +57,7 @@ int main(const int argc, char* argv[]) {
 
         if (buffer && length != 0) {
             metainfo_t* metainfo = parse_metainfo(buffer, length);
-            download(*metainfo, peer_id);
+            torrent(*metainfo, peer_id);
 
             // Freeing memory
             free_metainfo(metainfo);

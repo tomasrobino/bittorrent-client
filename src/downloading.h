@@ -32,5 +32,11 @@ announce_response_t* announce_request_udp(
     uint32_t key,
     uint16_t port
 );
-int download(metainfo_t metainfo, const char* peer_id);
+/**
+ * Downloads & uploads torrent
+ * @param metainfo The torrent metainfo extracted from the .torrent file
+ * @param peer_id The chosen peer_id
+ * @returns 0 for success, !0 for failure
+**/
+int torrent(metainfo_t metainfo, const char* peer_id);
 #endif //DOWNLOADING_H
