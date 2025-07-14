@@ -75,6 +75,14 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
 
     unsigned char buffer[MAX_RESPONSE_SIZE];
     const ssize_t recv_bytes = recvfrom(sockfd, buffer, MAX_RESPONSE_SIZE, 0, nullptr, &socklen);
+    if (((error_response*) buffer)->action == 3) {
+        // 3 means error
+        fprintf(stderr, "Server returned error:\n");
+        fprintf(stderr, "Transaction id: %d\n", ((error_response*) buffer)->transaction_id);
+        fprintf(stderr, "Error message from the server: %s\n", ((error_response*) buffer)->message);
+        return nullptr;
+    }
+
     if (recv_bytes < 0) {
         fprintf(stderr, "Error while receiving announce response: %s (errno: %d)\n", strerror(errno), errno);
         return nullptr;

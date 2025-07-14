@@ -187,6 +187,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     while (available_connections[i] == 0) {
         i++;
     }
+
     socklen_t socklen = sizeof(struct sockaddr);
     connect_response_t* res = malloc(sizeof(connect_response_t));
     const ssize_t received = recvfrom(sockfd[i], res, sizeof(connect_response_t), 0, nullptr, &socklen);
@@ -194,6 +195,15 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
         fprintf(stderr, "Error while receiving connect response: %s (errno: %d)\n", strerror(errno), errno);
         return 0;
     }
+
+    if (((error_response*) res)->action == 3) {
+        // 3 means error
+        fprintf(stderr, "Server returned error:\n");
+        fprintf(stderr, "Transaction id: %d\n", ((error_response*) res)->transaction_id);
+        fprintf(stderr, "Error message from the server: %s\n", ((error_response*) res)->message);
+        return 0;
+    }
+
     fprintf(stdout, "Received %ld bytes\n", received);
 
     fprintf(stdout, "Server response:\n");
