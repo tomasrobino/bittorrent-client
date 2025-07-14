@@ -162,6 +162,86 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     return res;
 }
 
+scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, const int sockfd, const uint64_t connection_id, const char info_hash[], const unsigned int torrent_amount) {
+    scrape_request_t req;
+    req.connection_id = htobe64(connection_id);
+    req.action = htobe32(2);
+    req.transaction_id = htobe32(arc4random());
+    req.info_hash_list = info_hash;
+
+    fprintf(stdout, "Scrape request:\n");
+    fprintf(stdout, "action: %d\n", req.action);
+    fprintf(stdout, "transaction_id: %d\n", req.transaction_id);
+    fprintf(stdout, "connection_id: %lu\n", req.connection_id);
+    fprintf(stdout, "info_hash: \n");
+    for (int i = 0; i < torrent_amount; ++i) {
+        fprintf(stdout, "#%d: ", i+1);
+        for (int j = 0; j < 20; ++j) {
+            fprintf(stdout, "%c",req.info_hash_list[j+20*i]);
+        }
+        fprintf(stdout, "\n");
+    }
+
+    socklen_t socklen = sizeof(struct sockaddr);
+    int* scrape_res_socket = try_request_udp(1, &sockfd, (const void**)&req, sizeof(scrape_request_t), &server_addr);
+    if (scrape_res_socket == nullptr) {
+        fprintf(stderr, "Error while receiving scrape response\n");
+        free(scrape_res_socket);
+        return nullptr;
+    }
+    free(scrape_res_socket);
+
+    const unsigned int res_size = sizeof(scrape_response_t)+sizeof(scraped_data_t)*(torrent_amount-1);
+    scrape_response_t* res = malloc(res_size);
+    const ssize_t recv_bytes = recvfrom(sockfd, res, res_size, 0, nullptr, &socklen);
+    if (((error_response*) res)->action == 3) {
+        // 3 means error
+        fprintf(stderr, "Server returned error:\n");
+        fprintf(stderr, "Transaction id: %d\n", ((error_response*) res)->transaction_id);
+        fprintf(stderr, "Error message from the server: %s\n", ((error_response*) res)->message);
+        free(res);
+        return nullptr;
+    }
+
+    if (recv_bytes < 0) {
+        fprintf(stderr, "Error while receiving scrape response: %s (errno: %d)\n", strerror(errno), errno);
+        free(res);
+        return nullptr;
+    }
+    if (recv_bytes < 8) {
+        fprintf(stderr, "Invalid scrape response\n");
+        free(res);
+        return nullptr;
+    }
+
+    if (req.transaction_id == res->transaction_id && req.action == res->action) {
+        // Convert back to host endianness
+        res->action = htobe32(res->action);
+        res->transaction_id = htobe32(res->transaction_id);
+        for (int i = 0; i < torrent_amount; ++i) {
+            res->scraped_data_array[i].seeders = htobe32(res->scraped_data_array[i].seeders);
+            res->scraped_data_array[i].completed = htobe32(res->scraped_data_array[i].completed);
+            res->scraped_data_array[i].leechers = htobe32(res->scraped_data_array[i].leechers);
+        }
+    } else {
+        // Wrong server response
+        free(res);
+        return nullptr;
+    }
+
+    fprintf(stdout, "Server response:\n");
+    fprintf(stdout, "action: %u\n", res->action);
+    fprintf(stdout, "transaction_id: %u\n", res->transaction_id);
+    fprintf(stdout, "scraped_data_array:\n");
+    for (int i = 0; i < torrent_amount; ++i) {
+        fprintf(stdout, "torrent #%d:\n", i+1);
+        fprintf(stdout, "seeders: %d\n", res->scraped_data_array[i].seeders);
+        fprintf(stdout, "completed: %d\n", res->scraped_data_array[i].completed);
+        fprintf(stdout, "leechers: %d\n", res->scraped_data_array[i].leechers);
+    }
+    return res;
+}
+
 int download(metainfo_t metainfo, const char* peer_id) {
     // For storing socket that successfully connected
     int successful_index = 0;

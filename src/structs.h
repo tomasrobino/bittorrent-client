@@ -205,7 +205,7 @@ typedef struct {
 typedef struct {
     uint32_t action;
     uint32_t transaction_id;
-    scraped_data_t* scraped_data_array[];
+    scraped_data_t scraped_data_array[];
 } scrape_response_t;
 
 /*
