@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <tgmath.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "structs.h"
 #include "whole_bencode.h"
@@ -128,7 +129,10 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
             const ssize_t sent = sendto(sockfd[i], req[i], req_size, 0, server_addr[i], sizeof(struct sockaddr));
             if (sent < 0) {
                 fprintf(stderr, "Can't send request: %s (errno: %d)\n", strerror(errno), errno);
-                exit(1);
+                for (int j = 0; j < amount; ++j) {
+                    close(sockfd[j]);
+                }
+                return nullptr;
             }
             fprintf(stdout, "Sent %zd bytes\n", sent);
         }
@@ -144,7 +148,8 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
                 if (pfd[i].revents & POLLIN) {
                     // Data available to be read on pfd[i].fd
                     sockfd_ret[i] = pfd[i].fd;
-                }
+
+                } else close(sockfd[i]);
             }
             return sockfd_ret;
         }
