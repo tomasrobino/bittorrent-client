@@ -255,7 +255,7 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     const socklen_t socklen = sizeof(struct sockaddr);
     // Try connecting
     if (connect(sockfd, server_addr, socklen) < 0) {
-        fprintf(stderr, "Erorr in connect for socket: %d", sockfd);
+        fprintf(stderr, "Error in connect for socket: %d", sockfd);
         close(sockfd);
         return nullptr;
     }
@@ -263,7 +263,7 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     // Send handshake request
     ssize_t bytes_sent = send(sockfd, buffer, 68, 0);
     if (bytes_sent < 0) {
-        fprintf(stderr, "Erorr in handshake for socket: %d", sockfd);
+        fprintf(stderr, "Error in handshake for socket: %d", sockfd);
         close(sockfd);
         return nullptr;
     }
@@ -272,11 +272,17 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     char* res = malloc(68);
     const ssize_t bytes_received = recv(sockfd, res, 68, 0);
     if (bytes_received < 0) {
-        fprintf(stderr, "Erorr in handshake for socket: %d", sockfd);
+        fprintf(stderr, "Error in handshake for socket: %d", sockfd);
         close(sockfd);
         return nullptr;
     }
-    return res;
+
+    if (memcmp(buffer+28, res+28, 20)) {
+        fprintf(stderr, "Error in handshake: returned wrong info hash");
+        return nullptr;
+    }
+
+    return res+48;
 }
 
 int torrent(metainfo_t metainfo, const char* peer_id) {
