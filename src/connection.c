@@ -201,6 +201,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
         fprintf(stderr, "Server returned error:\n");
         fprintf(stderr, "Transaction id: %d\n", ((error_response*) res)->transaction_id);
         fprintf(stderr, "Error message from the server: %s\n", ((error_response*) res)->message);
+        free(res);
         return 0;
     }
 
