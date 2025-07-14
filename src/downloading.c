@@ -181,15 +181,18 @@ scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, const 
         }
         fprintf(stdout, "\n");
     }
-
+    char* buffer = malloc(SCRAPE_REQUEST_SIZE+20*torrent_amount);
+    memcpy(buffer, &req, SCRAPE_REQUEST_SIZE);
+    memcpy(buffer+SCRAPE_REQUEST_SIZE, req.info_hash_list, torrent_amount*20);
     socklen_t socklen = sizeof(struct sockaddr);
-    int* scrape_res_socket = try_request_udp(1, &sockfd, (const void**)&req, sizeof(scrape_request_t), &server_addr);
+    int* scrape_res_socket = try_request_udp(1, &sockfd, (const void**)&buffer, SCRAPE_REQUEST_SIZE+20*torrent_amount, &server_addr);
     if (scrape_res_socket == nullptr) {
         fprintf(stderr, "Error while receiving scrape response\n");
         free(scrape_res_socket);
         return nullptr;
     }
     free(scrape_res_socket);
+    free(buffer);
 
     const unsigned int res_size = sizeof(scrape_response_t)+sizeof(scraped_data_t)*(torrent_amount-1);
     scrape_response_t* res = malloc(res_size);
@@ -274,6 +277,8 @@ int download(metainfo_t metainfo, const char* peer_id) {
 
         announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));
     } while (announce_response == nullptr);
+
+    scrape_response_t* scrape_response = scrape_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, 1);
 
     //TODO Actual download
 
