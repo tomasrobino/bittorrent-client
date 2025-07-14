@@ -9,7 +9,7 @@
  * @param server_addr Server address
  * @param sockfd Socket file descriptor
  * @param connection_id Returned from connect response of the tracker
- * @param info_hash Info hash of the requested piece
+ * @param info_hash Info hash of the torrent
  * @param peer_id ID of this peer
  * @param downloaded Amount downloaded
  * @param left Amount left to download
@@ -32,11 +32,22 @@ announce_response_t* announce_request_udp(
     uint32_t key,
     uint16_t port
 );
+
+/**
+ * Requests torrent scrape data to tracker
+ * @param server_addr Server address
+ * @param sockfd Socket file descriptor
+ * @param connection_id Returned from connect response of the tracker
+ * @param info_hash Info hash of all the torrents
+ * @param torrent_amount The amount of torrents to ask about
+ * @return The data returned or nullptr if there's an error
+ */
+scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, int sockfd, uint64_t connection_id, const char info_hash[], unsigned int torrent_amount);
 /**
  * Downloads & uploads torrent
  * @param metainfo The torrent metainfo extracted from the .torrent file
  * @param peer_id The chosen peer_id
  * @returns 0 for success, !0 for failure
-**/
+*/
 int torrent(metainfo_t metainfo, const char* peer_id);
 #endif //DOWNLOADING_H
