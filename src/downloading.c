@@ -269,20 +269,21 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     }
 
     // Receive response
-    char* res = malloc(68);
-    const ssize_t bytes_received = recv(sockfd, res, 68, 0);
+    char* res = malloc(20);
+    char res_buffer[68];
+    const ssize_t bytes_received = recv(sockfd, res_buffer, 68, 0);
     if (bytes_received < 0) {
         fprintf(stderr, "Error in handshake for socket: %d", sockfd);
         close(sockfd);
         return nullptr;
     }
 
-    if (memcmp(buffer+28, res+28, 20)) {
+    if (memcmp(buffer+28, res_buffer+28, 20) != 0) {
         fprintf(stderr, "Error in handshake: returned wrong info hash");
         return nullptr;
     }
-
-    return res+48;
+    memcpy(res, res_buffer+48, 20);
+    return res;
 }
 
 int torrent(metainfo_t metainfo, const char* peer_id) {
