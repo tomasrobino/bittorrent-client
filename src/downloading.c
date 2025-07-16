@@ -118,6 +118,9 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
             res->peer_list = head;
             int counter = 0;
             while (res->peer_list != nullptr) {
+                /*
+                    This only supports IPv4 for now
+                */
                 struct in_addr addr;
                 memcpy(&addr.s_addr, buffer+20 + peer_size*counter, 4);
                 // Checking if ip is 0
@@ -322,7 +325,52 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
     // This is only to get torrent statistics
     //scrape_response_t* scrape_response = scrape_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, 1);
 
+    // Freeing actually used UDP connection
+    free(connection_data.split_addr->host);
+    free(connection_data.split_addr->port);
+    free(connection_data.split_addr);
+    free(connection_data.ip);
+    free(connection_data.server_addr);
+
     //TODO Actual download
+
+    // Creating TCP sockets for all peers
+    /*
+        This only supports IPv4 for now
+    */
+    peer_ll* current_peer = announce_response->peer_list;
+    // Getting amount of peers
+    unsigned int peer_amount = 0;
+    while (current_peer != nullptr) {
+        peer_amount++;
+        current_peer = current_peer->next;
+    }
+    current_peer = announce_response->peer_list;
+
+    int* peer_socket_array = malloc(sizeof(int) * peer_amount);
+    struct sockaddr_in** peer_addr_array = malloc(sizeof(struct sockaddr_in) * peer_amount);
+    int counter2 = 0;
+    while (current_peer != nullptr) {
+        peer_socket_array[counter2] = socket(AF_INET, SOCK_STREAM, 0);
+        if (peer_socket_array[counter2] == 0) {
+            fprintf(stderr, "TCP socket creation failed");
+            exit(1);
+        }
+        struct sockaddr_in* peer_addr = (struct sockaddr_in*) peer_addr_array+counter2;
+        memset(peer_addr, 0, sizeof(struct sockaddr_in));
+        peer_addr->sin_family = AF_INET;
+        peer_addr->sin_port = htons(current_peer->port);
+
+        // Converting IP from string to binary
+        if (inet_pton(AF_INET, current_peer->ip, &peer_addr->sin_addr) <= 0) {
+            fprintf(stderr, "inet_pton failed while creating peer socket");
+            close(peer_socket_array[counter2]);
+            exit(1);
+        }
+        counter2++;
+        current_peer = current_peer->next;
+    }
+    current_peer = announce_response->peer_list;
 
 
     // Freeing announce response
@@ -332,11 +380,6 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
         announce_response->peer_list = aux;
     }
     free(announce_response);
-    // Freeing actually used connection
-    free(connection_data.split_addr->host);
-    free(connection_data.split_addr->port);
-    free(connection_data.split_addr);
-    free(connection_data.ip);
-    free(connection_data.server_addr);
+
     return 0;
 }
