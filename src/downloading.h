@@ -48,7 +48,7 @@ scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, int so
  * Attempts to get a handshake with a peer to download the torrent passed in the info_hash
  * @param server_addr Server address
  * @param sockfd Socket file descriptor
- * @param info_hash Info hash the torrent
+ * @param info_hash The torrent's info hash
  * @param peer_id This client's peer_id
  * @returns The 20-byte peer_id of the peer; or nullptr if unsuccessful
  */
