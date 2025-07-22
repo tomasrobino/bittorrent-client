@@ -75,7 +75,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     free(announce_res_socket);
 
     unsigned char buffer[MAX_RESPONSE_SIZE];
-    const ssize_t recv_bytes = recvfrom(sockfd, buffer, MAX_RESPONSE_SIZE, 0, nullptr, &socklen);
+    const ssize_t recv_bytes = recvfrom(sockfd, buffer, MAX_RESPONSE_SIZE, 0, nullptr, nullptr);
     if (((error_response*) buffer)->action == 3) {
         // 3 means error
         fprintf(stderr, "Server returned error:\n");
@@ -257,14 +257,15 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     memcpy(buffer+48, peer_id, 20);
     const socklen_t socklen = sizeof(struct sockaddr);
     // Try connecting
-    if (connect(sockfd, server_addr, socklen) < 0) {
-        fprintf(stderr, "Error in connect for socket: %d", sockfd);
+    int connect_result = connect(sockfd, server_addr, socklen);
+    if (connect_result < 0) {
+        fprintf(stderr, "Error #%d in connect for socket: %d", errno, sockfd);
         close(sockfd);
         return nullptr;
     }
 
     // Send handshake request
-    ssize_t bytes_sent = send(sockfd, buffer, 68, 0);
+    const ssize_t bytes_sent = send(sockfd, buffer, 68, 0);
     if (bytes_sent < 0) {
         fprintf(stderr, "Error in handshake for socket: %d", sockfd);
         close(sockfd);
@@ -310,17 +311,19 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
     }
     announce_response_t* announce_response;
     connection_data_t connection_data = {nullptr, nullptr, 0, nullptr};
-    do {
-        connection_id = connect_udp(counter, metainfo.announce_list, successful_index_pt, &connection_data);
-        if (connection_id == 0) {
-            // Couldn't connect to anyy tracker
-            return -1;
-        }
-        uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
-        uint32_t event = 0, key = arc4random();
+    uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
+    uint32_t event = 0, key = arc4random();
 
-        announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));
-    } while (announce_response == nullptr);
+    connection_id = connect_udp(counter, metainfo.announce_list, successful_index_pt, &connection_data);
+    if (connection_id == 0) {
+        // Couldn't connect to any tracker
+        return -1;
+    }
+    announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));
+    if (announce_response == nullptr) {
+        // Invalid response from tracker or error
+        return -2;
+    }
 
     // This is only to get torrent statistics
     //scrape_response_t* scrape_response = scrape_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, 1);
@@ -371,8 +374,17 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
         current_peer = current_peer->next;
     }
     current_peer = announce_response->peer_list;
+    char** peer_id_array = malloc(sizeof(char*) * peer_amount);
+    memset(peer_id_array, 0, sizeof(char*) * peer_amount);
+    for (int i = 0; i < peer_amount; ++i) {
+        peer_id_array[i] = handshake((const struct sockaddr*) peer_addr_array+i, peer_socket_array[i], metainfo.info->hash, peer_id);
+    }
 
 
+    // Freeing peers
+    free(peer_id_array);
+    free(peer_socket_array);
+    free(peer_addr_array);
     // Freeing announce response
     while (announce_response->peer_list != nullptr) {
         peer_ll* aux = announce_response->peer_list->next;
