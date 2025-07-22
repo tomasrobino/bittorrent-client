@@ -1,5 +1,8 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
+
+#include <stdint.h>
+
 #define CLIENT_ID "-IT0001-"
 #define ANNOUNCE_REQUEST_SIZE 98
 #define SCRAPE_REQUEST_SIZE 16

@@ -4,6 +4,11 @@
 
 #include "structs.h"
 
+/** Amount of times to try connecting to tracker
+ * According to the BitTorrent protocol, should be 9, but it's too much
+**/
+#define MAX_ATTEMPTS 3
+
 /** Splits address into protocol, host and port into struct
  * @param address The address to split
  * @returns The split address

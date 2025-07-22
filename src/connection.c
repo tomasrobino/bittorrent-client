@@ -123,7 +123,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
 
     int counter = 0;
     int ret = 0;
-    while (ret <= 0 && counter < 9) {
+    while (ret <= 0 && counter < MAX_ATTEMPTS) {
         // Send request
         for (int i = 0; i < amount; ++i) {
             const ssize_t sent = sendto(sockfd[i], req[i], req_size, 0, server_addr[i], sizeof(struct sockaddr));
