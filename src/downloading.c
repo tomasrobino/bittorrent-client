@@ -352,6 +352,7 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
 
     int* peer_socket_array = malloc(sizeof(int) * peer_amount);
     struct sockaddr_in** peer_addr_array = malloc(sizeof(struct sockaddr_in) * peer_amount);
+    memset(peer_addr_array, 0, sizeof(struct sockaddr_in) * peer_amount);
     int counter2 = 0;
     while (current_peer != nullptr) {
         peer_socket_array[counter2] = socket(AF_INET, SOCK_STREAM, 0);
@@ -360,7 +361,6 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
             exit(1);
         }
         struct sockaddr_in* peer_addr = (struct sockaddr_in*) peer_addr_array+counter2;
-        memset(peer_addr, 0, sizeof(struct sockaddr_in));
         peer_addr->sin_family = AF_INET;
         peer_addr->sin_port = htons(current_peer->port);
 
