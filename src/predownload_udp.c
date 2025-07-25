@@ -413,6 +413,13 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
 
     unsigned char buffer[MAX_RESPONSE_SIZE];
     const ssize_t recv_bytes = recvfrom(sockfd, buffer, MAX_RESPONSE_SIZE, 0, nullptr, nullptr);
+    /*
+    for (int i = 0; i < recv_bytes; ++i) {
+        fprintf(stdout, "buffer[%d]: %d\n", i, buffer[i]);
+    }
+    fprintf(stdout, "\n");
+    fprintf(stdout, "\n");
+    */
     if (((error_response*) buffer)->action == 3) {
         // 3 means error
         fprintf(stderr, "Server returned error:\n");
@@ -466,7 +473,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
                     counter++;
                     continue;
                 }
-                res->peer_list->ip = inet_ntoa(addr);
+                res->peer_list->ip = strdup(inet_ntoa(addr));
 
                 memcpy(&res->peer_list->port, buffer+20 + peer_size-2 + peer_size*counter, 2);
                 res->peer_list->port = htobe16(res->peer_list->port);
