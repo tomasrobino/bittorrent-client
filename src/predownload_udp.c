@@ -15,6 +15,8 @@
 #include "whole_bencode.h"
 #include "predownload_udp.h"
 
+#include "file.h"
+
 address_t* split_address(const char* address) {
     address_t* ret_address = malloc(sizeof(address_t));
     memset(ret_address, 0, sizeof(address_t));
@@ -368,9 +370,9 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     fprintf(stdout, "transaction_id: %d\n", req.transaction_id);
     fprintf(stdout, "connection_id: %lu\n", req.connection_id);
     fprintf(stdout, "info_hash: ");
-    for (int j = 0; j < 20; ++j) {
-        fprintf(stdout, "%c",req.info_hash[j]);
-    }
+    char human_hash[41];
+    sha1_to_hex(req.info_hash, human_hash);
+    fprintf(stdout, "%s", human_hash);
     fprintf(stdout, "\n");
     fprintf(stdout, "peer_id: ");
     for (int j = 0; j < 20; ++j) {
@@ -491,9 +493,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     fprintf(stdout, "peer_list: \n");
     int counter = 0;
     while (res->peer_list != nullptr) {
-        fprintf(stdout, "peer #%d: \n", counter+1);
-        fprintf(stdout, "id: %s\n",res->peer_list->ip);
-        fprintf(stdout, "port: %d\n",res->peer_list->port);
+        fprintf(stdout, "peer #%d: %s:%d\n", counter+1, res->peer_list->ip, res->peer_list->port);
         counter++;
         res->peer_list = res->peer_list->next;
     }

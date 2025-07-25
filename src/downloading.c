@@ -10,9 +10,6 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
-
-
-
 char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info_hash, const char* peer_id) {
     char buffer[68] = {0};
     buffer[0] = 19;
@@ -21,9 +18,10 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     memcpy(buffer+48, peer_id, 20);
     const socklen_t socklen = sizeof(struct sockaddr);
     // Try connecting
+    fprintf(stdout, "Attempting to connect to peer\n");
     int connect_result = connect(sockfd, server_addr, socklen);
     if (connect_result < 0) {
-        fprintf(stderr, "Error #%d in connect for socket: %d", errno, sockfd);
+        fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, sockfd);
         close(sockfd);
         return nullptr;
     }
