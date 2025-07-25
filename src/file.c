@@ -82,12 +82,8 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             metainfo->info->length = 0;
             // Position of "d"
             start = info_index-bencoded_value+4;
-            // Storing info_hash
-            const unsigned long info_length = length - start;
-            // Creates the SHA1 hash from info data and then copies it into metainfo.info.hash
-            memcpy(metainfo->info->hash,
-                SHA1((const unsigned char*) bencoded_value+start, info_length, nullptr),
-                20);
+
+            const char* info_start = bencoded_value+start;
             metainfo->info->hash[20] = '\0';
 
             if (bencoded_value[start+1] == '5') { // If multiple files
@@ -124,7 +120,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             } else return nullptr;
 
             // Reading pieces
-            if ( (info_index = strstr(bencoded_value+start, "pieces")) != nullptr) {
+            if ( (info_index = strstr(bencoded_value+start, "pieces")) != nullptr ) {
                 start = info_index-bencoded_value + 6;
                 const int amount = (int) decode_bencode_int(bencoded_value+start, nullptr);
                 start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
@@ -136,6 +132,19 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
             } else return nullptr;
 
             // Skipping private
+            if ( (info_index = strstr(bencoded_value+start, "7:private")) != nullptr) {
+                info_index = strchr(bencoded_value+start+9, 'e');
+                // Invalid file
+                if (info_index == nullptr) return nullptr;
+            }
+            // The character that info_index points to is the end of the integer of private, next character must be the
+            // 'e' of the end of the info dictionary
+            info_index++;
+
+            // Creates the SHA1 hash from info data and then copies it into metainfo.info.hash
+            memcpy(metainfo->info->hash,
+                SHA1( (unsigned char*)info_index,info_index-info_start, nullptr ),
+                20);
         } else return nullptr;
 
         return metainfo;
