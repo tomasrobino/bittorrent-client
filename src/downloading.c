@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #include "downloading.h"
-#include "connection.h"
+#include "predownload_udp.h"
 #include "whole_bencode.h"
 
 

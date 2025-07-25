@@ -1,7 +1,7 @@
 extern "C" {
     #include "../src/structs.h"
-    #include "../src/connection.h"
-    #include <stdlib.h>
+    #include "../src/predownload_udp.h"
+#include <stdlib.h>
 }
 
 #include <catch2/catch_test_macros.hpp>

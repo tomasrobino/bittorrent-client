@@ -18,8 +18,8 @@ add_executable(bittorrent ${SOURCE_FILES}
         src/whole_bencode.h
         src/magnet.c
         src/file.c
-        src/connection.c
-        src/connection.h
+        src/predownload_udp.c
+        src/predownload_udp.h
         src/downloading.c
         src/downloading.h
         src/messages.c
