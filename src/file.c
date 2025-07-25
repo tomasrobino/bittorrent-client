@@ -2,11 +2,19 @@
 #include <string.h>
 #include <tgmath.h>
 #include <openssl/sha.h>
+#include <stdio.h>
 
+#include "file.h"
 #include "structs.h"
 #include "whole_bencode.h"
 
-void free_info_files_list(files_ll* list);
+
+void sha1_to_hex(const unsigned char *sha1_bytes, char *hex_output) {
+    for (int i = 0; i < 20; i++) {
+        sprintf(hex_output + i * 2, "%02x", sha1_bytes[i]);
+    }
+    hex_output[40] = '\0';  // Null-terminate the string
+}
 
 metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long length) {
     // It MUST begin with 'd' and end with 'e'
@@ -143,8 +151,12 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
 
             // Creates the SHA1 hash from info data and then copies it into metainfo.info.hash
             memcpy(metainfo->info->hash,
-                SHA1( (unsigned char*)info_index,info_index-info_start, nullptr ),
+                SHA1( (unsigned char*)info_start,info_index-info_start+1, nullptr ),
                 20);
+
+            //Creating human-readable hash
+            sha1_to_hex(metainfo->info->hash, metainfo->info->human_hash);
+
         } else return nullptr;
 
         return metainfo;

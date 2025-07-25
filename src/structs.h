@@ -69,6 +69,7 @@ typedef struct {
     char* pieces;
     bool priv;
     char hash[21];
+    char human_hash[41];
 } info_t;
 
 typedef struct {

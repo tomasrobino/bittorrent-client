@@ -24,6 +24,7 @@ add_executable(bittorrent ${SOURCE_FILES}
         src/downloading.h
         src/messages.c
         src/messages.h
+        src/file.h
 )
 
 # Link OpenSSL, CURL and Math library
