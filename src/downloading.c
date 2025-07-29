@@ -63,7 +63,6 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
     int successful_index = 0;
     int* successful_index_pt = &successful_index;
     // connection id from server response
-    uint64_t connection_id;
     announce_list_ll* current = metainfo.announce_list;
     int counter = 0;
     // Get annnounce_list size
@@ -77,17 +76,20 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
         counter = 1;
         current = nullptr;
     }
-    announce_response_t* announce_response;
     connection_data_t connection_data = {nullptr, nullptr, 0, nullptr};
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();
 
-    connection_id = connect_udp(counter, metainfo.announce_list, successful_index_pt, &connection_data);
+    const uint64_t connection_id = connect_udp(counter, metainfo.announce_list, successful_index_pt, &connection_data);
     if (connection_id == 0) {
         // Couldn't connect to any tracker
         return -1;
     }
-    announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd, connection_id, metainfo.info->hash, peer_id, downloaded, left, uploaded, event, key, decode_bencode_int(connection_data.split_addr->port, nullptr));
+    announce_response_t *announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd,
+                                                                  connection_id, metainfo.info->hash, peer_id,
+                                                                  downloaded, left, uploaded, event, key,
+                                                                  decode_bencode_int(
+                                                                      connection_data.split_addr->port, nullptr));
     if (announce_response == nullptr) {
         // Invalid response from tracker or error
         return -2;
