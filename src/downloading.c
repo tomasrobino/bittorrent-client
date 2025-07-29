@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "downloading.h"
 #include "predownload_udp.h"
@@ -52,6 +53,11 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     return res;
 }
 
+void* thread_peer(void* passed_args) {
+    const handshake_args_t* args = (handshake_args_t*) passed_args;
+    return handshake(args->server_addr, args->sockfd, args->info_hash, args->peer_id);
+}
+
 int torrent(metainfo_t metainfo, const char* peer_id) {
     // For storing socket that successfully connected
     int successful_index = 0;
@@ -97,8 +103,6 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
     free(connection_data.ip);
     free(connection_data.server_addr);
 
-    //TODO Actual download
-
     // Creating TCP sockets for all peers
     /*
         This only supports IPv4 for now
@@ -138,10 +142,26 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
     current_peer = announce_response->peer_list;
     char** peer_id_array = malloc(sizeof(char*) * peer_amount);
     memset(peer_id_array, 0, sizeof(char*) * peer_amount);
+    // Connecting with all peers, with multithreading
+    pthread_t threads[peer_amount];
+    handshake_args_t handshake_args_array[peer_amount];
     for (int i = 0; i < peer_amount; ++i) {
-        peer_id_array[i] = handshake((const struct sockaddr*) peer_addr_array+i, peer_socket_array[i], metainfo.info->hash, peer_id);
+        handshake_args_array[i].server_addr = (struct sockaddr*) peer_addr_array+i;
+        handshake_args_array[i].sockfd = peer_socket_array[i];
+        handshake_args_array[i].info_hash = metainfo.info->hash;
+        handshake_args_array[i].peer_id = peer_id;
+
+        if (pthread_create(&threads[i], nullptr, thread_peer, &handshake_args_array[i])) {
+            fprintf(stderr, "Error creating thread for peer #%d", i+1);
+        }
     }
 
+    int* thread_results[peer_amount];
+    for (int i = 0; i < peer_amount; ++i) {
+        if (pthread_join(threads[i], (void**) &thread_results[i])) {
+            fprintf(stderr, "Error joining thread #%d", i+1);
+        }
+    }
 
     // Freeing peers
     free(peer_id_array);

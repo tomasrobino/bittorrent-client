@@ -224,4 +224,11 @@ typedef struct {
     char* message;
 } error_response;
 
+typedef struct {
+    struct sockaddr *server_addr;
+    int sockfd;
+    const char* info_hash;
+    const char* peer_id;
+} handshake_args_t;
+
 #endif //STRUCTS_H
