@@ -30,7 +30,7 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     // Send handshake request
     const ssize_t bytes_sent = send(sockfd, buffer, 68, 0);
     if (bytes_sent < 0) {
-        fprintf(stderr, "Error in handshake for socket: %d", sockfd);
+        fprintf(stderr, "Error in handshake for socket: %d\n", sockfd);
         close(sockfd);
         return nullptr;
     }
@@ -40,13 +40,13 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     char res_buffer[68];
     const ssize_t bytes_received = recv(sockfd, res_buffer, 68, 0);
     if (bytes_received < 0) {
-        fprintf(stderr, "Error in handshake for socket: %d", sockfd);
+        fprintf(stderr, "Error in handshake for socket: %d\n", sockfd);
         close(sockfd);
         return nullptr;
     }
 
     if (memcmp(buffer+28, res_buffer+28, 20) != 0) {
-        fprintf(stderr, "Error in handshake: returned wrong info hash");
+        fprintf(stderr, "Error in handshake: returned wrong info hash\n");
         return nullptr;
     }
     memcpy(res, res_buffer+48, 20);
@@ -158,10 +158,12 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
         }
     }
 
-    int* thread_results[peer_amount];
+    char* thread_results[peer_amount];
     for (int i = 0; i < peer_amount; ++i) {
         if (pthread_join(threads[i], (void**) &thread_results[i])) {
             fprintf(stderr, "Error joining thread #%d", i+1);
+        } else {
+            fprintf(stdout, "Thread #%d joined successfully\n", i+1);
         }
     }
 
