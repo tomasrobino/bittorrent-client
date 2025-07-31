@@ -145,16 +145,26 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
         counter2++;
         current_peer = current_peer->next;
     }
+    /*
     for (int i = 0; i < peer_amount; ++i) {
         fprintf(stdout, "%d, ", peer_socket_array[i]);
     }
     fprintf(stdout, "\n");
+    */
     current_peer = announce_response->peer_list;
     char** peer_id_array = malloc(sizeof(char*) * peer_amount);
     memset(peer_id_array, 0, sizeof(char*) * peer_amount);
     // Checking connections with epoll
     struct epoll_event epoll_events[MAX_EVENTS];
     // Waiting for sockets to be ready
+
+    int* socket_status_array = malloc(sizeof(int)*peer_amount);
+    /*
+     * 0 means nothing done on the socket
+     * 1 means connected
+     * 2 means failed connection
+    */
+    memset(socket_status_array, 0, sizeof(int)*peer_amount);
 
     int sockets_completed = 0;
     while (sockets_completed < peer_amount) {
@@ -184,14 +194,21 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
                     fprintf(stderr, "Error in getspckopt() in socket %d\n", fd);
                 } else if (err != 0) {
                     fprintf(stderr, "Connection failed in socket %d\n", fd);
+                    socket_status_array[p] = 2;
                 } else {
                     fprintf(stdout, "Connection successful in socket %d\n", fd);
+                    socket_status_array[p] = 1;
                 }
             } else {
                 fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
             }
             sockets_completed++;
         }
+    }
+
+    // DOWNLOAD LOOP
+    while (left) {
+
     }
 
 
