@@ -5,7 +5,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <pthread.h>
+#include <fcntl.h>
+#include <sys/epoll.h>
 
 #include "downloading.h"
 #include "predownload_udp.h"
@@ -17,15 +18,6 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     memcpy(buffer+1, "BitTorrent protocol", 19);
     memcpy(buffer+28, info_hash, 20);
     memcpy(buffer+48, peer_id, 20);
-    const socklen_t socklen = sizeof(struct sockaddr);
-    // Try connecting
-    fprintf(stdout, "Attempting to connect to peer\n");
-    int connect_result = connect(sockfd, server_addr, socklen);
-    if (connect_result < 0) {
-        fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, sockfd);
-        close(sockfd);
-        return nullptr;
-    }
 
     // Send handshake request
     const ssize_t bytes_sent = send(sockfd, buffer, 68, 0);
@@ -51,11 +43,6 @@ char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info
     }
     memcpy(res, res_buffer+48, 20);
     return res;
-}
-
-void* thread_peer(void* passed_args) {
-    const handshake_args_t* args = (handshake_args_t*) passed_args;
-    return handshake(args->server_addr, args->sockfd, args->info_hash, args->peer_id);
 }
 
 int torrent(metainfo_t metainfo, const char* peer_id) {
@@ -122,8 +109,11 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
     struct sockaddr_in** peer_addr_array = malloc(sizeof(struct sockaddr_in) * peer_amount);
     memset(peer_addr_array, 0, sizeof(struct sockaddr_in) * peer_amount);
     int counter2 = 0;
+    // Creating epoll for controlling sockets
+    const int epoll = epoll_create1(0);
     while (current_peer != nullptr) {
-        peer_socket_array[counter2] = socket(AF_INET, SOCK_STREAM, 0);
+        // Creating non-blocking socket
+        peer_socket_array[counter2] = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
         if (peer_socket_array[counter2] == 0) {
             fprintf(stderr, "TCP socket creation failed");
             exit(1);
@@ -138,34 +128,73 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
             close(peer_socket_array[counter2]);
             exit(1);
         }
+        // Try connecting
+        //fprintf(stdout, "Attempting to connect to peer\n");
+        int connect_result = connect(peer_socket_array[counter2], (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
+        if (connect_result < 0 && errno != EINPROGRESS) {
+            fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, peer_socket_array[counter2]);
+            close(peer_socket_array[counter2]);
+        } else if (errno == EINPROGRESS) {
+            // If connection is in progress, add socket to epoll
+            struct epoll_event ev;
+            // EPOLLOUT means the connection attempt has finished, for good or ill
+            ev.events = EPOLLOUT;
+            ev.data.fd = peer_socket_array[counter2];
+            epoll_ctl(epoll, EPOLL_CTL_ADD, peer_socket_array[counter2], &ev);
+        }
         counter2++;
         current_peer = current_peer->next;
     }
+    for (int i = 0; i < peer_amount; ++i) {
+        fprintf(stdout, "%d, ", peer_socket_array[i]);
+    }
+    fprintf(stdout, "\n");
     current_peer = announce_response->peer_list;
     char** peer_id_array = malloc(sizeof(char*) * peer_amount);
     memset(peer_id_array, 0, sizeof(char*) * peer_amount);
-    // Connecting with all peers, with multithreading
-    pthread_t threads[peer_amount];
-    handshake_args_t handshake_args_array[peer_amount];
-    for (int i = 0; i < peer_amount; ++i) {
-        handshake_args_array[i].server_addr = (struct sockaddr*) peer_addr_array+i;
-        handshake_args_array[i].sockfd = peer_socket_array[i];
-        handshake_args_array[i].info_hash = metainfo.info->hash;
-        handshake_args_array[i].peer_id = peer_id;
+    // Checking connections with epoll
+    struct epoll_event epoll_events[MAX_EVENTS];
+    // Waiting for sockets to be ready
 
-        if (pthread_create(&threads[i], nullptr, thread_peer, &handshake_args_array[i])) {
-            fprintf(stderr, "Error creating thread for peer #%d", i+1);
+    int sockets_completed = 0;
+    while (sockets_completed < peer_amount) {
+        const int nfds = epoll_wait(epoll, epoll_events, MAX_EVENTS, EPOLL_TIMEOUT);
+        if (nfds == -1) {
+            fprintf(stderr, "Error in epoll_wait\n");
+            continue;
+        }
+        // No socket returned
+        if (nfds == 0) {
+            fprintf(stderr, "Epoll timeout\n");
+            continue;
+        }
+        for (int i = 0; i < nfds; ++i) {
+            int p = 0;
+            const int fd = epoll_events[i].data.fd;
+            while (peer_socket_array[p] != fd) {
+                p++;
+            }
+
+            // If socket is ready
+            if (epoll_events[i].events & EPOLLOUT) {
+                int err = 0;
+                socklen_t len = sizeof(err);
+                // Check whether connect() was successful
+                if (getsockopt(peer_socket_array[p], SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
+                    fprintf(stderr, "Error in getspckopt() in socket %d\n", fd);
+                } else if (err != 0) {
+                    fprintf(stderr, "Connection failed in socket %d\n", fd);
+                } else {
+                    fprintf(stdout, "Connection successful in socket %d\n", fd);
+                }
+            } else {
+                fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
+            }
+            sockets_completed++;
         }
     }
 
-    char* thread_results[peer_amount];
-    for (int i = 0; i < peer_amount; ++i) {
-        if (pthread_join(threads[i], (void**) &thread_results[i])) {
-            fprintf(stderr, "Error joining thread #%d", i+1);
-        } else {
-            fprintf(stdout, "Thread #%d joined successfully\n", i+1);
-        }
-    }
+
 
     // Freeing peers
     free(peer_id_array);
