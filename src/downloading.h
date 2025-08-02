@@ -6,6 +6,14 @@
 #define MAX_EVENTS 128
 // Maximum amount of time epoll will wait for sockets to be ready (in milliseconds)
 #define EPOLL_TIMEOUT 5000
+// Enum for peer statuses
+typedef enum {
+    PEER_NOTHING, // Untouched peer
+    PEER_CONNECTED, // Peer connected
+    PEER_NO_CONNECTION, // Peer failed connection
+
+} PEER_STATUS;
+
 /**
  * Attempts to get a handshake with a peer to download the torrent passed in the info_hash
  * @param server_addr Server address

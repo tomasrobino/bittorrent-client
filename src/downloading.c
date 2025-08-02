@@ -151,14 +151,7 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
     memset(peer_id_array, 0, sizeof(char*) * peer_amount);
     // Checking connections with epoll
     struct epoll_event epoll_events[MAX_EVENTS];
-    // Waiting for sockets to be ready
-
-    /*
-     * 0 means nothing done on the socket
-     * 1 means connected
-     * 2 means failed connection
-    */
-    int* socket_status_array = malloc(sizeof(int)*peer_amount);
+    PEER_STATUS* socket_status_array = malloc(sizeof(int)*peer_amount);
     memset(socket_status_array, 0, sizeof(int)*peer_amount);
 
 
@@ -182,7 +175,7 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
 
         for (int i = 0; i < nfds; ++i) {
             // Skip already processed sockets
-            if (socket_status_array[epoll_events[i].data.u32] != 0) {
+            if (socket_status_array[epoll_events[i].data.u32] != PEER_NOTHING) {
                 continue;
             }
             const int fd = peer_socket_array[epoll_events[i].data.u32];
@@ -194,13 +187,14 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
                 // Check whether connect() was successful
                 if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
                     fprintf(stderr, "Error in getspckopt() in socket %d\n", fd);
+                    socket_status_array[epoll_events[i].data.u32] = PEER_NO_CONNECTION;
                 } else if (err != 0) {
                     fprintf(stderr, "Connection failed in socket %d\n", fd);
-                    socket_status_array[epoll_events[i].data.u32] = 2;
+                    socket_status_array[epoll_events[i].data.u32] = PEER_NO_CONNECTION;
                     sockets_completed++;
                 } else {
                     fprintf(stdout, "Connection successful in socket %d\n", fd);
-                    socket_status_array[epoll_events[i].data.u32] = 1;
+                    socket_status_array[epoll_events[i].data.u32] = PEER_CONNECTED;
                     sockets_completed++;
                 }
             } else {
