@@ -139,18 +139,13 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
             struct epoll_event ev;
             // EPOLLOUT means the connection attempt has finished, for good or ill
             ev.events = EPOLLOUT;
-            ev.data.fd = peer_socket_array[counter2];
+            ev.data.u32 = counter2;
             epoll_ctl(epoll, EPOLL_CTL_ADD, peer_socket_array[counter2], &ev);
         }
         counter2++;
         current_peer = current_peer->next;
     }
-    /*
-    for (int i = 0; i < peer_amount; ++i) {
-        fprintf(stdout, "%d, ", peer_socket_array[i]);
-    }
-    fprintf(stdout, "\n");
-    */
+
     current_peer = announce_response->peer_list;
     char** peer_id_array = malloc(sizeof(char*) * peer_amount);
     memset(peer_id_array, 0, sizeof(char*) * peer_amount);
@@ -158,14 +153,20 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
     struct epoll_event epoll_events[MAX_EVENTS];
     // Waiting for sockets to be ready
 
-    int* socket_status_array = malloc(sizeof(int)*peer_amount);
     /*
      * 0 means nothing done on the socket
      * 1 means connected
      * 2 means failed connection
     */
+    int* socket_status_array = malloc(sizeof(int)*peer_amount);
     memset(socket_status_array, 0, sizeof(int)*peer_amount);
 
+
+    /*
+     *
+     *  MAIN PEER INTERACTION LOOP
+     *
+    */
     int sockets_completed = 0;
     while (sockets_completed < peer_amount) {
         const int nfds = epoll_wait(epoll, epoll_events, MAX_EVENTS, EPOLL_TIMEOUT);
@@ -178,31 +179,33 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
             fprintf(stderr, "Epoll timeout\n");
             continue;
         }
+
         for (int i = 0; i < nfds; ++i) {
-            int p = 0;
-            const int fd = epoll_events[i].data.fd;
-            while (peer_socket_array[p] != fd) {
-                p++;
+            // Skip already processed sockets
+            if (socket_status_array[epoll_events[i].data.u32] != 0) {
+                continue;
             }
+            const int fd = peer_socket_array[epoll_events[i].data.u32];
 
             // If socket is ready
             if (epoll_events[i].events & EPOLLOUT) {
                 int err = 0;
                 socklen_t len = sizeof(err);
                 // Check whether connect() was successful
-                if (getsockopt(peer_socket_array[p], SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
+                if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
                     fprintf(stderr, "Error in getspckopt() in socket %d\n", fd);
                 } else if (err != 0) {
                     fprintf(stderr, "Connection failed in socket %d\n", fd);
-                    socket_status_array[p] = 2;
+                    socket_status_array[epoll_events[i].data.u32] = 2;
+                    sockets_completed++;
                 } else {
                     fprintf(stdout, "Connection successful in socket %d\n", fd);
-                    socket_status_array[p] = 1;
+                    socket_status_array[epoll_events[i].data.u32] = 1;
+                    sockets_completed++;
                 }
             } else {
                 fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
             }
-            sockets_completed++;
         }
     }
 
