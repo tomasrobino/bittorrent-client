@@ -299,7 +299,7 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
                 struct sockaddr_in* server_addr = malloc(sizeof(struct sockaddr_in));
                 server_addr->sin_family = split_addr_array[counter][i]->ip_version;
                 server_addr->sin_port = htons(decode_bencode_int(split_addr_array[counter][i]->port, nullptr));
-                server_addr->sin_addr.s_addr = inet_addr(ip_array[counter][i]);
+                inet_pton(AF_INET, ip_array[counter][i], &server_addr->sin_addr);
                 server_addr_array[counter][i] = (struct sockaddr*)server_addr;
             } else {
                 // For IPv6

@@ -212,6 +212,8 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
                     socket_status_array[index] = PEER_NOTHING;
                 }
             }
+
+
         }
     }
 
