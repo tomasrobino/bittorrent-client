@@ -203,13 +203,13 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
         }
     }
 
-    // DOWNLOAD LOOP
-    while (left) {
-
+    // Closing sockets
+    close(epoll);
+    for (int i = 0; i < peer_amount; ++i) {
+        close(peer_socket_array[i]);
     }
-
-
-
+    // Freeing socket status array
+    free(socket_status_array);
     // Freeing peers
     free(peer_id_array);
     free(peer_socket_array);
@@ -217,6 +217,7 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
     // Freeing announce response
     while (announce_response->peer_list != nullptr) {
         peer_ll* aux = announce_response->peer_list->next;
+        free(announce_response->peer_list->ip);
         free(announce_response->peer_list);
         announce_response->peer_list = aux;
     }
