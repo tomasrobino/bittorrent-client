@@ -15,6 +15,15 @@ typedef enum {
 } PEER_STATUS;
 
 /**
+ * Attempts to establish a connection to a peer using the specified socket and address.
+ * @param sockfd The file descriptor of the socket to be used for the connection.
+ * @param peer_addr Pointer to a sockaddr_in structure containing the peer's address.
+ * @return Returns 1 if the connection is successfully initiated or is in progress;
+ *         returns 0 and closes the socket if the connection fails with an error
+ *         other than EINPROGRESS.
+ */
+int try_connect(int sockfd, const struct sockaddr_in* peer_addr);
+/**
  * Attempts to get a handshake with a peer to download the torrent passed in the info_hash
  * @param server_addr Server address
  * @param sockfd Socket file descriptor

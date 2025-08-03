@@ -12,6 +12,16 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
+int try_connect(const int sockfd, const struct sockaddr_in* peer_addr) {
+    const int connect_result = connect(sockfd, (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
+    if (connect_result < 0 && errno != EINPROGRESS) {
+        fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, sockfd);
+        close(sockfd);
+        return 0;
+    }
+    return 1;
+}
+
 char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info_hash, const char* peer_id) {
     char buffer[68] = {0};
     buffer[0] = 19;
@@ -160,8 +170,7 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
      *  MAIN PEER INTERACTION LOOP
      *
     */
-    int sockets_completed = 0;
-    while (sockets_completed < peer_amount) {
+    while (left > 0) {
         const int nfds = epoll_wait(epoll, epoll_events, MAX_EVENTS, EPOLL_TIMEOUT);
         if (nfds == -1) {
             fprintf(stderr, "Error in epoll_wait\n");
@@ -174,31 +183,32 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
         }
 
         for (int i = 0; i < nfds; ++i) {
-            // Skip already processed sockets
-            if (socket_status_array[epoll_events[i].data.u32] != PEER_NOTHING) {
-                continue;
-            }
-            const int fd = peer_socket_array[epoll_events[i].data.u32];
-
-            // If socket is ready
-            if (epoll_events[i].events & EPOLLOUT) {
-                int err = 0;
-                socklen_t len = sizeof(err);
-                // Check whether connect() was successful
-                if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
-                    fprintf(stderr, "Error in getspckopt() in socket %d\n", fd);
-                    socket_status_array[epoll_events[i].data.u32] = PEER_NO_CONNECTION;
-                } else if (err != 0) {
-                    fprintf(stderr, "Connection failed in socket %d\n", fd);
-                    socket_status_array[epoll_events[i].data.u32] = PEER_NO_CONNECTION;
-                    sockets_completed++;
-                } else {
-                    fprintf(stdout, "Connection successful in socket %d\n", fd);
-                    socket_status_array[epoll_events[i].data.u32] = PEER_CONNECTED;
-                    sockets_completed++;
+            const int index = (int) epoll_events[i].data.u32;
+            const int fd = peer_socket_array[index];
+            if (socket_status_array[index] != PEER_NO_CONNECTION) {
+                // Retry connection
+                if (try_connect(fd, (struct sockaddr_in*)peer_addr_array+index)) {
+                    socket_status_array[index] = PEER_NOTHING;
                 }
             } else {
-                fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
+                // Connect
+                if (epoll_events[i].events & EPOLLOUT) {
+                    int err = 0;
+                    socklen_t len = sizeof(err);
+                    // Check whether connect() was successful
+                    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
+                        fprintf(stderr, "Error in getspckopt() in socket %d\n", fd);
+                        socket_status_array[index] = PEER_NO_CONNECTION;
+                    } else if (err != 0) {
+                        fprintf(stderr, "Connection failed in socket %d\n", fd);
+                        socket_status_array[index] = PEER_NO_CONNECTION;
+                    } else {
+                        fprintf(stdout, "Connection successful in socket %d\n", fd);
+                        socket_status_array[index] = PEER_CONNECTED;
+                    }
+                } else {
+                    fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
+                }
             }
         }
     }
