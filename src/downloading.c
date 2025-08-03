@@ -185,13 +185,8 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
         for (int i = 0; i < nfds; ++i) {
             const int index = (int) epoll_events[i].data.u32;
             const int fd = peer_socket_array[index];
-            if (socket_status_array[index] != PEER_NO_CONNECTION) {
-                // Retry connection
-                if (try_connect(fd, (struct sockaddr_in*)peer_addr_array+index)) {
-                    socket_status_array[index] = PEER_NOTHING;
-                }
-            } else {
-                // Connect
+
+            if (socket_status_array[index] != PEER_NOTHING) { // After calling connect()
                 if (epoll_events[i].events & EPOLLOUT) {
                     int err = 0;
                     socklen_t len = sizeof(err);
@@ -209,6 +204,12 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
                 } else {
                     fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
                 }
+            } else if (socket_status_array[index] != PEER_NO_CONNECTION) { // Retry connection if connect() failed
+                if (try_connect(fd, (struct sockaddr_in*)peer_addr_array+index)) {
+                    socket_status_array[index] = PEER_NOTHING;
+                }
+            } else {
+
             }
         }
     }
