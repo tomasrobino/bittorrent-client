@@ -9,9 +9,10 @@
 // Enum for peer statuses
 typedef enum {
     PEER_NOTHING, // Untouched peer
-    PEER_CONNECTED, // Peer connected
-    PEER_NO_CONNECTION, // Peer failed connection
-
+    PEER_CONNECTION_SUCCESS, // Peer connected
+    PEER_CONNECTION_FAILURE, // Peer failed connection
+    PEER_HANDSHAKE_SUCCESS,
+    PEER_HANDSHAKE_FAILURE
 } PEER_STATUS;
 
 /**

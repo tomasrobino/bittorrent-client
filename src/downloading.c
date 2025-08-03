@@ -186,30 +186,31 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
             const int index = (int) epoll_events[i].data.u32;
             const int fd = peer_socket_array[index];
 
-            if (socket_status_array[index] != PEER_NOTHING) { // After calling connect()
+            // DEALING WITH CONNECTING
+
+            if (socket_status_array[index] == PEER_NOTHING) { // After calling connect()
                 if (epoll_events[i].events & EPOLLOUT) {
                     int err = 0;
                     socklen_t len = sizeof(err);
+                    socket_status_array[index] = PEER_CONNECTION_FAILURE;
                     // Check whether connect() was successful
                     if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
                         fprintf(stderr, "Error in getspckopt() in socket %d\n", fd);
-                        socket_status_array[index] = PEER_NO_CONNECTION;
                     } else if (err != 0) {
                         fprintf(stderr, "Connection failed in socket %d\n", fd);
-                        socket_status_array[index] = PEER_NO_CONNECTION;
                     } else {
                         fprintf(stdout, "Connection successful in socket %d\n", fd);
-                        socket_status_array[index] = PEER_CONNECTED;
+                        socket_status_array[index] = PEER_CONNECTION_SUCCESS;
                     }
                 } else {
                     fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
                 }
-            } else if (socket_status_array[index] != PEER_NO_CONNECTION) { // Retry connection if connect() failed
+            }
+
+            if (socket_status_array[index] == PEER_CONNECTION_FAILURE) { // Retry connection if connect() failed
                 if (try_connect(fd, (struct sockaddr_in*)peer_addr_array+index)) {
                     socket_status_array[index] = PEER_NOTHING;
                 }
-            } else {
-
             }
         }
     }
