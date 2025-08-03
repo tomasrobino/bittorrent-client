@@ -22,7 +22,7 @@ int try_connect(const int sockfd, const struct sockaddr_in* peer_addr) {
     return 1;
 }
 
-char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info_hash, const char* peer_id) {
+char* handshake(const int sockfd, const char* info_hash, const char* peer_id) {
     char buffer[68] = {0};
     buffer[0] = 19;
     memcpy(buffer+1, "BitTorrent protocol", 19);

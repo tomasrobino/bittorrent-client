@@ -32,7 +32,7 @@ int try_connect(int sockfd, const struct sockaddr_in* peer_addr);
  * @param peer_id This client's peer_id
  * @returns The 20-byte peer_id of the peer (non null-terminated); or nullptr if unsuccessful
  */
-char* handshake(const struct sockaddr *server_addr, int sockfd, const char* info_hash, const char* peer_id);
+char* handshake(int sockfd, const char* info_hash, const char* peer_id);
 /**
  * Downloads & uploads torrent
  * @param metainfo The torrent metainfo extracted from the .torrent file
