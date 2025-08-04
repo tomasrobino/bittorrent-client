@@ -116,7 +116,7 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
     current_peer = announce_response->peer_list;
 
     int* peer_socket_array = malloc(sizeof(int) * peer_amount);
-    struct sockaddr_in** peer_addr_array = malloc(sizeof(struct sockaddr_in) * peer_amount);
+    struct sockaddr_in* peer_addr_array = malloc(sizeof(struct sockaddr_in) * peer_amount);
     memset(peer_addr_array, 0, sizeof(struct sockaddr_in) * peer_amount);
     int counter2 = 0;
     // Creating epoll for controlling sockets
@@ -128,7 +128,7 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
             fprintf(stderr, "TCP socket creation failed");
             exit(1);
         }
-        struct sockaddr_in* peer_addr = (struct sockaddr_in*) peer_addr_array+counter2;
+        struct sockaddr_in* peer_addr = peer_addr_array+counter2;
         peer_addr->sin_family = AF_INET;
         peer_addr->sin_port = htons(current_peer->port);
 
@@ -208,7 +208,7 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
             }
 
             if (socket_status_array[index] == PEER_CONNECTION_FAILURE) { // Retry connection if connect() failed
-                if (try_connect(fd, (struct sockaddr_in*)peer_addr_array+index)) {
+                if (try_connect(fd, peer_addr_array+index)) {
                     socket_status_array[index] = PEER_NOTHING;
                 }
             }
