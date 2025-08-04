@@ -56,7 +56,7 @@ char* handshake_response(const int sockfd, const char* info_hash) {
     return res;
 }
 
-int torrent(metainfo_t metainfo, const char* peer_id) {
+int torrent(const metainfo_t metainfo, const char* peer_id) {
     // For storing socket that successfully connected
     int successful_index = 0;
     int* successful_index_pt = &successful_index;
