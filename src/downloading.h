@@ -26,7 +26,6 @@ typedef enum {
 int try_connect(int sockfd, const struct sockaddr_in* peer_addr);
 /**
  * Attempts to get a handshake with a peer to download the torrent passed in the info_hash
- * @param server_addr Server address
  * @param sockfd Socket file descriptor
  * @param info_hash The torrent's info hash
  * @param peer_id This client's peer_id
