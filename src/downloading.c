@@ -22,7 +22,7 @@ int try_connect(const int sockfd, const struct sockaddr_in* peer_addr) {
     return 1;
 }
 
-char* handshake(const int sockfd, const char* info_hash, const char* peer_id) {
+int send_handshake(const int sockfd, const char* info_hash, const char* peer_id) {
     char buffer[68] = {0};
     buffer[0] = 19;
     memcpy(buffer+1, "BitTorrent protocol", 19);
@@ -33,10 +33,11 @@ char* handshake(const int sockfd, const char* info_hash, const char* peer_id) {
     const ssize_t bytes_sent = send(sockfd, buffer, 68, 0);
     if (bytes_sent < 0) {
         fprintf(stderr, "Error in handshake for socket: %d\n", sockfd);
-        close(sockfd);
-        return nullptr;
     }
+    return (int) bytes_sent;
+}
 
+char* handshake_response(const int sockfd, const char* info_hash) {
     // Receive response
     char* res = malloc(20);
     char res_buffer[68];
@@ -47,7 +48,7 @@ char* handshake(const int sockfd, const char* info_hash, const char* peer_id) {
         return nullptr;
     }
 
-    if (memcmp(buffer+28, res_buffer+28, 20) != 0) {
+    if (memcmp(info_hash, res_buffer+28, 20) != 0) {
         fprintf(stderr, "Error in handshake: returned wrong info hash\n");
         return nullptr;
     }
@@ -148,7 +149,7 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
             // If connection is in progress, add socket to epoll
             struct epoll_event ev;
             // EPOLLOUT means the connection attempt has finished, for good or ill
-            ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+            ev.events = EPOLLIN | EPOLLOUT;
             ev.data.u32 = counter2;
             epoll_ctl(epoll, EPOLL_CTL_ADD, peer_socket_array[counter2], &ev);
         }
@@ -185,11 +186,12 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
         for (int i = 0; i < nfds; ++i) {
             const int index = (int) epoll_events[i].data.u32;
             const int fd = peer_socket_array[index];
+            PEER_STATUS* status = &socket_status_array[index];
 
             // DEALING WITH CONNECTING
             // After calling connect()
-            if (socket_status_array[index] == PEER_NOTHING) {
-                socket_status_array[index] = PEER_CONNECTION_FAILURE;
+            if (*status == PEER_NOTHING) {
+                *status = PEER_CONNECTION_FAILURE;
                 if (epoll_events[i].events & EPOLLOUT) {
                     int err = 0;
                     socklen_t len = sizeof(err);
@@ -200,22 +202,38 @@ int torrent(metainfo_t metainfo, const char* peer_id) {
                         fprintf(stderr, "Connection failed in socket %d\n", fd);
                     } else {
                         fprintf(stdout, "Connection successful in socket %d\n", fd);
-                        socket_status_array[index] = PEER_CONNECTION_SUCCESS;
+                        *status = PEER_CONNECTION_SUCCESS;
                     }
                 } else {
                     fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
                 }
             }
             // Retry connection if connect() failed
-            /*
-            if (socket_status_array[index] == PEER_CONNECTION_FAILURE) {
+            if (*status == PEER_CONNECTION_FAILURE) {
                 if (try_connect(fd, peer_addr_array+index)) {
-                    socket_status_array[index] = PEER_NOTHING;
+                    *status = PEER_NOTHING;
+                }
+                continue;
+            }
+            // Send handshake
+            if (*status == PEER_CONNECTION_SUCCESS) {
+                const int result = send_handshake(fd, metainfo.info->hash, peer_id);
+                if (result > 0) {
+                    *status = PEER_HANDSHAKE_SENT;
+                    fprintf(stdout, "Handshake sent through socket %d\n", fd);
+                }
+                continue;
+            }
+            // Receive handshake
+            if (*status == PEER_HANDSHAKE_SENT && epoll_events[i].events & EPOLLIN) {
+                const char* foreign_id = handshake_response(fd, metainfo.info->hash);
+                if (foreign_id != nullptr) {
+                    *status = PEER_HANDSHAKE_SUCCESS;
+                    fprintf(stdout, "Handshake successful in socket %d\n", fd);
+                } else {
+                    *status = PEER_CONNECTION_SUCCESS;
                 }
             }
-            */
-
-
         }
     }
 
