@@ -473,7 +473,8 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
                     counter++;
                     continue;
                 }
-                res->peer_list->ip = strdup(inet_ntoa(addr));
+                res->peer_list->ip = malloc(INET_ADDRSTRLEN);
+                inet_ntop(AF_INET, &addr, res->peer_list->ip, INET_ADDRSTRLEN);
 
                 memcpy(&res->peer_list->port, buffer+20 + peer_size-2 + peer_size*counter, 2);
                 res->peer_list->port = htobe16(res->peer_list->port);
