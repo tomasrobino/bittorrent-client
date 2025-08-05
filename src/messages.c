@@ -85,7 +85,7 @@ bittorrent_message_t* read_message(const int sockfd) {
     bittorrent_message_t* message = malloc(sizeof(bittorrent_message_t));
     memset(message, 0, sizeof(bittorrent_message_t));
     ssize_t bytes_received = recv(sockfd, &message, MESSAGE_MIN_SIZE, 0);
-    if (bytes_received < 5) {
+    if (bytes_received < 5 || message->id < 0 || message->id > 9) {
         free(message);
         return nullptr;
     }
