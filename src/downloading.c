@@ -163,6 +163,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     // Checking connections with epoll
     struct epoll_event epoll_events[MAX_EVENTS];
     PEER_STATUS* socket_status_array = malloc(sizeof(int)*peer_amount);
+    const char** foreign_id_array = malloc(sizeof(char*)*peer_amount);
     memset(socket_status_array, 0, sizeof(int)*peer_amount);
 
 
@@ -229,6 +230,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 const char* foreign_id = handshake_response(fd, metainfo.info->hash);
                 if (foreign_id != nullptr) {
                     *status = PEER_HANDSHAKE_SUCCESS;
+                    foreign_id_array[index] = foreign_id;
                     fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
                     *status = PEER_CONNECTION_SUCCESS;
@@ -242,8 +244,9 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     for (int i = 0; i < peer_amount; ++i) {
         close(peer_socket_array[i]);
     }
-    // Freeing socket status array
+    // Freeing peer arrays
     free(socket_status_array);
+    free(foreign_id_array);
     // Freeing peers
     free(peer_id_array);
     free(peer_socket_array);
