@@ -11,7 +11,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "structs.h"
+#include "util.h"
 #include "whole_bencode.h"
 #include "predownload_udp.h"
 

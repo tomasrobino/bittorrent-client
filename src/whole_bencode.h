@@ -1,7 +1,7 @@
 #ifndef WHOLE_BENCODE_H
 #define WHOLE_BENCODE_H
 #include "file.h"
-#include "structs.h"
+#include "util.h"
 
 //Check if char is a digit
 bool is_digit(char c);

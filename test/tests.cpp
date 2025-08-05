@@ -1,6 +1,6 @@
 extern "C" {
-    #include "../src/structs.h"
-    #include "../src/predownload_udp.h"
+    #include "../src/util.h"
+#include "../src/predownload_udp.h"
 #include <stdlib.h>
 }
 

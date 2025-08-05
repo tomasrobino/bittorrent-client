@@ -1,7 +1,7 @@
 #ifndef FILE_H
 #define FILE_H
 
-#include "structs.h"
+#include "util.h"
 
 typedef struct files_ll {
     struct files_ll* next;
