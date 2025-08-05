@@ -199,6 +199,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     const ssize_t received = recvfrom(sockfd[i], res, sizeof(connect_response_t), 0, nullptr, &socklen);
     if (received < 0) {
         fprintf(stderr, "Error while receiving connect response: %s (errno: %d)\n", strerror(errno), errno);
+        free(res);
         return 0;
     }
 
@@ -224,6 +225,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
         res->transaction_id = htobe32(res->transaction_id);
     } else {
         // Wrong server response
+        free(res);
         return 0;
     }
 
