@@ -90,10 +90,10 @@ bittorrent_message_t* read_message(const int sockfd) {
         return nullptr;
     }
     message->length = htobe32(message->length);
-    if (message->length > 0) {
-        message->payload = malloc(message->length);
-        bytes_received = recv(sockfd, &message->length, MESSAGE_MIN_SIZE, 0);
-        if (bytes_received < message->length) {
+    if (message->length-1 > 0) {
+        message->payload = malloc(message->length-1);
+        bytes_received = recv(sockfd, &message->payload, MESSAGE_MIN_SIZE, 0);
+        if (bytes_received < message->length-1) {
             return nullptr;
         }
     }
