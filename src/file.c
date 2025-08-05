@@ -133,7 +133,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 const int amount = (int) decode_bencode_int(bencoded_value+start, nullptr);
                 start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
                 // 20 is the size of each piece's SHA1 hash
-                metainfo->info->piece_number = ceil((double) amount / 20);
+                metainfo->info->piece_number = amount / 20;
                 metainfo->info->pieces = malloc(sizeof(char)*(amount+1));
                 strncpy(metainfo->info->pieces, bencoded_value+start, amount);
                 metainfo->info->pieces[amount] = '\0';
