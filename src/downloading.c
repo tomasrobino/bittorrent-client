@@ -204,20 +204,30 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 }
                 continue;
             }
-            /*
-            // Receive bitfield
-            if (*status == PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
-                foreign_bitfield_array[index] = receive_bitfield(fd, metainfo.info->piece_number);
-                if (foreign_bitfield_array[index] != nullptr) {
-                    *status = PEER_BITFIELD_RECEIVED;
-                } else *status = PEER_NO_BITFIELD;
-                continue;
-            }
-            */
-
             // Process messages
             if (*status == PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
-
+                const bittorrent_message_t* message = read_message(fd);
+                switch (message->id) {
+                    case CHOKE:
+                        break;
+                    case UNCHOKE:
+                        break;
+                    case INTERESTED:
+                        break;
+                    case NOT_INTERESTED:
+                        break;
+                    case HAVE:
+                        break;
+                    case BITFIELD:
+                        break;
+                    case REQUEST:
+                        break;
+                    case PIECE:
+                        break;
+                    case CANCEL:
+                        break;
+                    default: ;
+                }
             }
         }
     }

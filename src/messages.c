@@ -59,26 +59,13 @@ char* handshake_response(const int sockfd, const char* info_hash) {
     return res;
 }
 
-char* receive_bitfield(const int sockfd, const unsigned int amount) {
-    const unsigned int byte_size = ceil(amount/8.0);
-    bittorrent_message_t message = {0};
-    ssize_t bytes_received = recv(sockfd, &message, MESSAGE_MIN_SIZE, 0);
-    message.length = htobe32(message.length);
-    if (message.length == byte_size+1 && message.id == BITFIELD) {
-        message.payload = malloc(byte_size);
-        bytes_received += recv(sockfd, message.payload, byte_size, 0);
-        if (bytes_received > MESSAGE_MIN_SIZE ) {
-            char* hex = malloc(byte_size*2 + 1);
-            memset(hex, 0, byte_size*2 + 1);
-            bitfield_to_hex((unsigned char*)message.payload, byte_size, hex);
-            fprintf(stdout, "Received correct bitfield in socket %d: %s\n", sockfd, hex);
-            free(hex);
-            return message.payload;
-        }
-        free(message.payload);
+unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, const unsigned int size) {
+    const unsigned int byte_size = ceil(size/8.0);
+    unsigned char* pending_bits = malloc(byte_size);
+    for (int i = 0; i < byte_size; ++i) {
+        pending_bits[i] = foreign_bitfield[i] & ~client_bitfield[i];
     }
-    fprintf(stderr, "Received erroneous bitfield in socket %d\n", sockfd);
-    return nullptr;
+    return pending_bits;
 }
 
 bittorrent_message_t* read_message(const int sockfd) {

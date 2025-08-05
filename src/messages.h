@@ -89,21 +89,17 @@ int send_handshake(int sockfd, const char* info_hash, const char* peer_id);
 char* handshake_response(int sockfd, const char* info_hash);
 
 /**
- * Receives and processes the bitfield message from a peer over the specified socket.
+ * Processes two bitfields to identify pending bits by performing a bitwise
+ * operation on the foreign bitfield and the client's bitfield.
  *
- * This function listens for a BITFIELD message on the given socket file descriptor.
- * It validates the incoming message by checking its length and message ID. Upon successful
- * validation, it allocates memory for the bitfield, reads the data into the buffer, and
- * returns the pointer to the buffer containing the bitfield. If the message is invalid
- * or if an error occurs during the reception, the function returns a nullptr.
- *
- * @param sockfd The socket file descriptor used to receive the message.
- * @param amount The total number of pieces in the torrent; used to calculate
- *               the size of the bitfield.
- * @return A pointer to the dynamically allocated buffer holding the valid bitfield
- *         data. Returns nullptr if the reception fails or the bitfield message is invalid.
+ * @param client_bitfield Pointer to the bitfield representing the client's bits.
+ * @param foreign_bitfield Pointer to the bitfield to compare against the client's bitfield.
+ * @param size The total number of bits in the bitfields.
+ * @return A dynamically allocated pointer to the resulting bitfield containing
+ *         the bits from the foreign bitfield that are not set in the client bitfield.
+ *         The caller is responsible for freeing the allocated memory.
  */
-char* receive_bitfield(int sockfd, unsigned int amount);
+unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, unsigned int size);
 
 /**
  * Reads a BitTorrent message from a socket descriptor.
