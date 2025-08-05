@@ -13,6 +13,14 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
+void bitfield_to_hex(const unsigned char *bitfield, const unsigned int byte_amount, char *hex_output) {
+    if (hex_output == NULL) return;
+    for (int i = 0; i < byte_amount; i++) {
+        sprintf(hex_output + i * 2, "%02x", bitfield[i]);
+    }
+    hex_output[byte_amount*2] = '\0';  // Null-terminate the string
+}
+
 int try_connect(const int sockfd, const struct sockaddr_in* peer_addr) {
     const int connect_result = connect(sockfd, (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
     if (connect_result < 0 && errno != EINPROGRESS) {
@@ -63,10 +71,14 @@ char* receive_bitfield(const int sockfd, const unsigned int amount) {
     ssize_t bytes_received = recv(sockfd, &message, MESSAGE_MIN_SIZE, 0);
     message.length = htobe32(message.length);
     if (message.length == byte_size+1 && message.id == BITFIELD) {
-        message.payload = malloc(sizeof(byte_size));
+        message.payload = malloc(byte_size);
         bytes_received += recv(sockfd, message.payload, byte_size, 0);
         if (bytes_received > MESSAGE_MIN_SIZE ) {
-            fprintf(stdout, "Received correct bitfield in socket %d: %s", sockfd, message.payload);
+            char* hex = malloc(byte_size*2 + 1);
+            memset(hex, 0, byte_size*2 + 1);
+            bitfield_to_hex((unsigned char*)message.payload, byte_size, hex);
+            fprintf(stdout, "Received correct bitfield in socket %d: %s\n", sockfd, hex);
+            free(hex);
             return message.payload;
         }
         free(message.payload);
@@ -281,6 +293,8 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     for (int i = 0; i < peer_amount; ++i) {
         close(peer_socket_array[i]);
     }
+    // Freeing bitfield
+    free(bitfield);
     // Freeing peer arrays
     free(socket_status_array);
     free(foreign_id_array);

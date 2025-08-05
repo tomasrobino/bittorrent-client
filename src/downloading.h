@@ -6,6 +6,10 @@
 #define MAX_EVENTS 128
 // Maximum amount of time epoll will wait for sockets to be ready (in milliseconds)
 #define EPOLL_TIMEOUT 5000
+// Handshake length
+#define HANDSHAKE_LEN 68
+// Bittorrent message size without payload (only length and id).
+#define MESSAGE_MIN_SIZE 5
 // Enum for peer statuses
 typedef enum {
     PEER_NOTHING, // Untouched peer
@@ -42,10 +46,6 @@ typedef enum {
     CANCEL,
     PORT
 } MESSAGE_ID;
-
-// Handshake length
-#define HANDSHAKE_LEN 68
-#define MESSAGE_MIN_SIZE 5
 /**
  * Structure representing a BitTorrent protocol message
  * @param length Length of the message in bytes, excluding the length field itself
@@ -57,6 +57,16 @@ typedef struct __attribute__((packed)) {
     MESSAGE_ID id;
     char *payload;
 } bittorrent_message_t;
+
+/**
+ * Converts a bitfield into its corresponding hexadecimal string representation.
+ *
+ * @param bitfield Pointer to the array representing the bitfield to convert.
+ * @param byte_amount Number of bytes in the bitfield array.
+ * @param hex_output Pointer to the output buffer where the resulting hexadecimal string should be stored.
+ *                   The buffer must be large enough to hold 2 * byte_amount characters plus a null terminator.
+ */
+void bitfield_to_hex(const unsigned char *bitfield, unsigned int byte_amount, char *hex_output);
 
 /**
  * Attempts to establish a connection to a peer using the specified socket and address.

@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <openssl/sha.h>
 #include <stdio.h>
 
@@ -156,8 +155,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 20);
 
             //Creating human-readable hash
-            sha1_to_hex(metainfo->info->hash, metainfo->info->human_hash);
-
+            sha1_to_hex((unsigned char*)metainfo->info->hash, metainfo->info->human_hash);
         } else return nullptr;
 
         return metainfo;
