@@ -59,6 +59,23 @@ char* handshake_response(const int sockfd, const char* info_hash) {
     return res;
 }
 
+char* receive_bitfield(const int sockfd, const unsigned int amount) {
+    const unsigned int byte_size = ceil(amount/8.0);
+    bittorrent_message_t message;
+    ssize_t bytes_received = recv(sockfd, &message, MESSAGE_MIN_SIZE, 0);
+    if (message.length == byte_size+1 && message.id == BITFIELD) {
+        message.payload = malloc(sizeof(byte_size));
+        bytes_received += recv(sockfd, message.payload, byte_size, 0);
+        if (bytes_received > MESSAGE_MIN_SIZE ) {
+            fprintf(stdout, "Received correct bitfield in socket %d: %s", sockfd, message.payload);
+            return message.payload;
+        }
+        free(message.payload);
+    }
+    fprintf(stderr, "Received erroneous bitfield in socket %d\n", sockfd);
+    return nullptr;
+}
+
 int torrent(const metainfo_t metainfo, const char* peer_id) {
     // For storing socket that successfully connected
     int successful_index = 0;

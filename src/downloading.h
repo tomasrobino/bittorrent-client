@@ -15,17 +15,46 @@ typedef enum {
     PEER_HANDSHAKE_SUCCESS,
     PEER_BITFIELD_RECEIVED
 } PEER_STATUS;
+
+/**
+ * Enumeration of BitTorrent protocol message types.
+ * Each value represents a specific message ID that can be sent between peers:
+ * CHOKE (0): Indicates the peer is choking the client
+ * UNCHOKE (1): Indicates the peer is unchoking the client
+ * INTERESTED (2): Client is interested in downloading from peer
+ * NOT_INTERESTED (3): Client is not interested in downloading from peer
+ * HAVE (4): Peer has successfully downloaded and verified a piece
+ * BITFIELD (5): Represents pieces that peer has (sent right after handshake)
+ * REQUEST (6): Request to download a piece from peer
+ * PIECE (7): Contains the actual piece data being transferred
+ * CANCEL (8): Cancels a previously requested piece
+ * PORT (9): DHT port number the peer is listening on
+ */
+typedef enum {
+    CHOKE,
+    UNCHOKE,
+    INTERESTED,
+    NOT_INTERESTED,
+    HAVE,
+    BITFIELD,
+    REQUEST,
+    PIECE,
+    CANCEL,
+    PORT
+} MESSAGE_ID;
+
 // Handshake length
 #define HANDSHAKE_LEN 68
+#define MESSAGE_MIN_SIZE 5
 /**
  * Structure representing a BitTorrent protocol message
  * @param length Length of the message in bytes, excluding the length field itself
  * @param id Message ID identifying the type of message (e.g. choke, interested)
  * @param payload Message payload data (can be NULL for messages without payload)
  */
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint32_t length;
-    char id;
+    MESSAGE_ID id;
     char *payload;
 } bittorrent_message_t;
 
@@ -64,16 +93,19 @@ int send_handshake(int sockfd, const char* info_hash, const char* peer_id);
 char* handshake_response(int sockfd, const char* info_hash);
 
 /**
- * Receives a bitfield from a connected socket.
+ * Receives and processes the bitfield message from a peer over the specified socket.
  *
- * This function reads a specified amount of data from the given
- * socket descriptor and returns it as a dynamically allocated
- * character array (bitfield).
+ * This function listens for a BITFIELD message on the given socket file descriptor.
+ * It validates the incoming message by checking its length and message ID. Upon successful
+ * validation, it allocates memory for the bitfield, reads the data into the buffer, and
+ * returns the pointer to the buffer containing the bitfield. If the message is invalid
+ * or if an error occurs during the reception, the function returns a nullptr.
  *
- * @param sockfd The socket file descriptor from which to receive data.
- * @param amount The number of bytes to read from the socket.
- * @return A pointer to a dynamically allocated character array containing
- *         the received bitfield. Returns nullptr if the operation fails.
+ * @param sockfd The socket file descriptor used to receive the message.
+ * @param amount The total number of pieces in the torrent; used to calculate
+ *               the size of the bitfield.
+ * @return A pointer to the dynamically allocated buffer holding the valid bitfield
+ *         data. Returns nullptr if the reception fails or the bitfield message is invalid.
  */
 char* receive_bitfield(int sockfd, unsigned int amount);
 
