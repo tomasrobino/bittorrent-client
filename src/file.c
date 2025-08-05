@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include <tgmath.h>
+#include <math.h>
 #include <openssl/sha.h>
 #include <stdio.h>
 
@@ -132,7 +132,8 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 start = info_index-bencoded_value + 6;
                 const int amount = (int) decode_bencode_int(bencoded_value+start, nullptr);
                 start = strchr(bencoded_value+start, ':') - bencoded_value + 1;
-                metainfo->info->piece_number = ceil((double) amount / metainfo->info->piece_length);
+                // 20 is the size of each piece's SHA1 hash
+                metainfo->info->piece_number = ceil((double) amount / 20);
                 metainfo->info->pieces = malloc(sizeof(char)*(amount+1));
                 strncpy(metainfo->info->pieces, bencoded_value+start, amount);
                 metainfo->info->pieces[amount] = '\0';

@@ -7,11 +7,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <math.h>
 
 #include "downloading.h"
-
-#include <tgmath.h>
-
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
@@ -61,8 +59,9 @@ char* handshake_response(const int sockfd, const char* info_hash) {
 
 char* receive_bitfield(const int sockfd, const unsigned int amount) {
     const unsigned int byte_size = ceil(amount/8.0);
-    bittorrent_message_t message;
+    bittorrent_message_t message = {0};
     ssize_t bytes_received = recv(sockfd, &message, MESSAGE_MIN_SIZE, 0);
+    message.length = htobe32(message.length);
     if (message.length == byte_size+1 && message.id == BITFIELD) {
         message.payload = malloc(sizeof(byte_size));
         bytes_received += recv(sockfd, message.payload, byte_size, 0);
@@ -269,7 +268,9 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
             // Receive bitfield
             if (*status == PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
                 foreign_bitfield_array[index] = receive_bitfield(fd, metainfo.info->piece_number);
-                if (foreign_bitfield_array[index] != nullptr) *status = PEER_BITFIELD_RECEIVED;
+                if (foreign_bitfield_array[index] != nullptr) {
+                    *status = PEER_BITFIELD_RECEIVED;
+                } else *status = PEER_CONNECTION_SUCCESS;
                 continue;
             }
         }
