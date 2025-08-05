@@ -4,7 +4,6 @@
 #include <stdio.h>
 
 #include "file.h"
-#include "structs.h"
 #include "whole_bencode.h"
 
 

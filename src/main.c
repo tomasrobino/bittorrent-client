@@ -8,6 +8,7 @@
 
 #include "predownload_udp.h"
 #include "downloading.h"
+#include "magnet.h"
 
 int main(const int argc, char* argv[]) {
     // Generating peer id

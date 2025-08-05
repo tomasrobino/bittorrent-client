@@ -3,6 +3,39 @@
 
 #include "structs.h"
 
+typedef struct files_ll {
+    struct files_ll* next;
+    unsigned long length;
+    ll* path;
+} files_ll;
+
+typedef struct announce_list_ll {
+    struct announce_list_ll* next;
+    ll* list;
+} announce_list_ll;
+
+typedef struct {
+    files_ll* files;
+    unsigned long length;
+    char* name;
+    unsigned int piece_length;
+    unsigned int piece_number;
+    char* pieces;
+    bool priv;
+    char hash[21];
+    char human_hash[41];
+} info_t;
+
+typedef struct {
+    char* announce;
+    announce_list_ll* announce_list;
+    char* comment;
+    char* created_by;
+    unsigned int creation_date;
+    char* encoding;
+    info_t* info;
+} metainfo_t;
+
 /**
  * Converts a SHA-1 hash represented as a 20-byte array into a hexadecimal string.
  *

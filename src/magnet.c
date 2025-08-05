@@ -3,11 +3,11 @@
 #include <string.h>
 #include <curl/curl.h>
 
-#include "structs.h"
 #include "whole_bencode.h"
+#include "magnet.h"
 
 magnet_data* process_magnet(const char* magnet) {
-    int length = (int) strlen(magnet);
+    const int length = (int) strlen(magnet);
     int start = 4;
     Magnet_Attributes current_attribute = none;
     magnet_data* data = malloc(sizeof(magnet_data));

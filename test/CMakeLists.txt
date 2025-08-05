@@ -18,6 +18,7 @@ list(FILTER SOURCE_FILES EXCLUDE REGEX ".*/main\\.c$")
 add_executable(tests
         tests.cpp
         ${SOURCE_FILES}
+        ../src/magnet.h
 )
 
 find_package(OpenSSL REQUIRED)

@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <tgmath.h>
+#include <math.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -371,7 +371,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     fprintf(stdout, "connection_id: %lu\n", req.connection_id);
     fprintf(stdout, "info_hash: ");
     char human_hash[41];
-    sha1_to_hex(req.info_hash, human_hash);
+    sha1_to_hex((unsigned char*)req.info_hash, human_hash);
     fprintf(stdout, "%s", human_hash);
     fprintf(stdout, "\n");
     fprintf(stdout, "peer_id: ");
@@ -401,7 +401,6 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     memcpy(req_buffer+96, &req.port, 2);
 
 
-    socklen_t socklen = sizeof(struct sockaddr);
     int* announce_res_socket = try_request_udp(1, &sockfd, (const void**)&req_buffer, ANNOUNCE_REQUEST_SIZE, &server_addr);
     free(req_buffer);
     if (announce_res_socket == nullptr) {

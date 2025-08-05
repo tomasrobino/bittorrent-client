@@ -1,5 +1,6 @@
 #ifndef WHOLE_BENCODE_H
 #define WHOLE_BENCODE_H
+#include "file.h"
 #include "structs.h"
 
 //Check if char is a digit
@@ -18,12 +19,4 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
 void free_announce_list(announce_list_ll* list);
 
 files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* index);
-
-metainfo_t* parse_metainfo(const char* bencoded_value, unsigned long length);
-
-void free_metainfo(metainfo_t* metainfo);
-//Returns magnet_data struct of parsed magnet link
-magnet_data* process_magnet(const char* magnet);
-
-void free_magnet_data(magnet_data* magnet_data);
 #endif //WHOLE_BENCODE_H

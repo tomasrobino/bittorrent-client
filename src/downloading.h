@@ -1,6 +1,5 @@
 #ifndef DOWNLOADING_H
 #define DOWNLOADING_H
-#include "structs.h"
 
 // Maximum events cached by epoll
 #define MAX_EVENTS 128
@@ -10,6 +9,8 @@
 #define HANDSHAKE_LEN 68
 // Bittorrent message size without payload (only length and id).
 #define MESSAGE_MIN_SIZE 5
+#include "file.h"
+
 // Enum for peer statuses
 typedef enum {
     PEER_NOTHING, // Untouched peer
