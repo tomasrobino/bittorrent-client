@@ -204,7 +204,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 }
                 continue;
             }
-
+            /*
             // Receive bitfield
             if (*status == PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
                 foreign_bitfield_array[index] = receive_bitfield(fd, metainfo.info->piece_number);
@@ -213,8 +213,12 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 } else *status = PEER_NO_BITFIELD;
                 continue;
             }
+            */
 
+            // Process messages
+            if (*status == PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
 
+            }
         }
     }
 

@@ -80,3 +80,22 @@ char* receive_bitfield(const int sockfd, const unsigned int amount) {
     fprintf(stderr, "Received erroneous bitfield in socket %d\n", sockfd);
     return nullptr;
 }
+
+bittorrent_message_t* read_message(const int sockfd) {
+    bittorrent_message_t* message = malloc(sizeof(bittorrent_message_t));
+    memset(message, 0, sizeof(bittorrent_message_t));
+    ssize_t bytes_received = recv(sockfd, &message, MESSAGE_MIN_SIZE, 0);
+    if (bytes_received < 5) {
+        free(message);
+        return nullptr;
+    }
+    message->length = htobe32(message->length);
+    if (message->length > 0) {
+        message->payload = malloc(message->length);
+        bytes_received = recv(sockfd, &message->length, MESSAGE_MIN_SIZE, 0);
+        if (bytes_received < message->length) {
+            return nullptr;
+        }
+    }
+    return message;
+}

@@ -21,6 +21,7 @@
  * PORT (9): DHT port number the peer is listening on
  */
 typedef enum {
+    MSG_ERROR = -1,
     CHOKE,
     UNCHOKE,
     INTERESTED,
@@ -103,4 +104,20 @@ char* handshake_response(int sockfd, const char* info_hash);
  *         data. Returns nullptr if the reception fails or the bitfield message is invalid.
  */
 char* receive_bitfield(int sockfd, unsigned int amount);
+
+/**
+ * Reads a BitTorrent message from a socket descriptor.
+ *
+ * This function attempts to read a BitTorrent message from the given socket.
+ * It reads the message length, type, and optional payload if the length indicates
+ * the presence of one. In case of an error while receiving the message, it may
+ * return a null pointer.
+ *
+ * @param sockfd The socket file descriptor from which the message will be read.
+ *
+ * @return A pointer to a dynamically allocated `bittorrent_message_t` structure
+ * containing the read message. Returns a null pointer if the read operation fails
+ * or if an invalid message is received.
+ */
+bittorrent_message_t* read_message(int sockfd);
 #endif //MESSAGES_H
