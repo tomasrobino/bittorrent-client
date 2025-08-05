@@ -14,7 +14,8 @@ typedef enum {
     PEER_HANDSHAKE_SENT,
     PEER_HANDSHAKE_SUCCESS
 } PEER_STATUS;
-
+// Handshake length
+#define HANDSHAKE_LEN 68
 /**
  * Attempts to establish a connection to a peer using the specified socket and address.
  * @param sockfd The file descriptor of the socket to be used for the connection.

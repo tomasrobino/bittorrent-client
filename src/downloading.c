@@ -23,14 +23,14 @@ int try_connect(const int sockfd, const struct sockaddr_in* peer_addr) {
 }
 
 int send_handshake(const int sockfd, const char* info_hash, const char* peer_id) {
-    char buffer[68] = {0};
+    char buffer[HANDSHAKE_LEN] = {0};
     buffer[0] = 19;
     memcpy(buffer+1, "BitTorrent protocol", 19);
     memcpy(buffer+28, info_hash, 20);
     memcpy(buffer+48, peer_id, 20);
 
     // Send handshake request
-    const ssize_t bytes_sent = send(sockfd, buffer, 68, 0);
+    const ssize_t bytes_sent = send(sockfd, buffer, HANDSHAKE_LEN, 0);
     if (bytes_sent < 0) {
         fprintf(stderr, "Error in handshake for socket: %d\n", sockfd);
     }
@@ -40,9 +40,9 @@ int send_handshake(const int sockfd, const char* info_hash, const char* peer_id)
 char* handshake_response(const int sockfd, const char* info_hash) {
     // Receive response
     char* res = malloc(20);
-    char res_buffer[68];
-    const ssize_t bytes_received = recv(sockfd, res_buffer, 68, 0);
-    if (bytes_received < 0) {
+    char res_buffer[HANDSHAKE_LEN];
+    const ssize_t bytes_received = recv(sockfd, res_buffer, HANDSHAKE_LEN, 0);
+    if (bytes_received < HANDSHAKE_LEN) {
         fprintf(stderr, "Error in handshake for socket: %d\n", sockfd);
         close(sockfd);
         return nullptr;
