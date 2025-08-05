@@ -12,10 +12,23 @@ typedef enum {
     PEER_CONNECTION_SUCCESS, // Peer connected
     PEER_CONNECTION_FAILURE, // Peer failed connection
     PEER_HANDSHAKE_SENT,
-    PEER_HANDSHAKE_SUCCESS
+    PEER_HANDSHAKE_SUCCESS,
+    PEER_BITFIELD_RECEIVED
 } PEER_STATUS;
 // Handshake length
 #define HANDSHAKE_LEN 68
+/**
+ * Structure representing a BitTorrent protocol message
+ * @param length Length of the message in bytes, excluding the length field itself
+ * @param id Message ID identifying the type of message (e.g. choke, interested)
+ * @param payload Message payload data (can be NULL for messages without payload)
+ */
+typedef struct {
+    uint32_t length;
+    char id;
+    char *payload;
+} bittorrent_message_t;
+
 /**
  * Attempts to establish a connection to a peer using the specified socket and address.
  * @param sockfd The file descriptor of the socket to be used for the connection.
@@ -49,6 +62,21 @@ int send_handshake(int sockfd, const char* info_hash, const char* peer_id);
  *         fails or an error occurs.
  */
 char* handshake_response(int sockfd, const char* info_hash);
+
+/**
+ * Receives a bitfield from a connected socket.
+ *
+ * This function reads a specified amount of data from the given
+ * socket descriptor and returns it as a dynamically allocated
+ * character array (bitfield).
+ *
+ * @param sockfd The socket file descriptor from which to receive data.
+ * @param amount The number of bytes to read from the socket.
+ * @return A pointer to a dynamically allocated character array containing
+ *         the received bitfield. Returns nullptr if the operation fails.
+ */
+char* receive_bitfield(int sockfd, unsigned int amount);
+
 /**
  * Downloads & uploads torrent
  * @param metainfo The torrent metainfo extracted from the .torrent file

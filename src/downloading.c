@@ -9,6 +9,9 @@
 #include <sys/epoll.h>
 
 #include "downloading.h"
+
+#include <tgmath.h>
+
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
@@ -129,7 +132,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
             fprintf(stderr, "TCP socket creation failed");
             exit(1);
         }
-        struct sockaddr_in* peer_addr = peer_addr_array+counter2;
+        struct sockaddr_in* peer_addr = &peer_addr_array[counter2];
         peer_addr->sin_family = AF_INET;
         peer_addr->sin_port = htons(current_peer->port);
 
@@ -162,10 +165,18 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     memset(peer_id_array, 0, sizeof(char*) * peer_amount);
     // Checking connections with epoll
     struct epoll_event epoll_events[MAX_EVENTS];
+    // Status of each socket
     PEER_STATUS* socket_status_array = malloc(sizeof(int)*peer_amount);
+    // peer_id of each peer
     const char** foreign_id_array = malloc(sizeof(char*)*peer_amount);
     memset(socket_status_array, 0, sizeof(int)*peer_amount);
-
+    // General bitfield. Each piece takes up 1 bit
+    const unsigned int bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
+    char* bitfield = malloc(bitfield_byte_size);
+    memset(bitfield, 0, bitfield_byte_size);
+    // Array for bitfields of all peers
+    char** foreign_bitfield_array = malloc(sizeof(char*)*peer_amount);
+    memset(foreign_bitfield_array, 0, sizeof(char*)*peer_amount);
 
     /*
      *
@@ -211,7 +222,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
             }
             // Retry connection if connect() failed
             if (*status == PEER_CONNECTION_FAILURE) {
-                if (try_connect(fd, peer_addr_array+index)) {
+                if (try_connect(fd, &peer_addr_array[index])) {
                     *status = PEER_NOTHING;
                 }
                 continue;
@@ -235,6 +246,14 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 } else {
                     *status = PEER_CONNECTION_SUCCESS;
                 }
+                continue;
+            }
+
+            // Receive bitfield
+            if (*status == PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
+                foreign_bitfield_array[index] = receive_bitfield(fd, metainfo.info->piece_number);
+                if (foreign_bitfield_array[index] != nullptr) *status = PEER_BITFIELD_RECEIVED;
+                continue;
             }
         }
     }
@@ -247,6 +266,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     // Freeing peer arrays
     free(socket_status_array);
     free(foreign_id_array);
+    free(foreign_bitfield_array);
     // Freeing peers
     free(peer_id_array);
     free(peer_socket_array);
