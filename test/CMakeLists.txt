@@ -19,6 +19,7 @@ add_executable(tests
         tests.cpp
         ${SOURCE_FILES}
         ../src/magnet.h
+        ../src/util.c
 )
 
 find_package(OpenSSL REQUIRED)

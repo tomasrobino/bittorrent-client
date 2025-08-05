@@ -71,6 +71,14 @@ typedef struct {
 } metainfo_t;
 
 /**
+ * Frees the memory associated with the given announce list.
+ *
+ * @param list The linked list of type announce_list_ll to be freed.
+ *             This includes all nodes and nested structures within the list.
+ */
+void free_announce_list(announce_list_ll* list);
+
+/**
  * Converts a SHA-1 hash represented as a 20-byte array into a hexadecimal string.
  *
  * @param sha1_bytes A pointer to the 20-byte array containing the SHA-1 hash.

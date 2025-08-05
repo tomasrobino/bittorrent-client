@@ -5,10 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-bool is_digit(const char c) {
-    return c >= '0' && c <= '9';
-}
-
 // Cannot handle lists of lists
 ll* decode_bencode_list(const char* bencoded_list, unsigned int* length) {
     // Checking if the beginning is valid

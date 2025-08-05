@@ -6,6 +6,14 @@
 #include "file.h"
 #include "whole_bencode.h"
 
+void free_announce_list(announce_list_ll* list) {
+    while (list != nullptr) {
+        free_bencode_list(list->list);
+        announce_list_ll* next = list->next;
+        free(list);
+        list = next;
+    }
+}
 
 void sha1_to_hex(const unsigned char *sha1_bytes, char *hex_output) {
     for (int i = 0; i < 20; i++) {

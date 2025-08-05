@@ -139,7 +139,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
         }
 
         // Wait for response
-        const int timeoutDuration = 15*pow(2, counter)*1000;
+        const int timeoutDuration = (int) (15*pow(2, counter)*1000);
         ret = poll(pfd, amount, timeoutDuration);
         if (ret > 0 && pfd[0].revents & POLLIN) {
             // Data ready

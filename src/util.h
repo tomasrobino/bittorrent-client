@@ -29,4 +29,11 @@ typedef struct {
     const char *peer_id;
 } handshake_args_t;
 
+/**
+ * Checks if the given character is a numeric digit (0-9).
+ *
+ * @param c The character to be checked.
+ * @return true if the character is a digit (0-9), false otherwise.
+ */
+bool is_digit(char c);
 #endif //STRUCTS_H

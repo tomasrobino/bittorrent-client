@@ -4,14 +4,6 @@
 #include "util.h"
 
 /**
- * Checks if the given character is a numeric digit (0-9).
- *
- * @param c The character to be checked.
- * @return true if the character is a digit (0-9), false otherwise.
- */
-bool is_digit(char c);
-
-/**
  * Decodes a bencoded list and returns it as a linked list structure.
  *
  * @param bencoded_list The bencoded string representing a list to be decoded.
@@ -61,14 +53,6 @@ unsigned long decode_bencode_int(const char *bencoded_value, char **endptr);
  * @return A pointer to the head node of a linked list representing the decoded "announce-list", or nullptr if decoding fails.
  */
 announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index);
-
-/**
- * Frees the memory associated with the given announce list.
- *
- * @param list The linked list of type announce_list_ll to be freed.
- *             This includes all nodes and nested structures within the list.
- */
-void free_announce_list(announce_list_ll* list);
 
 /**
  * Parses a bencoded string and constructs a linked list of file information structures.
