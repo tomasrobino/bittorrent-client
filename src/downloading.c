@@ -219,12 +219,15 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                     case HAVE:
                         break;
                     case BITFIELD:
+                        foreign_bitfield_array[index] = message->payload;
                         break;
                     case REQUEST:
                         break;
                     case PIECE:
                         break;
                     case CANCEL:
+                        break;
+                    case PORT:
                         break;
                     default: ;
                 }
