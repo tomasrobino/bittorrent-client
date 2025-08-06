@@ -15,11 +15,15 @@ typedef enum {
     PEER_HANDSHAKE_SENT,
     PEER_HANDSHAKE_SUCCESS,
     PEER_BITFIELD_RECEIVED,
-    PEER_NO_BITFIELD
+    PEER_NO_BITFIELD,
+    PEER_CHOKED,
+    PEER_UNCHOKED,
+    PEER_INTERESTED,
+    PEER_UNINTERESTED
 } PEER_STATUS;
 
 typedef struct {
-    char* bitfield;
+    unsigned char* bitfield;
     char* id;
     PEER_STATUS status;
     int socket;

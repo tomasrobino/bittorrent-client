@@ -42,7 +42,7 @@ typedef enum {
 typedef struct __attribute__((packed)) {
     uint32_t length;
     MESSAGE_ID id;
-    char *payload;
+    unsigned char *payload;
 } bittorrent_message_t;
 /**
  * Converts a bitfield into its corresponding hexadecimal string representation.

@@ -123,7 +123,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     struct epoll_event epoll_events[MAX_EVENTS];
     // General bitfield. Each piece takes up 1 bit
     const unsigned int bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
-    char* bitfield = malloc(bitfield_byte_size);
+    unsigned char* bitfield = malloc(bitfield_byte_size);
     memset(bitfield, 0, bitfield_byte_size);
     // Peer struct
     peer_t* peer_array = malloc(sizeof(peer_t)*peer_amount);
@@ -209,14 +209,22 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 const bittorrent_message_t* message = read_message(fd, &peer_array[index].last_msg);
                 switch (message->id) {
                     case CHOKE:
+                        peer_array[index].status = PEER_CHOKED;
                         break;
                     case UNCHOKE:
+                        peer_array[index].status = PEER_UNCHOKED;
                         break;
                     case INTERESTED:
+                        peer_array[index].status = PEER_INTERESTED;
                         break;
                     case NOT_INTERESTED:
+                        peer_array[index].status = PEER_UNINTERESTED;
                         break;
                     case HAVE:
+                        // Adding the new piece to the peer's bitfield
+                        const size_t byte_index = *message->payload / 8;
+                        const size_t bit_offset = 7 - *message->payload % 8;
+                        peer_array[index].bitfield[byte_index] |= 1 << bit_offset;
                         break;
                     case BITFIELD:
                         peer_array[index].bitfield = message->payload;
