@@ -44,6 +44,12 @@ typedef struct {
     MESSAGE_ID id;
     unsigned char *payload;
 } bittorrent_message_t;
+
+typedef struct {
+    unsigned int index;
+    unsigned int begin;
+    unsigned int length;
+} request_t;
 /**
  * Converts a bitfield into its corresponding hexadecimal string representation.
  *

@@ -233,6 +233,8 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         } else fprintf(stdout, "Error receiving bitfield for socket %d\n", fd);
                         break;
                     case REQUEST:
+                        //TODO request
+                        request_t* request = (request_t*) message->payload;
                         break;
                     case PIECE:
                         break;
