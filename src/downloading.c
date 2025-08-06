@@ -216,6 +216,9 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         break;
                     case BITFIELD:
                         peer_array[index].bitfield = message->payload;
+                        if (message->payload != nullptr) {
+                            fprintf(stdout, "Bitfield received successfully for socket %d\n", fd);
+                        } else fprintf(stdout, "Error receiving bitfield for socket %d\n", fd);
                         break;
                     case REQUEST:
                         break;
