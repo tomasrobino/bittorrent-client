@@ -152,12 +152,12 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
         for (int i = 0; i < nfds; ++i) {
             const int index = (int) epoll_events[i].data.u32;
             const int fd = peer_socket_array[index];
-            PEER_STATUS* status = &peer_array[index].status;
+            peer_t peer = peer_array[index];
 
             // DEALING WITH CONNECTING
             // After calling connect()
-            if (*status == PEER_NOTHING) {
-                *status = PEER_CONNECTION_FAILURE;
+            if (peer.status == PEER_NOTHING) {
+                peer.status = PEER_CONNECTION_FAILURE;
                 if (epoll_events[i].events & EPOLLOUT) {
                     int err = 0;
                     socklen_t len = sizeof(err);
@@ -168,78 +168,78 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         fprintf(stderr, "Connection failed in socket %d\n", fd);
                     } else {
                         fprintf(stdout, "Connection successful in socket %d\n", fd);
-                        *status = PEER_CONNECTION_SUCCESS;
+                        peer.status = PEER_CONNECTION_SUCCESS;
                     }
                 } else {
                     fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
                 }
             }
             // Retry connection if connect() failed
-            if (*status == PEER_CONNECTION_FAILURE) {
+            if (peer.status == PEER_CONNECTION_FAILURE) {
                 if (try_connect(fd, &peer_addr_array[index])) {
-                    *status = PEER_NOTHING;
+                    peer.status = PEER_NOTHING;
                 }
                 continue;
             }
             // Send handshake
-            if (*status == PEER_CONNECTION_SUCCESS) {
+            if (peer.status == PEER_CONNECTION_SUCCESS) {
                 const int result = send_handshake(fd, metainfo.info->hash, peer_id);
-                peer_array[index].last_msg = time(nullptr);
+                peer.last_msg = time(nullptr);
                 if (result > 0) {
-                    *status = PEER_HANDSHAKE_SENT;
+                    peer.status = PEER_HANDSHAKE_SENT;
                     fprintf(stdout, "Handshake sent through socket %d\n", fd);
                 }
                 continue;
             }
             // Receive handshake
-            if (*status == PEER_HANDSHAKE_SENT && epoll_events[i].events & EPOLLIN) {
+            if (peer.status == PEER_HANDSHAKE_SENT && epoll_events[i].events & EPOLLIN) {
                 const char* foreign_id = handshake_response(fd, metainfo.info->hash);
-                peer_array[index].last_msg = time(nullptr);
+                peer.last_msg = time(nullptr);
                 if (foreign_id != nullptr) {
-                    *status = PEER_HANDSHAKE_SUCCESS;
-                    peer_array[index].id = (char*)foreign_id;
+                    peer.status = PEER_HANDSHAKE_SUCCESS;
+                    peer.id = (char*)foreign_id;
                     fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
-                    *status = PEER_CONNECTION_SUCCESS;
+                    peer.status = PEER_CONNECTION_SUCCESS;
                 }
                 continue;
             }
             // Process messages
-            if (*status >= PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
+            if (peer.status >= PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
                 size_t byte_index = 0;
                 size_t bit_offset = 0;
-                const bittorrent_message_t* message = read_message(fd, &peer_array[index].last_msg);
+                const bittorrent_message_t* message = read_message(fd, &peer.last_msg);
                 switch (message->id) {
                     case CHOKE:
-                        peer_array[index].client_choked = true;
+                        peer.client_choked = true;
                         break;
                     case UNCHOKE:
-                        peer_array[index].client_choked = false;
+                        peer.client_choked = false;
                         break;
                     case INTERESTED:
-                        peer_array[index].peer_interest = true;
+                        peer.peer_interest = true;
                         break;
                     case NOT_INTERESTED:
-                        peer_array[index].peer_interest = false;
+                        peer.peer_interest = false;
                         break;
                     case HAVE:
                         // Adding the new piece to the peer's bitfield
                         byte_index = *message->payload / 8;
                         bit_offset = 7 - *message->payload % 8;
-                        peer_array[index].bitfield[byte_index] |= 1 << bit_offset;
+                        peer.bitfield[byte_index] |= 1 << bit_offset;
                         break;
                     case BITFIELD:
-                        peer_array[index].bitfield = message->payload;
+                        peer.bitfield = message->payload;
                         if (message->payload != nullptr) {
                             fprintf(stdout, "Bitfield received successfully for socket %d\n", fd);
                         } else fprintf(stdout, "Error receiving bitfield for socket %d\n", fd);
                         break;
                     case REQUEST:
-                        if (peer_array[index].peer_choked == false) {
+                        if (peer.peer_choked == false) {
                             const request_t* request = (request_t*) message->payload;
                             byte_index = request->index / 8;
                             bit_offset = 7 - request->index % 8;
-                            if (peer_array[index].bitfield[byte_index] &= 1 << bit_offset != 0) {
+                            if (peer.bitfield[byte_index] &= 1 << bit_offset != 0) {
                                 // If this client has the requested piece
                                 //TODO send requested piece
                             }
