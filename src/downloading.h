@@ -23,6 +23,7 @@ typedef struct {
     char* id;
     PEER_STATUS status;
     int socket;
+    time_t last_msg;
 } peer_t;
 
 /**

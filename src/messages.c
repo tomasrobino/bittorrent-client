@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/socket.h>
 
@@ -68,7 +69,7 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
     return pending_bits;
 }
 
-bittorrent_message_t* read_message(const int sockfd) {
+bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp) {
     bittorrent_message_t* message = malloc(sizeof(bittorrent_message_t));
     memset(message, 0, sizeof(bittorrent_message_t));
     ssize_t bytes_received = recv(sockfd, message, MESSAGE_MIN_SIZE, 0);
@@ -76,6 +77,7 @@ bittorrent_message_t* read_message(const int sockfd) {
         free(message);
         return nullptr;
     }
+    *peer_timestamp = time(nullptr);
     message->length = htobe32(message->length);
     if (message->length-1 > 0) {
         message->payload = malloc(message->length-1);

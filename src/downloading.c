@@ -11,6 +11,8 @@
 
 #include "downloading.h"
 
+#include <time.h>
+
 #include "messages.h"
 #include "predownload_udp.h"
 #include "whole_bencode.h"
@@ -182,6 +184,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
             // Send handshake
             if (*status == PEER_CONNECTION_SUCCESS) {
                 const int result = send_handshake(fd, metainfo.info->hash, peer_id);
+                peer_array[index].last_msg = time(nullptr);
                 if (result > 0) {
                     *status = PEER_HANDSHAKE_SENT;
                     fprintf(stdout, "Handshake sent through socket %d\n", fd);
@@ -191,6 +194,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
             // Receive handshake
             if (*status == PEER_HANDSHAKE_SENT && epoll_events[i].events & EPOLLIN) {
                 const char* foreign_id = handshake_response(fd, metainfo.info->hash);
+                peer_array[index].last_msg = time(nullptr);
                 if (foreign_id != nullptr) {
                     *status = PEER_HANDSHAKE_SUCCESS;
                     peer_array[index].id = (char*)foreign_id;
@@ -202,7 +206,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
             }
             // Process messages
             if (*status == PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
-                const bittorrent_message_t* message = read_message(fd);
+                const bittorrent_message_t* message = read_message(fd, &peer_array[index].last_msg);
                 switch (message->id) {
                     case CHOKE:
                         break;

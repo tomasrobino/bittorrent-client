@@ -106,14 +106,15 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
  *
  * This function attempts to read a BitTorrent message from the given socket.
  * It reads the message length, type, and optional payload if the length indicates
- * the presence of one. In case of an error while receiving the message, it may
- * return a null pointer.
+ * the presence of one, and updates the peer's timestamp with the current time.
+ * In case of an error while receiving the message, it may return a null pointer.
  *
  * @param sockfd The socket file descriptor from which the message will be read.
+ * @param peer_timestamp Pointer to a timestamp that will be updated with the current time when a message is successfully read.
  *
  * @return A pointer to a dynamically allocated `bittorrent_message_t` structure
  * containing the read message. Returns a null pointer if the read operation fails
  * or if an invalid message is received.
  */
-bittorrent_message_t* read_message(int sockfd);
+bittorrent_message_t* read_message(int sockfd, time_t* peer_timestamp);
 #endif //MESSAGES_H
