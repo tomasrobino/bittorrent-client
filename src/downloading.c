@@ -205,25 +205,27 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 continue;
             }
             // Process messages
-            if (*status == PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
+            if (*status >= PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
+                size_t byte_index = 0;
+                size_t bit_offset = 0;
                 const bittorrent_message_t* message = read_message(fd, &peer_array[index].last_msg);
                 switch (message->id) {
                     case CHOKE:
-                        peer_array[index].status = PEER_CHOKED;
+                        peer_array[index].client_choked = true;
                         break;
                     case UNCHOKE:
-                        peer_array[index].status = PEER_UNCHOKED;
+                        peer_array[index].client_choked = false;
                         break;
                     case INTERESTED:
-                        peer_array[index].status = PEER_INTERESTED;
+                        peer_array[index].peer_interest = true;
                         break;
                     case NOT_INTERESTED:
-                        peer_array[index].status = PEER_UNINTERESTED;
+                        peer_array[index].peer_interest = false;
                         break;
                     case HAVE:
                         // Adding the new piece to the peer's bitfield
-                        const size_t byte_index = *message->payload / 8;
-                        const size_t bit_offset = 7 - *message->payload % 8;
+                        byte_index = *message->payload / 8;
+                        bit_offset = 7 - *message->payload % 8;
                         peer_array[index].bitfield[byte_index] |= 1 << bit_offset;
                         break;
                     case BITFIELD:
@@ -233,10 +235,18 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         } else fprintf(stdout, "Error receiving bitfield for socket %d\n", fd);
                         break;
                     case REQUEST:
-                        //TODO request
-                        request_t* request = (request_t*) message->payload;
+                        if (peer_array[index].peer_choked == false) {
+                            const request_t* request = (request_t*) message->payload;
+                            byte_index = request->index / 8;
+                            bit_offset = 7 - request->index % 8;
+                            if (peer_array[index].bitfield[byte_index] &= 1 << bit_offset != 0) {
+                                // If this client has the requested piece
+                                //TODO send requested piece
+                            }
+                        }
                         break;
                     case PIECE:
+
                         break;
                     case CANCEL:
                         break;

@@ -15,17 +15,30 @@ typedef enum {
     PEER_HANDSHAKE_SENT,
     PEER_HANDSHAKE_SUCCESS,
     PEER_BITFIELD_RECEIVED,
-    PEER_NO_BITFIELD,
-    PEER_CHOKED,
-    PEER_UNCHOKED,
-    PEER_INTERESTED,
-    PEER_UNINTERESTED
+    PEER_NO_BITFIELD
 } PEER_STATUS;
 
+/**
+ * Represents peer data and state in a BitTorrent connection.
+ *
+ * @field bitfield Bit array representing the pieces this peer has
+ * @field id 20-byte string peer ID used during handshake 
+ * @field status Current status of the peer connection 
+ * @field peer_choked Whether we are choking by the peer
+ * @field client_choked Whether we are choked the peer
+ * @field peer_interest Whether peer is interested in our pieces
+ * @field client_interest Whether we are interested in peer's pieces
+ * @field socket Socket file descriptor for this peer connection
+ * @field last_msg Timestamp of last message received from peer
+ */
 typedef struct {
-    unsigned char* bitfield;
-    char* id;
+    unsigned char *bitfield;
+    char *id;
     PEER_STATUS status;
+    bool peer_choked;
+    bool client_choked;
+    bool peer_interest;
+    bool client_interest;
     int socket;
     time_t last_msg;
 } peer_t;
