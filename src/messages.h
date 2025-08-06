@@ -39,7 +39,7 @@ typedef enum {
  * @param id Message ID identifying the type of message (e.g. choke, interested)
  * @param payload Message payload data (can be NULL for messages without payload)
  */
-typedef struct __attribute__((packed)) {
+typedef struct {
     uint32_t length;
     MESSAGE_ID id;
     unsigned char *payload;
