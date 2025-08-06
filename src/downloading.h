@@ -18,6 +18,13 @@ typedef enum {
     PEER_NO_BITFIELD
 } PEER_STATUS;
 
+typedef struct {
+    char* bitfield;
+    char* id;
+    PEER_STATUS status;
+    int socket;
+} peer_t;
+
 /**
  * Downloads & uploads torrent
  * @param metainfo The torrent metainfo extracted from the .torrent file

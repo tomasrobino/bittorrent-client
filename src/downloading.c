@@ -117,22 +117,18 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     }
 
     current_peer = announce_response->peer_list;
-    char** peer_id_array = malloc(sizeof(char*) * peer_amount);
-    memset(peer_id_array, 0, sizeof(char*) * peer_amount);
     // Checking connections with epoll
     struct epoll_event epoll_events[MAX_EVENTS];
-    // Status of each socket
-    PEER_STATUS* socket_status_array = malloc(sizeof(int)*peer_amount);
-    // peer_id of each peer
-    const char** foreign_id_array = malloc(sizeof(char*)*peer_amount);
-    memset(socket_status_array, 0, sizeof(int)*peer_amount);
     // General bitfield. Each piece takes up 1 bit
     const unsigned int bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
     char* bitfield = malloc(bitfield_byte_size);
     memset(bitfield, 0, bitfield_byte_size);
-    // Array for bitfields of all peers
-    char** foreign_bitfield_array = malloc(sizeof(char*)*peer_amount);
-    memset(foreign_bitfield_array, 0, sizeof(char*)*peer_amount);
+    // Peer struct
+    peer_t* peer_array = malloc(sizeof(peer_t)*peer_amount);
+    memset(peer_array, 0, sizeof(peer_t)*peer_amount);
+    for (int i = 0; i < peer_amount; ++i) {
+        peer_array[i].socket = peer_socket_array[i];
+    }
 
     /*
      *
@@ -154,7 +150,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
         for (int i = 0; i < nfds; ++i) {
             const int index = (int) epoll_events[i].data.u32;
             const int fd = peer_socket_array[index];
-            PEER_STATUS* status = &socket_status_array[index];
+            PEER_STATUS* status = &peer_array[index].status;
 
             // DEALING WITH CONNECTING
             // After calling connect()
@@ -197,7 +193,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 const char* foreign_id = handshake_response(fd, metainfo.info->hash);
                 if (foreign_id != nullptr) {
                     *status = PEER_HANDSHAKE_SUCCESS;
-                    foreign_id_array[index] = foreign_id;
+                    peer_array[index].id = (char*)foreign_id;
                     fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
                     *status = PEER_CONNECTION_SUCCESS;
@@ -219,7 +215,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                     case HAVE:
                         break;
                     case BITFIELD:
-                        foreign_bitfield_array[index] = message->payload;
+                        peer_array[index].bitfield = message->payload;
                         break;
                     case REQUEST:
                         break;
@@ -242,12 +238,8 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     }
     // Freeing bitfield
     free(bitfield);
-    // Freeing peer arrays
-    free(socket_status_array);
-    free(foreign_id_array);
-    free(foreign_bitfield_array);
-    // Freeing peers
-    free(peer_id_array);
+    // Freeing peer array
+    free(peer_array);
     free(peer_socket_array);
     free(peer_addr_array);
     // Freeing announce response

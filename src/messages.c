@@ -71,7 +71,7 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
 bittorrent_message_t* read_message(const int sockfd) {
     bittorrent_message_t* message = malloc(sizeof(bittorrent_message_t));
     memset(message, 0, sizeof(bittorrent_message_t));
-    ssize_t bytes_received = recv(sockfd, &message, MESSAGE_MIN_SIZE, 0);
+    ssize_t bytes_received = recv(sockfd, message, MESSAGE_MIN_SIZE, 0);
     if (bytes_received < 5 || message->id < 0 || message->id > 9) {
         free(message);
         return nullptr;
@@ -79,7 +79,11 @@ bittorrent_message_t* read_message(const int sockfd) {
     message->length = htobe32(message->length);
     if (message->length-1 > 0) {
         message->payload = malloc(message->length-1);
-        bytes_received = recv(sockfd, &message->payload, MESSAGE_MIN_SIZE, 0);
+        unsigned int total = 0;
+        while (total < message->length-1) {
+            bytes_received = recv(sockfd, (message->payload)+total, message->length-1, 0);
+            total+=bytes_received;
+        }
         if (bytes_received < message->length-1) {
             return nullptr;
         }
