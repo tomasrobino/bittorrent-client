@@ -268,8 +268,8 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                             bit_offset = global_block_index % 8;
                             if (!(block_tracker[byte_index] >> (7 - bit_offset) & 1)) {
                                 // TODO actually saving block data to disk
-                            }
-                        }
+                            } else fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
+                        } else fprintf(stderr, "Piece received in socket %d already extant", fd);
                         break;
                     case CANCEL:
                         break;
