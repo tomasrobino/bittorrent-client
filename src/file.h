@@ -4,13 +4,15 @@
 #include "util.h"
 
 /**
- * Represents a linked list node for managing file information in a linked list structure.
+ * @brief Represents a linked list node for managing file information in a linked list structure.
  * Each node contains data about a file and a pointer to the next node in the list.
+ *
+ * @struct files_ll
  */
 typedef struct files_ll {
-    struct files_ll* next;
-    unsigned long length;
-    ll* path;
+    struct files_ll *next; /**< Pointer to next node in the list */
+    unsigned long length; /**< Length of the file in bytes */
+    ll *path; /**< Linked list containing the file path components */
 } files_ll;
 
 /**
