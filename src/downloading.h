@@ -1,11 +1,12 @@
 #ifndef DOWNLOADING_H
 #define DOWNLOADING_H
-
+#include "file.h"
 // Maximum events cached by epoll
 #define MAX_EVENTS 128
 // Maximum amount of time epoll will wait for sockets to be ready (in milliseconds)
 #define EPOLL_TIMEOUT 5000
-#include "file.h"
+// Download block size in bytes (16KB)
+#define BLOCK_SIZE 16384
 
 // Enum for peer statuses
 typedef enum {

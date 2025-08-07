@@ -125,6 +125,11 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     const unsigned int bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
     unsigned char* bitfield = malloc(bitfield_byte_size);
     memset(bitfield, 0, bitfield_byte_size);
+    // TODO Keep track of downloaded blocks
+    // Downloaded index for each block in a piece
+    unsigned int block_tracker_bytesize = ceil( ceil(metainfo.info->piece_number*metainfo.info->piece_length / BLOCK_SIZE) / 8 );
+    unsigned char* block_tracker = malloc(block_tracker_bytesize);
+    memset(block_tracker, 0, block_tracker_bytesize);
     // Peer struct
     peer_t* peer_array = malloc(sizeof(peer_t)*peer_amount);
     memset(peer_array, 0, sizeof(peer_t)*peer_amount);
@@ -239,14 +244,23 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                             const request_t* request = (request_t*) message->payload;
                             byte_index = request->index / 8;
                             bit_offset = 7 - request->index % 8;
-                            if (peer.bitfield[byte_index] &= 1 << bit_offset != 0) {
+                            if ((peer.bitfield[byte_index] & 1 << bit_offset) != 0) {
                                 // If this client has the requested piece
                                 //TODO send requested piece
                             }
                         }
                         break;
                     case PIECE:
-
+                        const piece_t* piece = (piece_t*) message->payload;
+                        byte_index = piece->index / 8;
+                        bit_offset = 7 - piece->index % 8;
+                        if ((bitfield[byte_index] & 1 << bit_offset) == 0) {
+                            // If this client doesn't have the piece received
+                            byte_index = piece->index / 8;
+                            bit_offset = 7 - piece->index % 8;
+                            bitfield[byte_index] |= 1 << bit_offset;
+                            // TODO actually saving block data to disk
+                        }
                         break;
                     case CANCEL:
                         break;
@@ -265,6 +279,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     }
     // Freeing bitfield
     free(bitfield);
+    free(block_tracker);
     // Freeing peer array
     free(peer_array);
     free(peer_socket_array);
