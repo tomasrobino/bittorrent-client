@@ -125,9 +125,8 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     const unsigned int bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
     unsigned char* bitfield = malloc(bitfield_byte_size);
     memset(bitfield, 0, bitfield_byte_size);
-    // TODO Keep track of downloaded blocks
     // Downloaded index for each block in a piece
-    unsigned int block_tracker_bytesize = ceil( ceil(metainfo.info->piece_number*metainfo.info->piece_length / BLOCK_SIZE) / 8 );
+    unsigned int block_tracker_bytesize = ceil( ceil(metainfo.info->piece_number*metainfo.info->piece_length / (double)BLOCK_SIZE) / 8.0 );
     unsigned char* block_tracker = malloc(block_tracker_bytesize);
     memset(block_tracker, 0, block_tracker_bytesize);
     // Peer struct
