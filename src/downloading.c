@@ -125,8 +125,15 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     const unsigned int bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
     unsigned char* bitfield = malloc(bitfield_byte_size);
     memset(bitfield, 0, bitfield_byte_size);
+    // Size in bytes of the block tracket
+    unsigned int block_tracker_bytesize = ceil(
+        ceil(
+            metainfo.info->piece_number*metainfo.info->piece_length / (double)BLOCK_SIZE
+        ) / 8.0
+    );
+    // Actual amount of blocks per piece (not bytes)
+    unsigned int blocks_per_piece = ceil(metainfo.info->piece_length / (double)BLOCK_SIZE);
     // Downloaded index for each block in a piece
-    unsigned int block_tracker_bytesize = ceil( ceil(metainfo.info->piece_number*metainfo.info->piece_length / (double)BLOCK_SIZE) / 8.0 );
     unsigned char* block_tracker = malloc(block_tracker_bytesize);
     memset(block_tracker, 0, block_tracker_bytesize);
     // Peer struct
@@ -210,8 +217,8 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
             }
             // Process messages
             if (peer.status >= PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
-                size_t byte_index = 0;
-                size_t bit_offset = 0;
+                unsigned int byte_index = 0;
+                unsigned int bit_offset = 0;
                 const bittorrent_message_t* message = read_message(fd, &peer.last_msg);
                 switch (message->id) {
                     case CHOKE:
@@ -253,12 +260,15 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         const piece_t* piece = (piece_t*) message->payload;
                         byte_index = piece->index / 8;
                         bit_offset = 7 - piece->index % 8;
+                        // If this client doesn't have the piece received
                         if ((bitfield[byte_index] & 1 << bit_offset) == 0) {
-                            // If this client doesn't have the piece received
-                            byte_index = piece->index / 8;
-                            bit_offset = 7 - piece->index % 8;
-                            bitfield[byte_index] |= 1 << bit_offset;
-                            // TODO actually saving block data to disk
+                            // If this client doesn't have the block received
+                            unsigned int global_block_index = piece->index * blocks_per_piece + piece->begin;
+                            byte_index = global_block_index / 8;
+                            bit_offset = global_block_index % 8;
+                            if (!(block_tracker[byte_index] >> (7 - bit_offset) & 1)) {
+                                // TODO actually saving block data to disk
+                            }
                         }
                         break;
                     case CANCEL:
