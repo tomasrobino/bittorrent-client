@@ -23,51 +23,37 @@ typedef struct announce_list_ll {
 } announce_list_ll;
 
 /**
- * Represents metadata and content information for a torrent file.
+ * @brief Represents metadata and content information for a torrent file.
  * Contains details about file(s), piece information, and hash identifiers.
- *
- * @field files Linked list of file information for multi-file torrents
- * @field length Total size of all files in the torrent in bytes
- * @field name Name of the torrent (single file) or directory name (multiple files)
- * @field piece_length Size of each piece in bytes
- * @field piece_number Total number of pieces
- * @field pieces String containing SHA1 hashes of all pieces concatenated
- * @field priv Whether the torrent is private (true) or public (false)
- * @field hash 20-byte SHA1 hash of the info dictionary
- * @field human_hash 40-character hex string representation of info hash
+ * 
+ * @struct info_t
  */
 typedef struct {
-    files_ll *files;
-    unsigned long length;
-    char *name;
-    unsigned int piece_length;
-    unsigned int piece_number;
-    char *pieces;
-    bool priv;
-    char hash[21];
-    char human_hash[41];
+    files_ll *files; /**< Linked list of file information for multi-file torrents */
+    unsigned long length; /**< Total size of all files in the torrent in bytes */
+    char *name; /**< Name of the torrent (single file) or directory name (multiple files) */
+    unsigned int piece_length; /**< Size of each piece in bytes */
+    unsigned int piece_number; /**< Total number of pieces */
+    char *pieces; /**< String containing SHA1 hashes of all pieces concatenated */
+    bool priv; /**< Whether the torrent is private (true) or public (false) */
+    char hash[21]; /**< 20-byte SHA1 hash of the info dictionary */
+    char human_hash[41]; /**< 40-character hex string representation of info hash */
 } info_t;
 
 /**
- * Represents the complete metadata structure of a torrent file.
+ * @brief Represents the complete metadata structure of a torrent file.
  * Contains primary tracker URL, tracker lists, and other descriptive information.
  *
- * @field announce Primary tracker URL that clients use to connect
- * @field announce_list List of backup tracker URLs organized in tiers
- * @field comment Optional descriptive comment about the torrent
- * @field created_by Optional string identifying the program used to create the torrent
- * @field creation_date Unix timestamp when the torrent was created
- * @field encoding Optional string specifying character encoding of strings in the torrent
- * @field info Pointer to structure containing core torrent content information
+ * @struct metainfo_t
  */
 typedef struct {
-    char *announce;
-    announce_list_ll *announce_list;
-    char *comment;
-    char *created_by;
-    unsigned int creation_date;
-    char *encoding;
-    info_t *info;
+    char *announce; /**< Primary tracker URL that clients use to connect */
+    announce_list_ll *announce_list; /**< List of backup tracker URLs organized in tiers */
+    char *comment; /**< Optional descriptive comment about the torrent */
+    char *created_by; /**< Optional string identifying the program used to create the torrent */
+    unsigned int creation_date; /**< Unix timestamp when the torrent was created */
+    char *encoding; /**< Optional string specifying character encoding of strings in the torrent */
+    info_t *info; /**< Pointer to structure containing core torrent content information */
 } metainfo_t;
 
 /**
