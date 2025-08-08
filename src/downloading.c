@@ -52,14 +52,15 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     } else asked_bytes = BLOCK_SIZE;
     // Finding out to which file the block belongs
     const files_ll* current = files_metainfo;
-    while (current != nullptr) {
+    bool done = false;
+    while (current != nullptr && !done) {
         byte_counter -= current->length;
         if (byte_counter <= 0) {
             // Getting absolute value, to know how many bytes remain in this file
             byte_counter = byte_counter < 0 ? -byte_counter : byte_counter;
             char* filepath_char = nullptr;
             get_path(current->path, &filepath_char);
-            FILE *file = fopen(filepath_char, "wb");
+            FILE *file = fopen(filepath_char, "rb+");
             if (file == NULL) {
                 fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
                 free(filepath_char);
@@ -68,8 +69,10 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
 
             // Getting how many bytes to read to this file
             long long this_file_ask;
-            if (byte_counter > asked_bytes) {
+            if (byte_counter >= asked_bytes) { // If the block ends before or at the same byte as the file
                 this_file_ask = asked_bytes;
+                // Since there are no other files in the block, done
+                done = true;
             } else this_file_ask = (long long)byte_counter; // Narrowing conversion is fine, byte_counter can't be larger than BLOCK_SIZE
             // Advancing file pointer to proper position
             fseeko(file, (long long)(current->length-byte_counter), SEEK_SET);
@@ -77,10 +80,14 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
 
             // Buffer for recv()
             unsigned char buffer[BLOCK_SIZE];
-            // Bytes received in recv()
-            ssize_t bytes_received;
             // Reading from socket and writing to file
-            while ((bytes_received = recv(sockfd, buffer, this_file_ask, 0)) > 0) {
+            do {
+                const ssize_t bytes_received = recv(sockfd, buffer, this_file_ask, 0);
+                if (bytes_received < 1) {
+                    free(filepath_char);
+                    fclose(file);
+                    return 3;
+                }
                 const size_t bytes_written = fwrite(buffer, 1, bytes_received, file);
                 if (bytes_written != (size_t)bytes_received) {
                     fprintf(stderr, "Failed to write to file in download_block() for socket %d\n", sockfd);
@@ -90,7 +97,8 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                 }
                 fprintf(stdout, "Wrote %lu bytes to file %s in download_block() for socket %d\n", bytes_written, filepath_char, sockfd);
                 this_file_ask-=bytes_received;
-            }
+            } while (this_file_ask > 0);
+
             fclose(file);
             free(filepath_char);
         }
