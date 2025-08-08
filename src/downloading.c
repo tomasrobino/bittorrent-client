@@ -70,11 +70,12 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
         free(filepath_char);
         return 1;
     }
-    // Reading from socket and writing to file
+    // Getting how many bytes to read to this file
     long long this_file_ask;
     if (byte_counter > asked_bytes) {
         this_file_ask = asked_bytes;
-    } else this_file_ask = (long long)byte_counter; // Narrowing conversion is fine, byte_counter can't be larget than BLOCK_SIZE
+    } else this_file_ask = (long long)byte_counter; // Narrowing conversion is fine, byte_counter can't be larger than BLOCK_SIZE
+    // Reading from socket and writing to file
     while ((bytes_received = recv(sockfd, buffer, this_file_ask, 0)) > 0) {
         const size_t bytes_written = fwrite(buffer, 1, bytes_received, file);
         if (bytes_written != (size_t)bytes_received) {
