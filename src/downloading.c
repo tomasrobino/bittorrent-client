@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <sys/stat.h>
 #include <math.h>
 #include <time.h>
 
@@ -36,9 +37,8 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     ll* filepath = nullptr;
     unsigned int filepath_size = 0;
     while (current != nullptr) {
-        if (byte_counter - current->length > 0) {
-            byte_counter =  byte_counter - current->length;
-        } else {
+        byte_counter -= current->length;
+        if (byte_counter < 0) {
             filepath = current->path;
             // Getting the amount of chars in the complete filepath
             while (filepath != nullptr) {
@@ -50,6 +50,8 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
         }
         current = current->next;
     }
+    // Getting absolute value, to know how many bytes remain in this file
+    byte_counter = byte_counter < 0 ? -byte_counter : byte_counter;
 
     char *filepath_char = malloc(filepath_size);
     filepath_size = 0;
@@ -69,7 +71,11 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
         return 1;
     }
     // Reading from socket and writing to file
-    while ((bytes_received = recv(sockfd, buffer, asked_bytes, 0)) > 0) {
+    long long this_file_ask;
+    if (byte_counter > asked_bytes) {
+        this_file_ask = asked_bytes;
+    } else this_file_ask = (long long)byte_counter; // Narrowing conversion is fine, byte_counter can't be larget than BLOCK_SIZE
+    while ((bytes_received = recv(sockfd, buffer, this_file_ask, 0)) > 0) {
         const size_t bytes_written = fwrite(buffer, 1, bytes_received, file);
         if (bytes_written != (size_t)bytes_received) {
             fprintf(stderr, "Failed to write to file in download_block() for socket %d\n", sockfd);
@@ -77,7 +83,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             return 2;
         }
         fprintf(stdout, "Wrote %lu bytes to file %s in download_block() for socket %d\n", bytes_written, filepath_char, sockfd);
-        asked_bytes-=bytes_received;
+        this_file_ask-=bytes_received;
     }
 
     free(filepath_char);
