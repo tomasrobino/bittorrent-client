@@ -39,14 +39,14 @@ void get_path(const ll* filepath, char** return_charpath) {
 }
 
 int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, const files_ll* files_metainfo) {
-    __int128_t byte_counter = piece_index*piece_size + byte_offset;
+    int64_t byte_counter = piece_index*piece_size + byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     /*
      * Maybe I'll turn this into a parameter instead
      */
-    long long asked_bytes;
+    int64_t asked_bytes;
     // If last block
-    const long block_amount = ceil(piece_size/(double)BLOCK_SIZE);
+    const long block_amount = (piece_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
     if (block_amount-1 == byte_offset/BLOCK_SIZE) {
         asked_bytes = piece_size - BLOCK_SIZE * (block_amount-1);
     } else asked_bytes = BLOCK_SIZE;
@@ -73,9 +73,9 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                 this_file_ask = asked_bytes;
                 // Since there are no other files in the block, done
                 done = true;
-            } else this_file_ask = (long long)byte_counter; // Narrowing conversion is fine, byte_counter can't be larger than BLOCK_SIZE
+            } else this_file_ask = byte_counter; // Narrowing conversion is fine, byte_counter can't be larger than BLOCK_SIZE
             // Advancing file pointer to proper position
-            fseeko(file, (long long)(current->length-byte_counter), SEEK_SET);
+            fseeko(file, current->length-byte_counter, SEEK_SET);
 
 
             // Buffer for recv()
@@ -358,10 +358,10 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                             bit_offset = global_block_index % 8;
                             if (!(block_tracker[byte_index] >> (7 - bit_offset) & 1)) {
                                 // If last piece, it's smaller
-                                long long p_len;
+                                int64_t p_len;
                                 if (piece->index == metainfo.info->piece_number-1) {
                                     // Conversion is fine beacuse single pieces aren't that large
-                                    p_len = (long long)(metainfo.info->length - piece->index*metainfo.info->piece_length);
+                                    p_len = metainfo.info->length - piece->index*metainfo.info->piece_length;
                                 } else p_len = metainfo.info->piece_length;
                                 int block_result = download_block(fd, piece->index, p_len, piece->begin, metainfo.info->files);
                             } else fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);

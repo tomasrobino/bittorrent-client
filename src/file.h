@@ -11,7 +11,7 @@
  */
 typedef struct files_ll {
     struct files_ll *next; /**< Pointer to next node in the list */
-    unsigned long length; /**< Length of the file in bytes */
+    int64_t length; /**< Length of the file in bytes */
     ll *path; /**< Linked list containing the file path components */
 } files_ll;
 
@@ -34,7 +34,7 @@ typedef struct announce_list_ll {
  */
 typedef struct {
     files_ll *files; /**< Linked list of file information for multi-file torrents */
-    unsigned long length; /**< Total size of all files in the torrent in bytes */
+    int64_t length; /**< Total size of all files in the torrent in bytes */
     char *name; /**< Name of the torrent (single file) or directory name (multiple files) */
     unsigned int piece_length; /**< Size of each piece in bytes */
     unsigned int piece_number; /**< Total number of pieces */
