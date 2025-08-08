@@ -50,10 +50,6 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     if (block_amount-1 == byte_offset/BLOCK_SIZE) {
         asked_bytes = piece_size - BLOCK_SIZE * (block_amount-1);
     } else asked_bytes = BLOCK_SIZE;
-    // Buffer for recv()
-    unsigned char buffer[BLOCK_SIZE];
-    // Bytes received in recv()
-    ssize_t bytes_received;
     // Finding out to which file the block belongs
     const files_ll* current = files_metainfo;
     while (current != nullptr) {
@@ -79,6 +75,10 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             fseeko(file, (long long)(current->length-byte_counter), SEEK_SET);
 
 
+            // Buffer for recv()
+            unsigned char buffer[BLOCK_SIZE];
+            // Bytes received in recv()
+            ssize_t bytes_received;
             // Reading from socket and writing to file
             while ((bytes_received = recv(sockfd, buffer, this_file_ask, 0)) > 0) {
                 const size_t bytes_written = fwrite(buffer, 1, bytes_received, file);
