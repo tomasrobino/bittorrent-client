@@ -8,11 +8,9 @@
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include <math.h>
-
-#include "downloading.h"
-
 #include <time.h>
 
+#include "downloading.h"
 #include "messages.h"
 #include "predownload_udp.h"
 #include "whole_bencode.h"
