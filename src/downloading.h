@@ -58,7 +58,7 @@ typedef struct {
  * @return Returns 0 on success, or a non-zero value if an error occurs during
  *         downloading or file operations.
  */
-int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size, int byte_offset, const files_ll* files_metainfo);
+int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size, unsigned int byte_offset, const files_ll* files_metainfo);
 
 /**
  * Downloads & uploads torrent

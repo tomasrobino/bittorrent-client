@@ -15,7 +15,7 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
-int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const int byte_offset, const files_ll* files_metainfo) {
+int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, const files_ll* files_metainfo) {
     __int128_t byte_counter = piece_index*piece_size + byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     /*
