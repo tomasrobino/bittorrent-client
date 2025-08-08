@@ -45,19 +45,20 @@ typedef struct {
 } peer_t;
 
 /**
- * Downloads a specific block of data from a given socket and writes it to the appropriate file.
+ * Downloads a specific block of data from a peer over a socket and writes it
+ * to the corresponding file on disk.
  *
- * @param sockfd The socket file descriptor to read data from.
+ * @param sockfd The socket file descriptor used for downloading the data.
  * @param piece_index The index of the piece to which the block belongs.
- * @param piece_size The size of the piece in bytes.
- * @param block_index The index of the block within the piece.
- * @param blocks_per_piece The total number of blocks in the piece.
- * @param files_metainfo Pointer to the linked list structure describing the files and their metadata.
- * @return 0 on successful download and write operation.
- *         1 if the file could not be opened.
- *         2 if writing to the file fails.
+ * @param piece_size The total size of the piece in bytes.
+ * @param byte_offset The byte offset within the piece where the block starts.
+ * @param files_metainfo A pointer to a linked list containing file metadata,
+ *        including file lengths and paths, used to determine the destination
+ *        of the downloaded block.
+ * @return Returns 0 on success, or a non-zero value if an error occurs during
+ *         downloading or file operations.
  */
-int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size, unsigned int block_index, unsigned int blocks_per_piece, const files_ll* files_metainfo);
+int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size, int byte_offset, const files_ll* files_metainfo);
 
 /**
  * Downloads & uploads torrent

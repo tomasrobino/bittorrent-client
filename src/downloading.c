@@ -15,8 +15,8 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
-int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int block_index, const unsigned int blocks_per_piece, const files_ll* files_metainfo) {
-    __int128_t byte_counter = piece_index*piece_size + block_index*BLOCK_SIZE;
+int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const int byte_offset, const files_ll* files_metainfo) {
+    __int128_t byte_counter = piece_index*piece_size + byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     /*
      * Maybe I'll turn this into a parameter instead
@@ -24,7 +24,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     long long asked_bytes;
     // If last block
     const long block_amount = ceil(piece_size/(double)BLOCK_SIZE);
-    if (block_amount-1 == block_index) {
+    if (block_amount-1 == byte_offset/BLOCK_SIZE) {
         asked_bytes = piece_size - BLOCK_SIZE * (block_amount-1);
     } else asked_bytes = BLOCK_SIZE;
     // Buffer for recv()
@@ -334,7 +334,14 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                             byte_index = global_block_index / 8;
                             bit_offset = global_block_index % 8;
                             if (!(block_tracker[byte_index] >> (7 - bit_offset) & 1)) {
-                                // TODO actually saving block data to disk
+                                unsigned int p_len = metainfo.info->piece_length;
+                                // If last piece, it's smaller
+                                long long this_piece_size;
+                                if (piece->index == metainfo.info->piece_number-1) {
+                                    // Conversion is fine beacuse single pieces aren't that large
+                                    this_piece_size = (long long)(metainfo.info->length - piece->index*metainfo.info->piece_length);
+                                } else this_piece_size = metainfo.info->piece_length;
+                                int block_result = download_block(fd, piece->index, this_piece_size, piece->begin, metainfo.info->files);
                             } else fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
                         } else fprintf(stderr, "Piece received in socket %d already extant", fd);
                         break;
