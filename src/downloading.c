@@ -18,24 +18,28 @@
 #include "whole_bencode.h"
 
 int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int block_index, const unsigned int blocks_per_piece, const files_ll* files_metainfo) {
-    long long byte_counter = piece_index*piece_size + block_index*BLOCK_SIZE;
+    __int128_t byte_counter = piece_index*piece_size + block_index*BLOCK_SIZE;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
+    /*
+     * Maybe I'll turn this into a parameter instead
+     */
     long long asked_bytes;
     // If last block
     const long block_amount = ceil(piece_size/(double)BLOCK_SIZE);
     if (block_amount-1 == block_index) {
         asked_bytes = piece_size - BLOCK_SIZE * (block_amount-1);
     } else asked_bytes = BLOCK_SIZE;
-
+    // Buffer for recv()
     unsigned char buffer[BLOCK_SIZE];
+    // Bytes received in recv()
     ssize_t bytes_received;
-    const files_ll* current = files_metainfo;
     // Finding out to which file the block belongs
+    const files_ll* current = files_metainfo;
     ll* filepath = nullptr;
     unsigned int filepath_size = 0;
     while (current != nullptr) {
         if (byte_counter - current->length > 0) {
-            byte_counter -= current->length;
+            byte_counter =  byte_counter - current->length;
         } else {
             filepath = current->path;
             // Getting the amount of chars in the complete filepath
