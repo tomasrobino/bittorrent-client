@@ -1,10 +1,13 @@
 // Project header files
+#include <errno.h>
+
 #include "whole_bencode.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "predownload_udp.h"
 #include "downloading.h"
@@ -57,6 +60,12 @@ int main(const int argc, char* argv[]) {
         } else fprintf(stderr, "Torrent file not found");
 
         if (buffer && length != 0) {
+            errno = 0;
+            const int mk_res = mkdir(argv[2], 0755);
+            if (mk_res == -1 && errno != 0) {
+                fprintf(stderr, "Error when creating torrent directory. Errno: %d", errno);
+                return 2;
+            }
             metainfo_t* metainfo = parse_metainfo(buffer, length);
             torrent(*metainfo, peer_id);
 
