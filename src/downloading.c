@@ -334,14 +334,13 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                             byte_index = global_block_index / 8;
                             bit_offset = global_block_index % 8;
                             if (!(block_tracker[byte_index] >> (7 - bit_offset) & 1)) {
-                                unsigned int p_len = metainfo.info->piece_length;
                                 // If last piece, it's smaller
-                                long long this_piece_size;
+                                long long p_len;
                                 if (piece->index == metainfo.info->piece_number-1) {
                                     // Conversion is fine beacuse single pieces aren't that large
-                                    this_piece_size = (long long)(metainfo.info->length - piece->index*metainfo.info->piece_length);
-                                } else this_piece_size = metainfo.info->piece_length;
-                                int block_result = download_block(fd, piece->index, this_piece_size, piece->begin, metainfo.info->files);
+                                    p_len = (long long)(metainfo.info->length - piece->index*metainfo.info->piece_length);
+                                } else p_len = metainfo.info->piece_length;
+                                int block_result = download_block(fd, piece->index, p_len, piece->begin, metainfo.info->files);
                             } else fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
                         } else fprintf(stderr, "Piece received in socket %d already extant", fd);
                         break;
