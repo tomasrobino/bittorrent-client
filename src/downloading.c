@@ -16,6 +16,28 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
+void get_path(const ll* filepath, char** return_charpath) {
+    // Getting the amount of chars in the complete filepath
+    int filepath_size = 0;
+    const ll* filepath_ptr = filepath;
+    while (filepath_ptr != nullptr) {
+        // The +1 is for slashes and null terminator
+        filepath_size += (int) strlen(filepath_ptr->val) + 1;
+        filepath_ptr = filepath_ptr->next;
+    }
+    *return_charpath = malloc(filepath_size);
+    filepath_ptr = filepath;
+    // Copying full path as string into *return_charpath
+    while (filepath_ptr != nullptr) {
+        //TODO create directories
+        strncpy(*return_charpath + filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
+        filepath_size += (int)strlen(filepath_ptr->val);
+        (*return_charpath)[filepath_size] = '/';
+        filepath_ptr = filepath_ptr->next;
+    }
+    (*return_charpath)[filepath_size] = '\0';
+}
+
 int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, const files_ll* files_metainfo) {
     __int128_t byte_counter = piece_index*piece_size + byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
@@ -34,60 +56,46 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     ssize_t bytes_received;
     // Finding out to which file the block belongs
     const files_ll* current = files_metainfo;
-    ll* filepath = nullptr;
-    unsigned int filepath_size = 0;
     while (current != nullptr) {
         byte_counter -= current->length;
-        if (byte_counter < 0) {
-            filepath = current->path;
-            // Getting the amount of chars in the complete filepath
-            while (filepath != nullptr) {
-                // The +1 is for slashes and null terminator
-                filepath_size += strlen(filepath->val) + 1;
-                filepath = filepath->next;
+        if (byte_counter <= 0) {
+            // Getting absolute value, to know how many bytes remain in this file
+            byte_counter = byte_counter < 0 ? -byte_counter : byte_counter;
+            char* filepath_char = nullptr;
+            get_path(current->path, &filepath_char);
+            FILE *file = fopen(filepath_char, "wb");
+            if (file == NULL) {
+                fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
+                free(filepath_char);
+                return 1;
             }
-            filepath = current->path;
+
+            // Getting how many bytes to read to this file
+            long long this_file_ask;
+            if (byte_counter > asked_bytes) {
+                this_file_ask = asked_bytes;
+            } else this_file_ask = (long long)byte_counter; // Narrowing conversion is fine, byte_counter can't be larger than BLOCK_SIZE
+            // Advancing file pointer to proper position
+            fseeko(file, (long long)(current->length-byte_counter), SEEK_SET);
+
+
+            // Reading from socket and writing to file
+            while ((bytes_received = recv(sockfd, buffer, this_file_ask, 0)) > 0) {
+                const size_t bytes_written = fwrite(buffer, 1, bytes_received, file);
+                if (bytes_written != (size_t)bytes_received) {
+                    fprintf(stderr, "Failed to write to file in download_block() for socket %d\n", sockfd);
+                    free(filepath_char);
+                    fclose(file);
+                    return 2;
+                }
+                fprintf(stdout, "Wrote %lu bytes to file %s in download_block() for socket %d\n", bytes_written, filepath_char, sockfd);
+                this_file_ask-=bytes_received;
+            }
+            fclose(file);
+            free(filepath_char);
         }
         current = current->next;
     }
-    // Getting absolute value, to know how many bytes remain in this file
-    byte_counter = byte_counter < 0 ? -byte_counter : byte_counter;
-
-    char *filepath_char = malloc(filepath_size);
-    filepath_size = 0;
-    ll* filepath_ptr = filepath;
-    // Copying full path as string into filepath_char
-    while (filepath_ptr != nullptr) {
-        strncpy(filepath_char+filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
-        filepath_size += strlen(filepath_ptr->val);
-        filepath_ptr = filepath_ptr->next;
-    }
-    filepath_char[filepath_size] = '\0';
-
-    FILE *file = fopen(filepath_char, "wb");
-    if (file == NULL) {
-        fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
-        free(filepath_char);
-        return 1;
-    }
-    // Getting how many bytes to read to this file
-    long long this_file_ask;
-    if (byte_counter > asked_bytes) {
-        this_file_ask = asked_bytes;
-    } else this_file_ask = (long long)byte_counter; // Narrowing conversion is fine, byte_counter can't be larger than BLOCK_SIZE
-    // Reading from socket and writing to file
-    while ((bytes_received = recv(sockfd, buffer, this_file_ask, 0)) > 0) {
-        const size_t bytes_written = fwrite(buffer, 1, bytes_received, file);
-        if (bytes_written != (size_t)bytes_received) {
-            fprintf(stderr, "Failed to write to file in download_block() for socket %d\n", sockfd);
-            free(filepath_char);
-            return 2;
-        }
-        fprintf(stdout, "Wrote %lu bytes to file %s in download_block() for socket %d\n", bytes_written, filepath_char, sockfd);
-        this_file_ask-=bytes_received;
-    }
-
-    free(filepath_char);
     return 0;
 }
 
