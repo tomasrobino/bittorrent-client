@@ -17,6 +17,73 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
+int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int block_index, const unsigned int blocks_per_piece, const files_ll* files_metainfo) {
+    long long byte_counter = piece_index*piece_size + block_index*BLOCK_SIZE;
+    // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
+    long long asked_bytes;
+    // If last block
+    const long block_amount = ceil(piece_size/(double)BLOCK_SIZE);
+    if (block_amount-1 == block_index) {
+        asked_bytes = piece_size - BLOCK_SIZE * (block_amount-1);
+    } else asked_bytes = BLOCK_SIZE;
+
+    unsigned char buffer[BLOCK_SIZE];
+    ssize_t bytes_received;
+    const files_ll* current = files_metainfo;
+    // Finding out to which file the block belongs
+    ll* filepath = nullptr;
+    unsigned int filepath_size = 0;
+    while (current != nullptr) {
+        if (byte_counter - current->length > 0) {
+            byte_counter -= current->length;
+        } else {
+            filepath = current->path;
+            // Getting the amount of chars in the complete filepath
+            while (filepath != nullptr) {
+                // The +1 is for slashes and null terminator
+                filepath_size += strlen(filepath->val) + 1;
+                filepath = filepath->next;
+            }
+            filepath = current->path;
+        }
+        current = current->next;
+    }
+
+    char *filepath_char = malloc(filepath_size);
+    filepath_size = 0;
+    ll* filepath_ptr = filepath;
+    // Copying full path as string into filepath_char
+    while (filepath_ptr != nullptr) {
+        strncpy(filepath_char+filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
+        filepath_size += strlen(filepath_ptr->val);
+        filepath_ptr = filepath_ptr->next;
+    }
+    filepath_char[filepath_size] = '\0';
+
+    FILE *file = fopen(filepath_char, "wb");
+    if (file == NULL) {
+        fprintf(stderr, "Failed to open file in download_block() for socket %d", sockfd);
+        free(filepath_char);
+        return 1;
+    }
+
+    unsigned int block_count = 0;
+    while ((bytes_received = recv(sockfd, buffer, asked_bytes-block_count, 0)) > 0) {
+        const size_t bytes_written = fwrite(buffer, 1, bytes_received, file);
+        block_count+=bytes_written;
+        if (bytes_written != (size_t)bytes_received) {
+            fprintf(stderr, "Failed to write to file in download_block() for socket %d", sockfd);
+            break;
+        }
+
+        if (block_index == blocks_per_piece-1) {
+
+        }
+    }
+
+    free(filepath_char);
+}
+
 int torrent(const metainfo_t metainfo, const char* peer_id) {
     // For storing socket that successfully connected
     int successful_index = 0;
