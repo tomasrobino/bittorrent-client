@@ -66,26 +66,24 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
 
     FILE *file = fopen(filepath_char, "wb");
     if (file == NULL) {
-        fprintf(stderr, "Failed to open file in download_block() for socket %d", sockfd);
+        fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
         free(filepath_char);
         return 1;
     }
-
-    unsigned int block_count = 0;
-    while ((bytes_received = recv(sockfd, buffer, asked_bytes-block_count, 0)) > 0) {
+    // Reading from socket and writing to file
+    while ((bytes_received = recv(sockfd, buffer, asked_bytes, 0)) > 0) {
         const size_t bytes_written = fwrite(buffer, 1, bytes_received, file);
-        block_count+=bytes_written;
         if (bytes_written != (size_t)bytes_received) {
-            fprintf(stderr, "Failed to write to file in download_block() for socket %d", sockfd);
-            break;
+            fprintf(stderr, "Failed to write to file in download_block() for socket %d\n", sockfd);
+            free(filepath_char);
+            return 2;
         }
-
-        if (block_index == blocks_per_piece-1) {
-
-        }
+        fprintf(stdout, "Wrote %lu bytes to file %s in download_block() for socket %d\n", bytes_written, filepath_char, sockfd);
+        asked_bytes-=bytes_received;
     }
 
     free(filepath_char);
+    return 0;
 }
 
 int torrent(const metainfo_t metainfo, const char* peer_id) {
