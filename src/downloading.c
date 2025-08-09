@@ -100,8 +100,13 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             } while (this_file_ask > 0);
 
             asked_bytes -= this_file_ask;
-
-            //TODO update local_bytes
+            /*
+             * Adding downloaded bytes to byte counter
+             * If e.g.: byte_counter = -100; (and there are more bytes to download from other files) makes it
+             * byte_counter = 0; so that in the next loop iteration byte_counter = -current.length; meaning:
+             * start the next file from the beginning
+             */
+            byte_counter += this_file_ask;
 
             fclose(file);
             free(filepath_char);
