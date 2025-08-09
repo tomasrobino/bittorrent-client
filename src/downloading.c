@@ -28,11 +28,23 @@ char* get_path(const ll* filepath) {
     char* return_charpath = malloc(filepath_size);
     filepath_ptr = filepath;
     // Copying full path as string into *return_charpath
+    struct stat st;
     while (filepath_ptr != nullptr) {
-        //TODO create directories
         strncpy(return_charpath + filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
         filepath_size += (int)strlen(filepath_ptr->val);
         return_charpath[filepath_size] = '/';
+
+        // Creating directories
+        if (stat(return_charpath, &st) == -1) {
+            // Doesn't exist, create it
+            if (mkdir(return_charpath, 0755) == 0) {
+                fprintf(stdout, "Created directory: %s", return_charpath);
+            } else {
+                fprintf(stderr, "Couldn't create directory: %s", return_charpath);
+                exit(1);
+            }
+        }
+
         filepath_ptr = filepath_ptr->next;
     }
     return_charpath[filepath_size] = '\0';
