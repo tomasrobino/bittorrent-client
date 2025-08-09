@@ -45,6 +45,16 @@ typedef struct {
 } peer_t;
 
 /**
+ * Constructs a full file path as a string from a linked list of directory segments
+ * and creates the necessary directory structure if it does not exist.
+ *
+ * @param filepath A pointer to a linked list of `ll` structures, where each node
+ * represents a segment of the file path as a string.
+ * @return A dynamically allocated string containing the full file path. The caller
+ * is responsible for freeing the allocated memory.
+ */
+char* get_path(const ll* filepath);
+/**
  * Downloads a specific block of data from a peer and writes it to the corresponding file(s) based on the metadata.
  *
  * @param sockfd The socket file descriptor used for communication with the peer.

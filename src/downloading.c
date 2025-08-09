@@ -35,7 +35,7 @@ char* get_path(const ll* filepath) {
         return_charpath[filepath_size] = '/';
 
         // Creating directories
-        if (stat(return_charpath, &st) == -1) {
+        if (filepath_ptr->next != nullptr && stat(return_charpath, &st) == -1) {
             // Doesn't exist, create it
             if (mkdir(return_charpath, 0755) == 0) {
                 fprintf(stdout, "Created directory: %s", return_charpath);
