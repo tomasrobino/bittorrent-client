@@ -57,7 +57,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
         byte_counter -= current->length;
         if (byte_counter <= 0) {
             // Getting absolute value, to know how many bytes remain in this file
-            byte_counter = byte_counter < 0 ? -byte_counter : byte_counter;
+            int64_t local_bytes = byte_counter < 0 ? -byte_counter : byte_counter;
             char* filepath_char = nullptr;
             get_path(current->path, &filepath_char);
             FILE *file = fopen(filepath_char, "rb+");
@@ -69,13 +69,13 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
 
             // Getting how many bytes to read to this file
             long long this_file_ask;
-            if (byte_counter >= asked_bytes) { // If the block ends before or at the same byte as the file
+            if (local_bytes >= asked_bytes) { // If the block ends before or at the same byte as the file
                 this_file_ask = asked_bytes;
                 // Since there are no other files in the block, done
                 done = true;
-            } else this_file_ask = byte_counter; // Narrowing conversion is fine, byte_counter can't be larger than BLOCK_SIZE
+            } else this_file_ask = local_bytes; // Narrowing conversion is fine, local_bytes can't be larger than BLOCK_SIZE
             // Advancing file pointer to proper position
-            fseeko(file, current->length-byte_counter, SEEK_SET);
+            fseeko(file, current->length-local_bytes, SEEK_SET);
 
 
             // Buffer for recv()
@@ -98,6 +98,10 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                 fprintf(stdout, "Wrote %lu bytes to file %s in download_block() for socket %d\n", bytes_written, filepath_char, sockfd);
                 this_file_ask-=bytes_received;
             } while (this_file_ask > 0);
+
+            asked_bytes -= this_file_ask;
+
+            //TODO update local_bytes
 
             fclose(file);
             free(filepath_char);
