@@ -387,7 +387,11 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                                     // Conversion is fine beacuse single pieces aren't that large
                                     p_len = metainfo.info->length - piece->index*metainfo.info->piece_length;
                                 } else p_len = metainfo.info->piece_length;
+                                // ACTUAL DOWNLOAD
                                 int block_result = download_block(fd, piece->index, p_len, piece->begin, metainfo.info->files);
+                                if (block_result != 0) {
+                                    exit(2);
+                                }
                             } else fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
                         } else fprintf(stderr, "Piece received in socket %d already extant", fd);
                         break;
