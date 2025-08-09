@@ -16,7 +16,7 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
-void get_path(const ll* filepath, char** return_charpath) {
+char* get_path(const ll* filepath) {
     // Getting the amount of chars in the complete filepath
     int filepath_size = 0;
     const ll* filepath_ptr = filepath;
@@ -25,17 +25,18 @@ void get_path(const ll* filepath, char** return_charpath) {
         filepath_size += (int) strlen(filepath_ptr->val) + 1;
         filepath_ptr = filepath_ptr->next;
     }
-    *return_charpath = malloc(filepath_size);
+    char* return_charpath = malloc(filepath_size);
     filepath_ptr = filepath;
     // Copying full path as string into *return_charpath
     while (filepath_ptr != nullptr) {
         //TODO create directories
-        strncpy(*return_charpath + filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
+        strncpy(return_charpath + filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
         filepath_size += (int)strlen(filepath_ptr->val);
-        (*return_charpath)[filepath_size] = '/';
+        return_charpath[filepath_size] = '/';
         filepath_ptr = filepath_ptr->next;
     }
-    (*return_charpath)[filepath_size] = '\0';
+    return_charpath[filepath_size] = '\0';
+    return return_charpath;
 }
 
 int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, const files_ll* files_metainfo) {
@@ -58,8 +59,8 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
         if (byte_counter <= 0) {
             // Getting absolute value, to know how many bytes remain in this file
             int64_t local_bytes = -byte_counter;
-            char* filepath_char = nullptr;
-            get_path(current->path, &filepath_char);
+            char* filepath_char = get_path(current->path);
+
             FILE *file = fopen(filepath_char, "rb+");
             if (file == NULL) {
                 fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
