@@ -108,7 +108,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
              * byte_counter = 0; so that in the next loop iteration byte_counter = -current.length; meaning:
              * start the next file from the beginning
              */
-            byte_counter += this_file_ask;
+            byte_counter += total_downloaded;
 
             fclose(file);
             free(filepath_char);
