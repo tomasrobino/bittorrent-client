@@ -46,7 +46,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
      */
     int64_t asked_bytes;
     // If last block
-    const long block_amount = (piece_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    const int64_t block_amount = (piece_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
     if (block_amount-1 == byte_offset/BLOCK_SIZE) {
         asked_bytes = piece_size - BLOCK_SIZE * (block_amount-1);
     } else asked_bytes = BLOCK_SIZE;
@@ -57,7 +57,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
         byte_counter -= current->length;
         if (byte_counter <= 0) {
             // Getting absolute value, to know how many bytes remain in this file
-            int64_t local_bytes = byte_counter < 0 ? -byte_counter : byte_counter;
+            int64_t local_bytes = -byte_counter;
             char* filepath_char = nullptr;
             get_path(current->path, &filepath_char);
             FILE *file = fopen(filepath_char, "rb+");
@@ -68,7 +68,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             }
 
             // Getting how many bytes to read to this file
-            long long this_file_ask;
+            int64_t this_file_ask;
             if (local_bytes >= asked_bytes) { // If the block ends before or at the same byte as the file
                 this_file_ask = asked_bytes;
                 // Since there are no other files in the block, done
@@ -81,25 +81,27 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             // Buffer for recv()
             unsigned char buffer[BLOCK_SIZE];
             // Reading from socket and writing to file
+            int64_t total_downloaded = this_file_ask;
             do {
-                const ssize_t bytes_received = recv(sockfd, buffer, this_file_ask, 0);
+                // this_file_ask can never be larger than BLOCK_SIZE, so narrowing conversion is fine
+                const int32_t bytes_received = (int32_t) recv(sockfd, buffer, this_file_ask, 0);
                 if (bytes_received < 1) {
                     free(filepath_char);
                     fclose(file);
                     return 3;
                 }
-                const size_t bytes_written = fwrite(buffer, 1, bytes_received, file);
+                const int32_t bytes_written = (int32_t) fwrite(buffer, 1, bytes_received, file);
                 if (bytes_written != (size_t)bytes_received) {
                     fprintf(stderr, "Failed to write to file in download_block() for socket %d\n", sockfd);
                     free(filepath_char);
                     fclose(file);
                     return 2;
                 }
-                fprintf(stdout, "Wrote %lu bytes to file %s in download_block() for socket %d\n", bytes_written, filepath_char, sockfd);
+                fprintf(stdout, "Wrote %d bytes to file %s in download_block() for socket %d\n", bytes_written, filepath_char, sockfd);
                 this_file_ask-=bytes_received;
             } while (this_file_ask > 0);
 
-            asked_bytes -= this_file_ask;
+            asked_bytes -= total_downloaded;
             /*
              * Adding downloaded bytes to byte counter
              * If e.g.: byte_counter = -100; (and there are more bytes to download from other files) makes it
