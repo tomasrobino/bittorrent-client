@@ -61,8 +61,8 @@ int main(const int argc, char* argv[]) {
 
         if (buffer && length != 0) {
             errno = 0;
-            const int mk_res = mkdir(argv[2], 0755);
-            if (mk_res == -1 && errno != 0) {
+            const int mk_res = mkdir("download-folder", 0755);
+            if (mk_res == -1 && errno != 0 && errno != 17) {
                 fprintf(stderr, "Error when creating torrent directory. Errno: %d", errno);
                 return 2;
             }
