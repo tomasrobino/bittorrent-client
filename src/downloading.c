@@ -62,7 +62,7 @@ int32_t write_block(const unsigned char* buffer, const int32_t amount, FILE* fil
 }
 
 int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, files_ll* files_metainfo) {
-    int64_t byte_counter = piece_index*piece_size + byte_offset;
+    int64_t byte_counter = (int64_t)piece_index*(int64_t)piece_size + (int64_t)byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     /*
      * Maybe I'll turn this into a parameter instead
