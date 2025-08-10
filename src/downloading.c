@@ -141,11 +141,6 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             }
             buffer_offset+=bytes_written;
 
-            // If file has been entirely downloaded, close the file
-            if (this_file_ask == local_bytes) {
-                fclose(current->file_ptr);
-            }
-
             asked_bytes -= this_file_ask;
             byte_counter += this_file_ask;
 
