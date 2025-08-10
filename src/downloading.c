@@ -62,6 +62,10 @@ int32_t write_block(const unsigned char* buffer, const int32_t amount, FILE* fil
 }
 
 int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, files_ll* files_metainfo) {
+    // Checking whether arguments are invalid
+    if (byte_offset >= piece_size) return 4;
+    if (piece_size == 0) return 4;
+
     int64_t byte_counter = (int64_t)piece_index*(int64_t)piece_size + (int64_t)byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     /*
@@ -78,8 +82,8 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     files_ll* current = files_metainfo;
     bool done = false;
     while (current != nullptr && !done) {
-        // If the file starts at or after the block, and if it ends at or before the block ends
-        if (current->byte_index >= byte_counter && current->byte_index+current->length <= byte_counter+asked_bytes) {
+        // If the file starts before or at the block
+        if (current->byte_index <= byte_counter) {
             // To know how many bytes remain in this file
             const int64_t local_bytes = current->length - byte_counter-current->byte_index;
             char* filepath_char = get_path(current->path);
