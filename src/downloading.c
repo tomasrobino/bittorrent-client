@@ -53,7 +53,7 @@ char* get_path(const ll* filepath) {
 
 int32_t write_block(const unsigned char* buffer, const int32_t amount, FILE* file) {
     const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
-    if (bytes_written != (size_t)amount) {
+    if (bytes_written != amount) {
         fprintf(stderr, "Failed to write to file %p\n", file);
         return -1;
     }
@@ -116,6 +116,12 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                     return 3;
                 }
                 int32_t bytes_written = write_block(buffer, bytes_received, file);
+                if (bytes_written <= 0) {
+                    //Error
+                    free(filepath_char);
+                    fclose(file);
+                    return 4;
+                }
                 this_file_ask-=bytes_received;
             } while (this_file_ask > 0);
 
