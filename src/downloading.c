@@ -61,35 +61,36 @@ int32_t write_block(const unsigned char* buffer, const int32_t amount, FILE* fil
     return bytes_written;
 }
 
-// TODO WRONG. IT BEHAVES AS IF THE SOCKET WERE BLOCKING
-
-int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, const files_ll* files_metainfo) {
+int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, files_ll* files_metainfo) {
     int64_t byte_counter = piece_index*piece_size + byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     /*
      * Maybe I'll turn this into a parameter instead
      */
     int64_t asked_bytes;
-    // If last block
+    // Actual size of the block
     const int64_t block_amount = (piece_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    // If last block
     if (block_amount-1 == byte_offset/BLOCK_SIZE) {
         asked_bytes = piece_size - BLOCK_SIZE * (block_amount-1);
     } else asked_bytes = BLOCK_SIZE;
     // Finding out to which file the block belongs
-    const files_ll* current = files_metainfo;
+    files_ll* current = files_metainfo;
     bool done = false;
     while (current != nullptr && !done) {
-        byte_counter -= current->length;
-        if (byte_counter <= 0) {
-            // Getting absolute value, to know how many bytes remain in this file
-            int64_t local_bytes = -byte_counter;
+        // If the file starts at or after the block, and if it ends at or before the block ends
+        if (current->byte_index >= byte_counter && current->byte_index+current->length <= byte_counter+asked_bytes) {
+            // To know how many bytes remain in this file
+            const int64_t local_bytes = current->length - byte_counter-current->byte_index;
             char* filepath_char = get_path(current->path);
-
-            FILE *file = fopen(filepath_char, "rb+");
-            if (file == NULL) {
-                fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
-                free(filepath_char);
-                return 1;
+            // If file not open yet
+            if (current->file_ptr == nullptr) {
+                current->file_ptr = fopen(filepath_char, "rb+");
+                if (current->file_ptr == NULL) {
+                    fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
+                    free(filepath_char);
+                    return 1;
+                }
             }
 
             // Getting how many bytes to read to this file
@@ -98,36 +99,39 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                 this_file_ask = asked_bytes;
                 // Since there are no other files in the block, done
                 done = true;
-            } else this_file_ask = local_bytes; // Narrowing conversion is fine, local_bytes can't be larger than BLOCK_SIZE
+            } else this_file_ask = local_bytes;
             // Advancing file pointer to proper position
-            fseeko(file, current->length-local_bytes, SEEK_SET);
-
+            fseeko(current->file_ptr, current->length-local_bytes, SEEK_SET);
 
             // Buffer for recv()
             unsigned char buffer[BLOCK_SIZE];
             // Reading from socket and writing to file
-            int64_t total_downloaded = this_file_ask;
+            int64_t total_downloaded = 0;
             do {
                 // this_file_ask can never be larger than BLOCK_SIZE, so narrowing conversion is fine
                 const int32_t bytes_received = (int32_t) recv(sockfd, buffer, this_file_ask, 0);
                 if (bytes_received < 1) {
                     free(filepath_char);
-                    fclose(file);
+                    return 2;
+                }
+                const int32_t bytes_written = write_block(buffer, bytes_received, current->file_ptr);
+                if (bytes_written < 0) {
+                    // Error when writing
+                    free(filepath_char);
                     return 3;
                 }
+                total_downloaded += bytes_received;
                 this_file_ask-=bytes_received;
             } while (this_file_ask > 0);
 
+            // If file has been entirely downloaded, close the file
+            if (total_downloaded == local_bytes) {
+                fclose(current->file_ptr);
+            }
+
             asked_bytes -= total_downloaded;
-            /*
-             * Adding downloaded bytes to byte counter
-             * If e.g.: byte_counter = -100; (and there are more bytes to download from other files) makes it
-             * byte_counter = 0; so that in the next loop iteration byte_counter = -current.length; meaning:
-             * start the next file from the beginning
-             */
             byte_counter += total_downloaded;
 
-            fclose(file);
             free(filepath_char);
         }
         current = current->next;

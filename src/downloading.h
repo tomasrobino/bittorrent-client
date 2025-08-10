@@ -76,7 +76,7 @@ int32_t write_block(const unsigned char* buffer, int32_t amount, FILE* file);
  *                       including their lengths and paths.
  * @return Returns 0 on successful downloading and writing of the block. An error code may otherwise be returned.
  */
-int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size, unsigned int byte_offset, const files_ll* files_metainfo);
+int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size, unsigned int byte_offset, files_ll* files_metainfo);
 
 /**
  * Downloads & uploads torrent
