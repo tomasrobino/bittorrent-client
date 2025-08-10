@@ -111,6 +111,10 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             // If file not open yet
             if (current->file_ptr == nullptr) {
                 current->file_ptr = fopen(filepath_char, "rb+");
+                // If the file doesn't exist, create it
+                if (current->file_ptr == NULL) {
+                    current->file_ptr = fopen(filepath_char, "wb+");
+                }
                 if (current->file_ptr == NULL) {
                     fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
                     free(filepath_char);
@@ -128,27 +132,22 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             // Advancing file pointer to proper position
             fseeko(current->file_ptr, current->length-local_bytes, SEEK_SET);
 
-            // Reading from socket and writing to file
-            int64_t total_downloaded = 0;
-            do {
-                const int32_t bytes_written = write_block(buffer+buffer_offset, this_file_ask, current->file_ptr);
-                if (bytes_written < 0) {
-                    // Error when writing
-                    free(filepath_char);
-                    return 3;
-                }
-                buffer_offset+=bytes_written;
-                total_downloaded += this_file_ask;
-                this_file_ask-=bytes_written;
-            } while (this_file_ask > 0);
+            // Writing to file
+            const int32_t bytes_written = write_block(buffer+buffer_offset, this_file_ask, current->file_ptr);
+            if (bytes_written < 0) {
+                // Error when writing
+                free(filepath_char);
+                return 3;
+            }
+            buffer_offset+=bytes_written;
 
             // If file has been entirely downloaded, close the file
-            if (total_downloaded == local_bytes) {
+            if (this_file_ask == local_bytes) {
                 fclose(current->file_ptr);
             }
 
-            asked_bytes -= total_downloaded;
-            byte_counter += total_downloaded;
+            asked_bytes -= this_file_ask;
+            byte_counter += this_file_ask;
 
             free(filepath_char);
         }
