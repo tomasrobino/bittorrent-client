@@ -86,7 +86,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
      * Maybe I'll turn this into a parameter instead
      */
     int64_t asked_bytes;
-    // Actual size of the block
+    // Amount of blocks in the piece
     const int64_t block_amount = (piece_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
     // If last block
     if (block_amount-1 == byte_offset/BLOCK_SIZE) {
@@ -97,6 +97,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     if (read_block_from_socket(sockfd, buffer, asked_bytes) < 0) {
         return 5;
     }
+    int32_t buffer_offset = 0;
 
     // Finding out to which file the block belongs
     files_ll* current = files_metainfo;
@@ -105,7 +106,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
         // If the file starts before or at the block
         if (current->byte_index <= byte_counter) {
             // To know how many bytes remain in this file
-            const int64_t local_bytes = current->length - byte_counter-current->byte_index;
+            const int64_t local_bytes = current->length - (byte_counter-current->byte_index);
             char* filepath_char = get_path(current->path);
             // If file not open yet
             if (current->file_ptr == nullptr) {
@@ -130,12 +131,13 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             // Reading from socket and writing to file
             int64_t total_downloaded = 0;
             do {
-                const int32_t bytes_written = write_block(buffer, this_file_ask, current->file_ptr);
+                const int32_t bytes_written = write_block(buffer+buffer_offset, this_file_ask, current->file_ptr);
                 if (bytes_written < 0) {
                     // Error when writing
                     free(filepath_char);
                     return 3;
                 }
+                buffer_offset+=bytes_written;
                 total_downloaded += this_file_ask;
                 this_file_ask-=bytes_written;
             } while (this_file_ask > 0);
