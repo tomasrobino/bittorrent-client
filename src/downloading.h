@@ -16,7 +16,8 @@ typedef enum {
     PEER_HANDSHAKE_SENT,
     PEER_HANDSHAKE_SUCCESS,
     PEER_BITFIELD_RECEIVED,
-    PEER_NO_BITFIELD
+    PEER_NO_BITFIELD,
+    PEER_PENDING_WRITE
 } PEER_STATUS;
 
 /**
@@ -54,6 +55,16 @@ typedef struct {
  * is responsible for freeing the allocated memory.
  */
 char* get_path(const ll* filepath);
+
+/**
+ * Writes a specified number of bytes from a buffer to a given file.
+ *
+ * @param buffer Pointer to the buffer containing the data to be written.
+ * @param amount Number of bytes to write to the file.
+ * @param file Pointer to the file object where data will be written.
+ * @return The number of bytes successfully written, or -1 if an error occurred.
+ */
+int32_t write_block(const unsigned char* buffer, int32_t amount, FILE* file);
 /**
  * Downloads a specific block of data from a peer and writes it to the corresponding file(s) based on the metadata.
  *

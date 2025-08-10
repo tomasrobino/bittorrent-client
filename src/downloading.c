@@ -50,7 +50,19 @@ char* get_path(const ll* filepath) {
     return_charpath[filepath_size] = '\0';
     return return_charpath;
 }
+
+int32_t write_block(const unsigned char* buffer, const int32_t amount, FILE* file) {
+    const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
+    if (bytes_written != (size_t)amount) {
+        fprintf(stderr, "Failed to write to file %p\n", file);
+        return -1;
+    }
+    fprintf(stdout, "Wrote %d bytes to file %p\n", bytes_written, file);
+    return bytes_written;
+}
+
 // TODO WRONG. IT BEHAVES AS IF THE SOCKET WERE BLOCKING
+
 int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, const files_ll* files_metainfo) {
     int64_t byte_counter = piece_index*piece_size + byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
@@ -103,14 +115,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                     fclose(file);
                     return 3;
                 }
-                const int32_t bytes_written = (int32_t) fwrite(buffer, 1, bytes_received, file);
-                if (bytes_written != (size_t)bytes_received) {
-                    fprintf(stderr, "Failed to write to file in download_block() for socket %d\n", sockfd);
-                    free(filepath_char);
-                    fclose(file);
-                    return 2;
-                }
-                fprintf(stdout, "Wrote %d bytes to file %s in download_block() for socket %d\n", bytes_written, filepath_char, sockfd);
+                int32_t bytes_written = write_block(buffer, bytes_received, file);
                 this_file_ask-=bytes_received;
             } while (this_file_ask > 0);
 
