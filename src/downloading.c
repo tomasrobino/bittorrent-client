@@ -51,6 +51,20 @@ char* get_path(const ll* filepath) {
     return return_charpath;
 }
 
+int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const int32_t amount) {
+    // Reading data from socket
+    int32_t total_received = 0;
+    while (total_received < amount) {
+        // this_file_ask can never be larger than BLOCK_SIZE, so narrowing conversion is fine
+        const int32_t bytes_received = (int32_t) recv(sockfd, buffer, amount, 0);
+        if (bytes_received < 1) {
+            return -1;
+        }
+        total_received += bytes_received;
+    }
+    return total_received;
+}
+
 int32_t write_block(const unsigned char* buffer, const int32_t amount, FILE* file) {
     const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
     if (bytes_written != amount) {
@@ -78,6 +92,12 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     if (block_amount-1 == byte_offset/BLOCK_SIZE) {
         asked_bytes = piece_size - BLOCK_SIZE * (block_amount-1);
     } else asked_bytes = BLOCK_SIZE;
+    // Buffer for recv()
+    unsigned char buffer[BLOCK_SIZE];
+    if (read_block_from_socket(sockfd, buffer, asked_bytes) < 0) {
+        return 5;
+    }
+
     // Finding out to which file the block belongs
     files_ll* current = files_metainfo;
     bool done = false;
@@ -107,25 +127,17 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             // Advancing file pointer to proper position
             fseeko(current->file_ptr, current->length-local_bytes, SEEK_SET);
 
-            // Buffer for recv()
-            unsigned char buffer[BLOCK_SIZE];
             // Reading from socket and writing to file
             int64_t total_downloaded = 0;
             do {
-                // this_file_ask can never be larger than BLOCK_SIZE, so narrowing conversion is fine
-                const int32_t bytes_received = (int32_t) recv(sockfd, buffer, this_file_ask, 0);
-                if (bytes_received < 1) {
-                    free(filepath_char);
-                    return 2;
-                }
-                const int32_t bytes_written = write_block(buffer, bytes_received, current->file_ptr);
+                const int32_t bytes_written = write_block(buffer, this_file_ask, current->file_ptr);
                 if (bytes_written < 0) {
                     // Error when writing
                     free(filepath_char);
                     return 3;
                 }
-                total_downloaded += bytes_received;
-                this_file_ask-=bytes_received;
+                total_downloaded += this_file_ask;
+                this_file_ask-=bytes_written;
             } while (this_file_ask > 0);
 
             // If file has been entirely downloaded, close the file

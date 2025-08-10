@@ -57,6 +57,18 @@ typedef struct {
 char* get_path(const ll* filepath);
 
 /**
+ * Reads a block of data from a specified socket and writes it into the provided buffer.
+ *
+ * This function continuously reads data from the given socket until the requested
+ * amount of data is read or an error occurs.
+ *
+ * @param sockfd The socket file descriptor from which data is to be read.
+ * @param buffer A pointer to the buffer where the read data will be stored.
+ * @param amount The amount of data, in bytes, to read from the socket.
+ * @return The total number of bytes successfully read from the socket. Returns -1 in case of an error.
+ */
+int32_t read_block_from_socket(int sockfd, unsigned char* buffer, int32_t amount);
+/**
  * Writes a specified number of bytes from a buffer to a given file.
  *
  * @param buffer Pointer to the buffer containing the data to be written.
