@@ -40,10 +40,12 @@ files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* ind
     files_ll *head = malloc(sizeof(files_ll));
     head->path = nullptr;
     head->next = nullptr;
+    head->file_ptr = nullptr;
     files_ll *current = head;
     unsigned int start = 1;
     unsigned int* start_ptr = &start;
     unsigned int element_num = 0;
+    int64_t acc = 0;
 
     while (bencode[start] != 'e') {
         if (element_num > 0) {
@@ -51,6 +53,7 @@ files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* ind
             current = current->next;
             current->next = nullptr;
             current->path = nullptr;
+            head->file_ptr = nullptr;
         }
 
         char* parse_index;
@@ -84,7 +87,8 @@ files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* ind
             } else return nullptr;
         }
 
-
+        current->byte_index = acc;
+        acc += current->length;
         element_num++;
 
         if (!multiple) break;
