@@ -50,7 +50,7 @@ char* get_path(const ll* filepath) {
     return_charpath[filepath_size] = '\0';
     return return_charpath;
 }
-
+// TODO WRONG. IT BEHAVES AS IF THE SOCKET WERE BLOCKING
 int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, const files_ll* files_metainfo) {
     int64_t byte_counter = piece_index*piece_size + byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
