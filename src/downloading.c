@@ -116,7 +116,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                     return 3;
                 }
                 int32_t bytes_written = write_block(buffer, bytes_received, file);
-                if (bytes_written <= 0) {
+                if (bytes_written < 1) {
                     //Error
                     free(filepath_char);
                     fclose(file);
