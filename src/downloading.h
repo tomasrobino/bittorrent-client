@@ -17,7 +17,7 @@ typedef enum {
     PEER_HANDSHAKE_SUCCESS, /**< Handshake completed successfully */
     PEER_BITFIELD_RECEIVED, /**< Received bitfield from peer */
     PEER_NO_BITFIELD, /**< No bitfield received from peer */
-    PEER_PENDING_WRITE /**< Pending write operation to peer */
+    PEER_PENDING_HAVE /**< Need to send have message to all peers */
 } PEER_STATUS;
 
 /// @brief Represents peer data and state in a BitTorrent connection
@@ -33,6 +33,17 @@ typedef struct {
     time_t last_msg; /**< Timestamp of last message received from peer */
 } peer_t;
 
+/**
+ * Calculates the size of a block to be downloaded based on the piece size and byte offset.
+ * The block size is typically a fixed value (BLOCK_SIZE), except for the last block in the piece,
+ * which may be smaller depending on the remaining size of the piece.
+ *
+ * @param piece_size The total size of the piece in bytes.
+ * @param byte_offset The byte offset within the piece from where the block starts.
+ * @return The size of the block in bytes to be downloaded. If the block is the last one in the piece,
+ *         its size will be smaller than or equal to BLOCK_SIZE. Otherwise, it will always return BLOCK_SIZE.
+ */
+int64_t calc_block_size(unsigned int piece_size, unsigned int byte_offset);
 /**
  * @brief Constructs a full file path as a string from a linked list of directory segments
  * and creates the necessary directory structure if it does not exist.

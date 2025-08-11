@@ -16,6 +16,17 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
+int64_t calc_block_size(const unsigned int piece_size, const unsigned int byte_offset) {
+    int64_t asked_bytes;
+    // Amount of blocks in the piece
+    const int64_t block_amount = (piece_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    // If last block
+    if (block_amount-1 == byte_offset/BLOCK_SIZE) {
+        asked_bytes = piece_size - BLOCK_SIZE * (block_amount-1);
+    } else asked_bytes = BLOCK_SIZE;
+    return asked_bytes;
+}
+
 char* get_path(const ll* filepath) {
     // Getting the amount of chars in the complete filepath
     int filepath_size = 0;
@@ -85,13 +96,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     /*
      * Maybe I'll turn this into a parameter instead
      */
-    int64_t asked_bytes;
-    // Amount of blocks in the piece
-    const int64_t block_amount = (piece_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    // If last block
-    if (block_amount-1 == byte_offset/BLOCK_SIZE) {
-        asked_bytes = piece_size - BLOCK_SIZE * (block_amount-1);
-    } else asked_bytes = BLOCK_SIZE;
+    int64_t asked_bytes = calc_block_size(piece_size, byte_offset);
     // Buffer for recv()
     unsigned char buffer[BLOCK_SIZE];
     if (read_block_from_socket(sockfd, buffer, asked_bytes) < 0) {
