@@ -104,7 +104,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     bool done = false;
     while (current != nullptr && !done) {
         // If the file starts before or at the block
-        if (current->byte_index <= byte_counter) {
+        if (current->byte_index <= byte_counter && byte_counter < current->byte_index+current->length) {
             // To know how many bytes remain in this file
             const int64_t local_bytes = current->length - (byte_counter-current->byte_index);
             char* filepath_char = get_path(current->path);
