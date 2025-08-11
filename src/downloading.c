@@ -107,6 +107,11 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
         if (current->byte_index <= byte_counter && byte_counter < current->byte_index+current->length) {
             // To know how many bytes remain in this file
             const int64_t local_bytes = current->length - (byte_counter-current->byte_index);
+            // If files_ll is malformed
+            if (local_bytes <= 0) {
+                current = current->next;
+                continue;
+            }
             char* filepath_char = get_path(current->path);
             // If file not open yet
             if (current->file_ptr == nullptr) {

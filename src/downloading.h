@@ -85,7 +85,7 @@ int32_t write_block(const unsigned char* buffer, int64_t amount, FILE* file);
  * @param piece_size The size of the piece in bytes.
  * @param byte_offset The offset within the piece where the block begins.
  * @param files_metainfo A linked list containing metadata about the files managed by the torrent client,
- *                       including their lengths and paths.
+ *                       including their lengths and paths. The files must be in order according to their index
  * @return Returns 0 on successful downloading and writing of the block. An error code may otherwise be returned.
  */
 int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size, unsigned int byte_offset, files_ll* files_metainfo);
