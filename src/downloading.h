@@ -67,7 +67,7 @@ char* get_path(const ll* filepath);
  * @param amount The amount of data, in bytes, to read from the socket.
  * @return The total number of bytes successfully read from the socket. Returns -1 in case of an error.
  */
-int32_t read_block_from_socket(int sockfd, unsigned char* buffer, int32_t amount);
+int32_t read_block_from_socket(int sockfd, unsigned char* buffer, int64_t amount);
 /**
  * Writes a specified number of bytes from a buffer to a given file.
  *
@@ -76,7 +76,7 @@ int32_t read_block_from_socket(int sockfd, unsigned char* buffer, int32_t amount
  * @param file Pointer to the file object where data will be written.
  * @return The number of bytes successfully written, or -1 if an error occurred.
  */
-int32_t write_block(const unsigned char* buffer, int32_t amount, FILE* file);
+int32_t write_block(const unsigned char* buffer, int64_t amount, FILE* file);
 /**
  * Downloads a specific block of data from a peer and writes it to the corresponding file(s) based on the metadata.
  *

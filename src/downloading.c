@@ -51,7 +51,7 @@ char* get_path(const ll* filepath) {
     return return_charpath;
 }
 
-int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const int32_t amount) {
+int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const int64_t amount) {
     // Reading data from socket
     int32_t total_received = 0;
     while (total_received < amount) {
@@ -65,7 +65,7 @@ int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const in
     return total_received;
 }
 
-int32_t write_block(const unsigned char* buffer, const int32_t amount, FILE* file) {
+int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* file) {
     const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
     if (bytes_written != amount) {
         fprintf(stderr, "Failed to write to file %p\n", file);
@@ -97,7 +97,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     if (read_block_from_socket(sockfd, buffer, asked_bytes) < 0) {
         return 5;
     }
-    int32_t buffer_offset = 0;
+    int64_t buffer_offset = 0;
 
     // Finding out to which file the block belongs
     files_ll* current = files_metainfo;
@@ -133,7 +133,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             fseeko(current->file_ptr, current->length-local_bytes, SEEK_SET);
 
             // Writing to file
-            const int32_t bytes_written = write_block(buffer+buffer_offset, this_file_ask, current->file_ptr);
+            const int64_t bytes_written = write_block(buffer+buffer_offset, this_file_ask, current->file_ptr);
             if (bytes_written < 0) {
                 // Error when writing
                 free(filepath_char);
