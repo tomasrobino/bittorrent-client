@@ -163,11 +163,11 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
 
 bool piece_complete(const unsigned char *block_tracker, const unsigned int piece_index, const unsigned int piece_size, const int64_t torrent_size) {
     unsigned int this_piece_size = piece_size;
-    if ((piece_index+1)*piece_size > torrent_size) {
-        this_piece_size = torrent_size - piece_index*piece_size;
+    if ( ((int64_t)piece_index+1) * (int64_t)piece_size > torrent_size ) {
+        this_piece_size = torrent_size - (int64_t)piece_index * (int64_t)piece_size;
     }
-    const unsigned int blocks_amount = (this_piece_size+BLOCK_SIZE-1) / BLOCK_SIZE;
-    const unsigned int first_block_global = piece_index * ( (piece_size+BLOCK_SIZE-1) / BLOCK_SIZE );
+    const unsigned int blocks_amount = ( (int64_t)this_piece_size+BLOCK_SIZE-1 ) / BLOCK_SIZE;
+    const unsigned int first_block_global = (int64_t)piece_index * (( (int64_t)piece_size+BLOCK_SIZE-1 ) / BLOCK_SIZE);
     const unsigned int last_block_global = first_block_global + blocks_amount;
 
     for (unsigned int block_global = first_block_global; block_global < last_block_global; block_global++) {
@@ -290,7 +290,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     const unsigned int bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
     unsigned char* bitfield = malloc(bitfield_byte_size);
     memset(bitfield, 0, bitfield_byte_size);
-    // Size in bytes of the block tracket
+    // Size in bytes of the block tracker
     unsigned int block_tracker_bytesize = ceil(
         ceil(
             metainfo.info->piece_number*metainfo.info->piece_length / (double)BLOCK_SIZE
