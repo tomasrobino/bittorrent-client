@@ -378,6 +378,8 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         peer.peer_interest = false;
                         break;
                     case HAVE:
+                        // Endianness
+                        *message->payload = ntohl(*message->payload);
                         // Adding the new piece to the peer's bitfield
                         byte_index = *message->payload / 8;
                         bit_offset = 7 - *message->payload % 8;
@@ -391,17 +393,24 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         break;
                     case REQUEST:
                         if (peer.peer_choked == false) {
-                            const request_t* request = (request_t*) message->payload;
+                            request_t* request = (request_t*) message->payload;
+                            // Endianness
+                            request->index = ntohl(request->index);
+                            request->begin = ntohl(request->begin);
+                            request->length = ntohl(request->length);
                             byte_index = request->index / 8;
                             bit_offset = 7 - request->index % 8;
-                            if ((peer.bitfield[byte_index] & 1 << bit_offset) != 0) {
+                            if (( peer.bitfield[byte_index] & (1u << bit_offset) ) != 0) {
                                 // If this client has the requested piece
                                 //TODO send requested piece
                             }
                         }
                         break;
                     case PIECE:
-                        const piece_t* piece = (piece_t*) message->payload;
+                        piece_t* piece = (piece_t*) message->payload;
+                        // Endianness
+                        piece->begin = ntohl(piece->begin);
+                        piece->index = ntohl(piece->index);
                         byte_index = piece->index / 8;
                         bit_offset = 7 - piece->index % 8;
                         // If this client doesn't have the piece received
