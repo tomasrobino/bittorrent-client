@@ -449,8 +449,21 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                                 } else p_len = metainfo.info->piece_length;
                                 // ACTUAL DOWNLOAD
                                 int block_result = download_block(fd, piece->index, p_len, piece->begin, metainfo.info->files);
-                                if (block_result != 0) {
-                                    exit(2);
+                                // Successful block download
+                                if (block_result == 0) {
+                                    int64_t this_block = calc_block_size(p_len, piece->begin);
+                                    // Update block tracker
+                                    block_tracker[byte_index] |= (1u << bit_offset);
+                                    // If all the blocks in a piece are downloaded, mark it in the bitfield and prepare
+                                    // to send "have" message to all peers
+
+                                    if (piece_complete(block_tracker, piece->index, metainfo.info->piece_length, metainfo.info->length)) {
+                                        byte_index = piece->index / 8;
+                                        bit_offset = 7 - piece->index % 8;
+                                        bitfield[byte_index] |= (1u << bit_offset);
+                                    }
+
+                                    left -= this_block;
                                 }
                             } else fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
                         } else fprintf(stderr, "Piece received in socket %d already extant", fd);
@@ -461,6 +474,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         break;
                     default: ;
                 }
+                continue;
             }
         }
     }
