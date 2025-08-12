@@ -383,7 +383,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         // Adding the new piece to the peer's bitfield
                         byte_index = *message->payload / 8;
                         bit_offset = 7 - *message->payload % 8;
-                        peer.bitfield[byte_index] |= 1 << bit_offset;
+                        peer.bitfield[byte_index] |= (1u << bit_offset);
                         break;
                     case BITFIELD:
                         peer.bitfield = message->payload;
@@ -414,12 +414,12 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         byte_index = piece->index / 8;
                         bit_offset = 7 - piece->index % 8;
                         // If this client doesn't have the piece received
-                        if ((bitfield[byte_index] & 1 << bit_offset) == 0) {
+                        if ((bitfield[byte_index] & (1u << bit_offset)) == 0) {
                             // If this client doesn't have the block received
                             unsigned int global_block_index = piece->index * blocks_per_piece + piece->begin;
                             byte_index = global_block_index / 8;
-                            bit_offset = global_block_index % 8;
-                            if (!(block_tracker[byte_index] >> (7 - bit_offset) & 1)) {
+                            bit_offset = 7 - global_block_index % 8;
+                            if ( (block_tracker[byte_index] & (1u << bit_offset)) == 0) {
                                 // If last piece, it's smaller
                                 int64_t p_len;
                                 if (piece->index == metainfo.info->piece_number-1) {
