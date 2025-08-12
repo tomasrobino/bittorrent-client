@@ -166,8 +166,8 @@ bool piece_complete(const unsigned char *block_tracker, const unsigned int piece
     if ((piece_index+1)*piece_size > torrent_size) {
         this_piece_size = torrent_size - piece_index*piece_size;
     }
-    const unsigned int blocks_amount = ceil((double)this_piece_size/(double)BLOCK_SIZE);
-    const unsigned int first_block_global = (unsigned int)(piece_index * ceil((double)piece_size/(double)BLOCK_SIZE));
+    const unsigned int blocks_amount = (this_piece_size+BLOCK_SIZE-1) / BLOCK_SIZE;
+    const unsigned int first_block_global = piece_index * ( (piece_size+BLOCK_SIZE-1) / BLOCK_SIZE );
     const unsigned int last_block_global = first_block_global + blocks_amount;
 
     for (unsigned int block_global = first_block_global; block_global < last_block_global; block_global++) {
