@@ -161,6 +161,27 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
     return 0;
 }
 
+bool piece_complete(const unsigned char *block_tracker, const unsigned int piece_index, const unsigned int piece_size, const int64_t torrent_size) {
+    unsigned int this_piece_size = piece_size;
+    if ((piece_index+1)*piece_size > torrent_size) {
+        this_piece_size = torrent_size - piece_index*piece_size;
+    }
+    const unsigned int blocks_amount = ceil((double)this_piece_size/(double)BLOCK_SIZE);
+    const unsigned int first_block_global = (unsigned int)(piece_index * ceil((double)piece_size/(double)BLOCK_SIZE));
+    const unsigned int last_block_global = first_block_global + blocks_amount;
+
+    for (unsigned int block_global = first_block_global; block_global < last_block_global; block_global++) {
+        const unsigned int byte_index = block_global / 8;
+        const unsigned int bit_offset = 7 - (block_global % 8);
+
+        if ((block_tracker[byte_index] & (1u << bit_offset)) == 0) {
+            // This block is not downloaded yet, piece incomplete
+            return false;
+        }
+    }
+    return true;
+}
+
 int torrent(const metainfo_t metainfo, const char* peer_id) {
     // For storing socket that successfully connected
     int successful_index = 0;

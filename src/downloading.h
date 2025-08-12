@@ -93,6 +93,23 @@ int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size
                    files_ll *files_metainfo);
 
 /**
+ * Determines if a specific piece of a torrent has been fully downloaded.
+ *
+ * This function checks the `block_tracker` bitfield to verify if all blocks
+ * within the given piece are marked as downloaded. The size of the piece
+ * is adjusted if it is the last piece and does not span the full `piece_size`.
+ *
+ * @param block_tracker A pointer to the bitfield that tracks the downloaded state
+ *                      of each block in the torrent.
+ * @param piece_index The index of the piece to check.
+ * @param piece_size The standard size of a piece in bytes.
+ * @param torrent_size The total size of the torrent in bytes.
+ *
+ * @return Returns `true` if the piece at the given index is fully downloaded,
+ *         otherwise returns `false`.
+ */
+bool piece_complete(const unsigned char *block_tracker, unsigned int piece_index, unsigned int piece_size, int64_t torrent_size);
+/**
  * @brief Downloads & uploads torrent
  * @param metainfo The torrent metainfo extracted from the .torrent file
  * @param peer_id The chosen peer_id
