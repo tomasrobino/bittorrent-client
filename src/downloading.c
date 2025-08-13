@@ -216,8 +216,8 @@ bool are_bits_set(const unsigned char *bitfield, const unsigned int start, const
 }
 
 void closing_files(const files_ll* files, const unsigned char* bitfield, const unsigned int piece_index, const unsigned int piece_size, const unsigned int this_piece_size) {
-    unsigned int byte_index = piece_index / 8;
-    unsigned int bit_offset = 7 - piece_index % 8;
+    const unsigned int byte_index = piece_index / 8;
+    const unsigned int bit_offset = 7 - piece_index % 8;
     // Checking whether the passed piece is actually downloaded
     if (( bitfield[byte_index] & (1u << bit_offset) ) == 0) {
         return;
@@ -536,7 +536,19 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                                         bit_offset = 7 - piece->index % 8;
                                         bitfield[byte_index] |= (1u << bit_offset);
                                         closing_files(metainfo.info->files, bitfield, piece->index, metainfo.info->piece_length, p_len);
-                                        // TODO send "have" message to all peers
+                                        // Sending have message to all peers
+                                        char* buffer = malloc(9);
+                                        for (int j = 0; j < peer_amount; ++j) {
+                                            if (peer_array[j].status >= PEER_HANDSHAKE_SUCCESS) {
+                                                uint32_t l = htonl(5);
+                                                memcpy(buffer, &l, 4);
+                                                buffer[4] = 4;
+                                                l = htonl(piece->index);
+                                                memcpy(buffer, &l, 4);
+                                                send(peer_array[j].socket, buffer, 9, 0);
+                                            }
+                                        }
+                                        free(buffer);
                                     }
 
                                     left -= this_block;
