@@ -182,6 +182,53 @@ bool piece_complete(const unsigned char *block_tracker, const unsigned int piece
     return true;
 }
 
+int closing_files(const files_ll* files, const unsigned char* bitfield, const unsigned int piece_index, const unsigned int piece_size, const unsigned int this_piece_size) {
+    unsigned int byte_index = piece_index / 8;
+    unsigned int bit_offset = 7 - piece_index % 8;
+    // Checking whether the passed piece is actually downloaded
+    if (( bitfield[byte_index] & (1u << bit_offset) ) == 0) {
+        return -1;
+    }
+    bool last;
+    int64_t piece_offset;
+    if (piece_size != this_piece_size) {
+        last = true;
+        piece_offset = piece_index*(piece_size-1) + this_piece_size;
+    } else {
+        last = false;
+        piece_offset = piece_index*piece_size;
+    }
+
+
+    int64_t byte_counter = 0;
+    int64_t piece_counter = (int64_t)piece_index*(int64_t)piece_size;
+    const files_ll* current = files;
+    while (current != nullptr) {
+        // If the file ends after the piece starts and if it starts before the piece ends
+        if (current->byte_index+current->length > piece_offset && current->byte_index < piece_offset+this_piece_size) {
+            // If it overlaps with following pieces
+            unsigned int right = 0;
+            unsigned int left = 0;
+            if (!last) {
+                const int64_t overlap = piece_offset+this_piece_size - current->byte_index;
+                right = ceil((double)(current->length - overlap)/(double)piece_size);
+            }
+
+            if (piece_index != 0) {
+                const int64_t overlap = current->byte_index+current->length - piece_offset;
+                left = ceil((double)(current->length - overlap) / (double)piece_size);
+            }
+
+            for (unsigned int i = piece_index - left; i <= left+right+piece_index; i++) {
+                // TODO Check whether bits are 1
+            }
+        }
+
+        current = current->next;
+    }
+    return 0;
+}
+
 int torrent(const metainfo_t metainfo, const char* peer_id) {
     // For storing socket that successfully connected
     int successful_index = 0;
@@ -448,7 +495,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                                     p_len = metainfo.info->length - piece->index*metainfo.info->piece_length;
                                 } else p_len = metainfo.info->piece_length;
                                 // ACTUAL DOWNLOAD
-                                int block_result = download_block(fd, piece->index, p_len, piece->begin, metainfo.info->files);
+                                int block_result = download_block(fd, piece->index, metainfo.info->piece_length, piece->begin, metainfo.info->files);
                                 // Successful block download
                                 if (block_result == 0) {
                                     int64_t this_block = calc_block_size(p_len, piece->begin);
@@ -456,11 +503,11 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                                     block_tracker[byte_index] |= (1u << bit_offset);
                                     // If all the blocks in a piece are downloaded, mark it in the bitfield and prepare
                                     // to send "have" message to all peers
-
                                     if (piece_complete(block_tracker, piece->index, metainfo.info->piece_length, metainfo.info->length)) {
                                         byte_index = piece->index / 8;
                                         bit_offset = 7 - piece->index % 8;
                                         bitfield[byte_index] |= (1u << bit_offset);
+                                        // TODO send "have" message to all peers
                                     }
 
                                     left -= this_block;

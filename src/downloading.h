@@ -109,6 +109,9 @@ int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size
  *         otherwise returns `false`.
  */
 bool piece_complete(const unsigned char *block_tracker, unsigned int piece_index, unsigned int piece_size, int64_t torrent_size);
+
+int closing_files(const files_ll* files, const unsigned char* bitfield, unsigned int piece_index, unsigned int piece_size, unsigned int this_piece_size);
+
 /**
  * @brief Downloads & uploads torrent
  * @param metainfo The torrent metainfo extracted from the .torrent file
