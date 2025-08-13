@@ -108,7 +108,22 @@ int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size
  * @return Returns `true` if the piece at the given index is fully downloaded,
  *         otherwise returns `false`.
  */
-bool piece_complete(const unsigned char *block_tracker, unsigned int piece_index, unsigned int piece_size, int64_t torrent_size);
+bool piece_complete(const unsigned char *block_tracker, unsigned int piece_index, unsigned int piece_size, int64_t torrent_size);}
+
+/**
+ * Checks if all bits in the specified range are set within a given bitfield.
+ *
+ * This function examines the specified range of bits, defined by `start` and `end`,
+ * located within the provided `bitfield`. It verifies if all the bits in that range
+ * are set to 1.
+ *
+ * @param bitfield A pointer to the bitfield array that contains the bits to be checked.
+ * @param start The starting bit index of the range to check (inclusive).
+ * @param end The ending bit index of the range to check (inclusive).
+ * @return Returns true if all bits in the range are set to 1, otherwise returns false.
+ */
+bool are_bits_set(const unsigned char *bitfield, unsigned int start, unsigned int end);
+
 
 int closing_files(const files_ll* files, const unsigned char* bitfield, unsigned int piece_index, unsigned int piece_size, unsigned int this_piece_size);
 

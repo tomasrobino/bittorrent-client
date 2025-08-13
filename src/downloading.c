@@ -182,6 +182,40 @@ bool piece_complete(const unsigned char *block_tracker, const unsigned int piece
     return true;
 }
 
+bool are_bits_set(const unsigned char *bitfield, const unsigned int start, const unsigned int end) {
+    const unsigned int start_byte = start / 8;
+    const unsigned int end_byte = end / 8;
+    const unsigned int start_bit = start % 8;
+    const unsigned int end_bit = end % 8;
+
+    // Mask for first byte
+    unsigned char first_mask = (unsigned char)(0xFFu >> start_bit);
+    first_mask &= (unsigned char)(0xFFu << (7u - ((start_byte == end_byte) ? end_bit : 7u)));
+
+    // Mask for last byte
+    unsigned char last_mask = (unsigned char)(0xFFu << (7u - end_bit));
+    last_mask &= (unsigned char)(0xFFu >> ((start_byte == end_byte) ? start_bit : 0u));
+
+    // Check first byte
+    if ( (bitfield[start_byte] & first_mask) != first_mask )
+        return false;
+
+    // Full middle bytes
+    for (unsigned int b = start_byte + 1; b < end_byte; b++) {
+        if (bitfield[b] != 0xFFu)
+            return false;
+    }
+
+    // Check last byte (if different from first)
+    if (end_byte != start_byte) {
+        if ( (bitfield[end_byte] & last_mask) != last_mask )
+            return false;
+    }
+
+    return true;
+}
+
+
 int closing_files(const files_ll* files, const unsigned char* bitfield, const unsigned int piece_index, const unsigned int piece_size, const unsigned int this_piece_size) {
     unsigned int byte_index = piece_index / 8;
     unsigned int bit_offset = 7 - piece_index % 8;
