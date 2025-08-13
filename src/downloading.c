@@ -496,9 +496,29 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                             request->length = ntohl(request->length);
                             byte_index = request->index / 8;
                             bit_offset = 7 - request->index % 8;
+                            // If this client has the requested piece
                             if (( peer.bitfield[byte_index] & (1u << bit_offset) ) != 0) {
-                                // If this client has the requested piece
-                                //TODO send requested piece
+                                // Constructing message buffer
+                                int32_t buffer_size = 5 + 8 + request->length;
+                                char* buffer = malloc(buffer_size);
+                                uint32_t l = ntohl(9+request->length);
+                                memcpy(buffer, &l, 4);
+                                buffer[4] = 7;
+                                l = ntohl(request->index);
+                                memcpy(buffer+5, &l, 4);
+                                l = ntohl(request->begin);
+                                memcpy(buffer+9, &l, 4);
+
+                                // Sending block
+                                int32_t sent_bytes = 0;
+                                while (sent_bytes < buffer_size) {
+                                    int32_t sent = (int32_t)send(peer.socket, buffer, buffer_size, 0);
+                                    if (sent == -1) {
+                                        fprintf(stderr, "Error while sending piece in socket %d", peer.socket);
+                                    } else sent_bytes += sent;
+                                }
+
+                                free(buffer);
                             }
                         }
                         break;
@@ -544,7 +564,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                                                 memcpy(buffer, &l, 4);
                                                 buffer[4] = 4;
                                                 l = htonl(piece->index);
-                                                memcpy(buffer, &l, 4);
+                                                memcpy(buffer+5, &l, 4);
                                                 int32_t sent_bytes = 0;
                                                 while (sent_bytes < 9) {
                                                     int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, 9, 0);
