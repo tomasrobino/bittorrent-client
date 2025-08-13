@@ -215,12 +215,12 @@ bool are_bits_set(const unsigned char *bitfield, const unsigned int start, const
     return true;
 }
 
-int closing_files(const files_ll* files, const unsigned char* bitfield, const unsigned int piece_index, const unsigned int piece_size, const unsigned int this_piece_size) {
+void closing_files(const files_ll* files, const unsigned char* bitfield, const unsigned int piece_index, const unsigned int piece_size, const unsigned int this_piece_size) {
     unsigned int byte_index = piece_index / 8;
     unsigned int bit_offset = 7 - piece_index % 8;
     // Checking whether the passed piece is actually downloaded
     if (( bitfield[byte_index] & (1u << bit_offset) ) == 0) {
-        return -1;
+        return;
     }
     bool last;
     int64_t piece_offset;
@@ -255,7 +255,6 @@ int closing_files(const files_ll* files, const unsigned char* bitfield, const un
         }
         current = current->next;
     }
-    return 0;
 }
 
 int torrent(const metainfo_t metainfo, const char* peer_id) {

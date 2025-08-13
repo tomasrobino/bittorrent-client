@@ -124,7 +124,20 @@ bool piece_complete(const unsigned char *block_tracker, unsigned int piece_index
  */
 bool are_bits_set(const unsigned char *bitfield, unsigned int start, unsigned int end);
 
-int closing_files(const files_ll* files, const unsigned char* bitfield, unsigned int piece_index, unsigned int piece_size, unsigned int this_piece_size);
+/**
+ * Closes files in a linked list if all pieces overlapping with the file are downloaded.
+ *
+ * This function checks for pieces of a file that intersect with the given
+ * piece and determines whether all corresponding pieces are downloaded or not.
+ * If all overlapping pieces for a file are downloaded, the file pointer is closed.
+ *
+ * @param files Pointer to the linked list of files (each file containing metadata and a file pointer).
+ * @param bitfield A bitfield indicating which pieces are downloaded (1 indicates downloaded, 0 indicates not).
+ * @param piece_index The index of the piece to be processed.
+ * @param piece_size The size of a piece in bytes.
+ * @param this_piece_size The size of the current piece being evaluated (useful for the last piece which can be smaller).
+ */
+void closing_files(const files_ll* files, const unsigned char* bitfield, unsigned int piece_index, unsigned int piece_size, unsigned int this_piece_size);
 
 /**
  * @brief Downloads & uploads torrent
