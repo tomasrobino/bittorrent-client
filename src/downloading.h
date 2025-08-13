@@ -124,7 +124,6 @@ bool piece_complete(const unsigned char *block_tracker, unsigned int piece_index
  */
 bool are_bits_set(const unsigned char *bitfield, unsigned int start, unsigned int end);
 
-
 int closing_files(const files_ll* files, const unsigned char* bitfield, unsigned int piece_index, unsigned int piece_size, unsigned int this_piece_size);
 
 /**

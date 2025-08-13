@@ -215,7 +215,6 @@ bool are_bits_set(const unsigned char *bitfield, const unsigned int start, const
     return true;
 }
 
-
 int closing_files(const files_ll* files, const unsigned char* bitfield, const unsigned int piece_index, const unsigned int piece_size, const unsigned int this_piece_size) {
     unsigned int byte_index = piece_index / 8;
     unsigned int bit_offset = 7 - piece_index % 8;
@@ -233,9 +232,6 @@ int closing_files(const files_ll* files, const unsigned char* bitfield, const un
         piece_offset = piece_index*piece_size;
     }
 
-
-    int64_t byte_counter = 0;
-    int64_t piece_counter = (int64_t)piece_index*(int64_t)piece_size;
     const files_ll* current = files;
     while (current != nullptr) {
         // If the file ends after the piece starts and if it starts before the piece ends
@@ -253,11 +249,10 @@ int closing_files(const files_ll* files, const unsigned char* bitfield, const un
                 left = ceil((double)(current->length - overlap) / (double)piece_size);
             }
 
-            for (unsigned int i = piece_index - left; i <= left+right+piece_index; i++) {
-                // TODO Check whether bits are 1
+            if (are_bits_set(bitfield, piece_index-left, piece_index+right)) {
+                fclose(current->file_ptr);
             }
         }
-
         current = current->next;
     }
     return 0;
