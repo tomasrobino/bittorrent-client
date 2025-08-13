@@ -535,6 +535,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                                         byte_index = piece->index / 8;
                                         bit_offset = 7 - piece->index % 8;
                                         bitfield[byte_index] |= (1u << bit_offset);
+                                        closing_files(metainfo.info->files, bitfield, piece->index, metainfo.info->piece_length, p_len);
                                         // TODO send "have" message to all peers
                                     }
 
