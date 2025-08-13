@@ -545,7 +545,13 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                                                 buffer[4] = 4;
                                                 l = htonl(piece->index);
                                                 memcpy(buffer, &l, 4);
-                                                send(peer_array[j].socket, buffer, 9, 0);
+                                                int32_t sent_bytes = 0;
+                                                while (sent_bytes < 9) {
+                                                    int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, 9, 0);
+                                                    if (res == -1) {
+                                                        fprintf(stderr, "Error while sending have in socket %d", peer_array[j].socket);
+                                                    } else sent_bytes += res;
+                                                }
                                             }
                                         }
                                         free(buffer);
