@@ -1,6 +1,7 @@
 #ifndef DOWNLOADING_H
 #define DOWNLOADING_H
 #include "file.h"
+#include "predownload_udp.h"
 /// @brief Maximum events cached by epoll
 #define MAX_EVENTS 128
 /// @brief Maximum amount of time epoll will wait for sockets to be ready (in milliseconds)
@@ -108,7 +109,7 @@ int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size
  * @return Returns `true` if the piece at the given index is fully downloaded,
  *         otherwise returns `false`.
  */
-bool piece_complete(const unsigned char *block_tracker, unsigned int piece_index, unsigned int piece_size, int64_t torrent_size);}
+bool piece_complete(const unsigned char *block_tracker, unsigned int piece_index, unsigned int piece_size, int64_t torrent_size);
 
 /**
  * Checks if all bits in the specified range are set within a given bitfield.
@@ -138,6 +139,20 @@ bool are_bits_set(const unsigned char *bitfield, unsigned int start, unsigned in
  * @param this_piece_size The size of the current piece being evaluated (useful for the last piece which can be smaller).
  */
 void closing_files(const files_ll* files, const unsigned char* bitfield, unsigned int piece_index, unsigned int piece_size, unsigned int this_piece_size);
+
+/**
+ * Handles the pre-download procedure over UDP by connecting to a tracker and sending an announce request.
+ *
+ * @param metainfo A structure containing metadata of the torrent file, including tracker information.
+ * @param peer_id A unique identifier for the peer that is making the request.
+ * @param downloaded The total amount of data downloaded by the client, in bytes.
+ * @param left The amount of data left to download, in bytes.
+ * @param uploaded The total amount of data uploaded by the client, in bytes.
+ * @param event A numeric value representing the event type (e.g., start, stop, complete).
+ * @param key A random numerical key used to verify the announce request.
+ * @return A pointer to an announce_response_t structure containing the tracker's response, or nullptr if the request fails.
+ */
+announce_response_t* handle_predownload_udp(metainfo_t metainfo, const char* peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key);
 
 /**
  * @brief Downloads & uploads torrent

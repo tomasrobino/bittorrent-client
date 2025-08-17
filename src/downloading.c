@@ -257,7 +257,7 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, const u
     }
 }
 
-int torrent(const metainfo_t metainfo, const char* peer_id) {
+announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const char* peer_id, const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key) {
     // For storing socket that successfully connected
     int successful_index = 0;
     int* successful_index_pt = &successful_index;
@@ -270,19 +270,15 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
             counter++;
             current = current->next;
         }
-        current = metainfo.announce_list;
     } else {
         counter = 1;
-        current = nullptr;
     }
     connection_data_t connection_data = {nullptr, nullptr, 0, nullptr};
-    uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
-    uint32_t event = 0, key = arc4random();
 
     const uint64_t connection_id = connect_udp(counter, metainfo.announce_list, successful_index_pt, &connection_data);
     if (connection_id == 0) {
         // Couldn't connect to any tracker
-        return -1;
+        return nullptr;
     }
     announce_response_t *announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd,
                                                                   connection_id, metainfo.info->hash, peer_id,
@@ -291,7 +287,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                                                                       connection_data.split_addr->port, nullptr));
     if (announce_response == nullptr) {
         // Invalid response from tracker or error
-        return -2;
+        return nullptr;
     }
 
     // This is only to get torrent statistics
@@ -303,7 +299,13 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     free(connection_data.split_addr);
     free(connection_data.ip);
     free(connection_data.server_addr);
+    return announce_response;
+}
 
+int torrent(const metainfo_t metainfo, const char* peer_id) {
+    uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
+    uint32_t event = 0, key = arc4random();
+    announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key);
     // Creating TCP sockets for all peers
     /*
         This only supports IPv4 for now
