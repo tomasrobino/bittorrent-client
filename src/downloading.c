@@ -306,6 +306,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();
     announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key);
+    if (announce_response == nullptr) return -1;
     // Creating TCP sockets for all peers
     /*
         This only supports IPv4 for now
@@ -501,7 +502,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                             // If this client has the requested piece
                             if (( peer.bitfield[byte_index] & (1u << bit_offset) ) != 0) {
                                 // Constructing message buffer
-                                int32_t buffer_size = 5 + 8 + request->length;
+                                uint32_t buffer_size = 5 + 8 + request->length;
                                 char* buffer = malloc(buffer_size);
                                 uint32_t l = ntohl(9+request->length);
                                 memcpy(buffer, &l, 4);
