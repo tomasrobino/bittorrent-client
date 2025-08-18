@@ -28,15 +28,6 @@ int64_t calc_block_size(const unsigned int piece_size, const unsigned int byte_o
 }
 
 char* get_path(const ll* filepath, const LOG_CODE log_code) {
-    // Logging variables
-    FILE* logout;
-    FILE* logerr;
-    if (log_code == LOG_FULL) {
-        logout = stdout;
-    } else logout = fopen("/dev/null", "w");
-    if (log_code >= LOG_ERR) {
-        logerr = stderr;
-    } else logerr = fopen("/dev/null", "w");
     // Getting the amount of chars in the complete filepath
     int filepath_size = 0;
     const ll* filepath_ptr = filepath;
@@ -59,9 +50,9 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
         if (filepath_ptr->next != nullptr && stat(return_charpath, &st) == -1) {
             // Doesn't exist, create it
             if (mkdir(return_charpath, 0755) == 0) {
-                fprintf(logout, "Created directory: %s", return_charpath);
+                if (log_code == LOG_FULL) fprintf(stdout, "Created directory: %s", return_charpath);
             } else {
-                fprintf(logerr, "Couldn't create directory: %s", return_charpath);
+                if (log_code >= LOG_ERR) fprintf(stderr, "Couldn't create directory: %s", return_charpath);
                 exit(1);
             }
         }
@@ -87,29 +78,16 @@ int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const in
 }
 
 int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* file, const LOG_CODE log_code) {
-    // Logging variables
-    FILE* logout;
-    FILE* logerr;
-    if (log_code == LOG_FULL) {
-        logout = stdout;
-    } else logout = fopen("/dev/null", "w");
-    if (log_code >= LOG_ERR) {
-        logerr = stderr;
-    } else logerr = fopen("/dev/null", "w");
     const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
     if (bytes_written != amount) {
-        fprintf(logerr, "Failed to write to file %p\n", file);
+        if (log_code >= LOG_ERR) if (log_code == LOG_FULL) fprintf(stdout, "Failed to write to file %p\n", file);
         return -1;
     }
-    fprintf(logout, "Wrote %d bytes to file %p\n", bytes_written, file);
+    if (log_code >= LOG_ERR) fprintf(stderr, "Wrote %d bytes to file %p\n", bytes_written, file);
     return bytes_written;
 }
 
 int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, files_ll* files_metainfo, const LOG_CODE log_code) {
-    FILE* logerr;
-    if (log_code >= LOG_ERR) {
-        logerr = stderr;
-    } else logerr = fopen("/dev/null", "w");
     // Checking whether arguments are invalid
     if (byte_offset >= piece_size) return 4;
     if (piece_size == 0) return 4;
@@ -149,7 +127,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                     current->file_ptr = fopen(filepath_char, "wb+");
                 }
                 if (current->file_ptr == NULL) {
-                    fprintf(logerr, "Failed to open file in download_block() for socket %d\n", sockfd);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
                     free(filepath_char);
                     return 1;
                 }
@@ -326,16 +304,6 @@ announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const cha
 }
 
 int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_code) {
-    // Logging variables
-    FILE* logout;
-    FILE* logerr;
-    if (log_code == LOG_FULL) {
-        logout = stdout;
-    } else logout = fopen("/dev/null", "w");
-    if (log_code >= LOG_ERR) {
-        logerr = stderr;
-    } else logerr = fopen("/dev/null", "w");
-
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();
     announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key, log_code);
@@ -363,7 +331,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
         // Creating non-blocking socket
         peer_socket_array[counter2] = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
         if (peer_socket_array[counter2] == 0) {
-            fprintf(logerr, "TCP socket creation failed");
+            if (log_code >= LOG_ERR) fprintf(stderr, "TCP socket creation failed");
             exit(1);
         }
         struct sockaddr_in* peer_addr = &peer_addr_array[counter2];
@@ -372,14 +340,14 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
 
         // Converting IP from string to binary
         if (inet_pton(AF_INET, current_peer->ip, &peer_addr->sin_addr) <= 0) {
-            fprintf(logerr, "inet_pton failed while creating peer socket");
+            if (log_code >= LOG_ERR) fprintf(stderr, "inet_pton failed while creating peer socket");
             close(peer_socket_array[counter2]);
             exit(1);
         }
         // Try connecting
         int connect_result = connect(peer_socket_array[counter2], (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
         if (connect_result < 0 && errno != EINPROGRESS) {
-            fprintf(logerr, "Error #%d in connect for socket: %d\n", errno, peer_socket_array[counter2]);
+            if (log_code >= LOG_ERR) fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, peer_socket_array[counter2]);
             close(peer_socket_array[counter2]);
         } else if (errno == EINPROGRESS) {
             // If connection is in progress, add socket to epoll
@@ -426,12 +394,12 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
     while (left > 0) {
         const int nfds = epoll_wait(epoll, epoll_events, MAX_EVENTS, EPOLL_TIMEOUT);
         if (nfds == -1) {
-            fprintf(logerr, "Error in epoll_wait\n");
+            if (log_code >= LOG_ERR) fprintf(stderr, "Error in epoll_wait\n");
             continue;
         }
         // No socket returned
         if (nfds == 0) {
-            fprintf(logerr, "Epoll timeout\n");
+            if (log_code >= LOG_ERR) fprintf(stderr, "Epoll timeout\n");
             continue;
         }
 
@@ -449,15 +417,15 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                     socklen_t len = sizeof(err);
                     // Check whether connect() was successful
                     if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
-                        fprintf(logerr, "Error in getspckopt() in socket %d\n", fd);
+                        if (log_code >= LOG_ERR) fprintf(stderr, "Error in getspckopt() in socket %d\n", fd);
                     } else if (err != 0) {
-                        fprintf(logerr, "Connection failed in socket %d\n", fd);
+                        if (log_code >= LOG_ERR) fprintf(stderr, "Connection failed in socket %d\n", fd);
                     } else {
-                        fprintf(logout, "Connection successful in socket %d\n", fd);
+                        if (log_code == LOG_FULL) fprintf(stdout, "Connection successful in socket %d\n", fd);
                         peer->status = PEER_CONNECTION_SUCCESS;
                     }
                 } else {
-                    fprintf(logerr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
                 }
             }
             // Retry connection if connect() failed
@@ -473,10 +441,10 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 peer->last_msg = time(nullptr);
                 if (result > 0) {
                     peer->status = PEER_HANDSHAKE_SENT;
-                    fprintf(logout, "Handshake sent through socket %d\n", fd);
+                    if (log_code == LOG_FULL) fprintf(stdout, "Handshake sent through socket %d\n", fd);
                 } else {
                     peer->status = PEER_NOTHING;
-                    fprintf(logerr, "Error when sending handshake sent through socket %d\n", fd);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n", fd);
                     close(fd);
                 }
                 continue;
@@ -488,7 +456,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 if (foreign_id != nullptr) {
                     peer->status = PEER_HANDSHAKE_SUCCESS;
                     peer->id = (char*)foreign_id;
-                    fprintf(logout, "Handshake successful in socket %d\n", fd);
+                    if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
                     peer->status = PEER_CONNECTION_SUCCESS;
                 }
@@ -531,10 +499,10 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                     case BITFIELD:
                         peer->bitfield = message->payload;
                         if (message->payload != nullptr) {
-                            fprintf(logout, "Bitfield received successfully for socket %d\n", fd);
+                            if (log_code == LOG_FULL) fprintf(stdout, "Bitfield received successfully for socket %d\n", fd);
                             peer->status = PEER_BITFIELD_RECEIVED;
                         } else {
-                            fprintf(logout, "Error receiving bitfield for socket %d\n", fd);
+                            if (log_code == LOG_FULL) fprintf(stdout, "Error receiving bitfield for socket %d\n", fd);
                             peer->status = PEER_NO_BITFIELD;
                         }
                         break;
@@ -565,7 +533,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                                 while (sent_bytes < buffer_size) {
                                     int32_t sent = (int32_t)send(peer->socket, buffer, buffer_size, 0);
                                     if (sent == -1) {
-                                        fprintf(logerr, "Error while sending piece in socket %d", peer->socket);
+                                        if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending piece in socket %d", peer->socket);
                                     } else sent_bytes += sent;
                                 }
 
@@ -620,7 +588,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                                                 while (sent_bytes < 9) {
                                                     int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, 9, 0);
                                                     if (res == -1) {
-                                                        fprintf(logerr, "Error while sending have in socket %d", peer_array[j].socket);
+                                                        if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending have in socket %d", peer_array[j].socket);
                                                     } else sent_bytes += res;
                                                 }
                                             }
@@ -630,8 +598,8 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
 
                                     left -= this_block;
                                 }
-                            } else fprintf(logerr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
-                        } else fprintf(logerr, "Piece received in socket %d already extant", fd);
+                            } else if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
+                        } else if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", fd);
                         break;
                     case CANCEL:
                         break;

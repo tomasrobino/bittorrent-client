@@ -59,17 +59,12 @@ void free_bencode_list(ll* list) {
 }
 
 char* decode_bencode_string(const char* bencoded_value, const LOG_CODE log_code) {
-    // Logging
-    FILE* logerr;
-    if (log_code >= LOG_ERR) {
-        logerr = stderr;
-    } else logerr = fopen("/dev/null", "w");
     // Byte strings
     if (is_digit(bencoded_value[0])) {
         char *endptr;
         const int length = (int)strtol(bencoded_value, &endptr, 10);
         if (endptr == bencoded_value) {
-            fprintf(logerr, "No valid number found\n");
+            if (log_code >= LOG_ERR) fprintf(stderr, "No valid number found\n");
             exit(1);
         }
         const char* colon_index = strchr(bencoded_value, ':');
@@ -82,23 +77,18 @@ char* decode_bencode_string(const char* bencoded_value, const LOG_CODE log_code)
             decoded_str[length+2] = '\0';
             return decoded_str;
         }
-        fprintf(logerr, "Invalid encoded value: %s\n", bencoded_value);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Invalid encoded value: %s\n", bencoded_value);
         exit(1);
     }
-    fprintf(logerr, "Unsupported formatting\n");
+    if (log_code >= LOG_ERR) fprintf(stderr, "Unsupported formatting\n");
     exit(1);
 }
 
 unsigned long decode_bencode_int(const char *bencoded_value, char **endptr, const LOG_CODE log_code) {
-    // Logging
-    FILE* logerr;
-    if (log_code >= LOG_ERR) {
-        logerr = stderr;
-    } else logerr = fopen("/dev/null", "w");
     if (is_digit(bencoded_value[0])) {
         const unsigned long num = strtol(bencoded_value, endptr, 10);
         if (endptr != nullptr && *endptr == bencoded_value) {
-            fprintf(logerr, "Invalid number\n");
+            if (log_code >= LOG_ERR) fprintf(stderr, "Invalid number\n");
             return 0;
         }
         return num;

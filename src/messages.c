@@ -19,14 +19,9 @@ void bitfield_to_hex(const unsigned char *bitfield, const unsigned int byte_amou
     hex_output[byte_amount*2] = '\0';  // Null-terminate the string
 }
 int try_connect(const int sockfd, const struct sockaddr_in* peer_addr, const LOG_CODE log_code) {
-    // Logging
-    FILE* logerr;
-    if (log_code >= LOG_ERR) {
-        logerr = stderr;
-    } else logerr = fopen("/dev/null", "w");
     const int connect_result = connect(sockfd, (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
     if (connect_result < 0 && errno != EINPROGRESS) {
-        fprintf(logerr, "Error #%d in connect for socket: %d\n", errno, sockfd);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, sockfd);
         close(sockfd);
         return 0;
     }
@@ -34,11 +29,6 @@ int try_connect(const int sockfd, const struct sockaddr_in* peer_addr, const LOG
 }
 
 int send_handshake(const int sockfd, const char* info_hash, const char* peer_id, const LOG_CODE log_code) {
-    // Logging
-    FILE* logerr;
-    if (log_code >= LOG_ERR) {
-        logerr = stderr;
-    } else logerr = fopen("/dev/null", "w");
     char buffer[HANDSHAKE_LEN] = {0};
     buffer[0] = 19;
     memcpy(buffer+1, "BitTorrent protocol", 19);
@@ -48,29 +38,24 @@ int send_handshake(const int sockfd, const char* info_hash, const char* peer_id,
     // Send handshake request
     const ssize_t bytes_sent = send(sockfd, buffer, HANDSHAKE_LEN, MSG_NOSIGNAL);
     if (bytes_sent < 0) {
-        fprintf(logerr, "Error in handshake for socket: %d\n", sockfd);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Error in handshake for socket: %d\n", sockfd);
     }
     return (int) bytes_sent;
 }
 
 char* handshake_response(const int sockfd, const char* info_hash, const LOG_CODE log_code) {
-    // Logging
-    FILE* logerr;
-    if (log_code >= LOG_ERR) {
-        logerr = stderr;
-    } else logerr = fopen("/dev/null", "w");
     // Receive response
     char* res = malloc(20);
     char res_buffer[HANDSHAKE_LEN];
     const ssize_t bytes_received = recv(sockfd, res_buffer, HANDSHAKE_LEN, 0);
     if (bytes_received < HANDSHAKE_LEN) {
-        fprintf(logerr, "Error in handshake for socket: %d\n", sockfd);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Error in handshake for socket: %d\n", sockfd);
         close(sockfd);
         return nullptr;
     }
 
     if (memcmp(info_hash, res_buffer+28, 20) != 0) {
-        fprintf(logerr, "Error in handshake: returned wrong info hash\n");
+        if (log_code >= LOG_ERR) fprintf(stderr, "Error in handshake: returned wrong info hash\n");
         return nullptr;
     }
     memcpy(res, res_buffer+48, 20);
@@ -87,11 +72,6 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
 }
 
 bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, const LOG_CODE log_code) {
-    // Logging
-    FILE* logerr;
-    if (log_code >= LOG_ERR) {
-        logerr = stderr;
-    } else logerr = fopen("/dev/null", "w");
     bittorrent_message_t* message = malloc(sizeof(bittorrent_message_t));
     memset(message, 0, sizeof(bittorrent_message_t));
     ssize_t bytes_received = recv(sockfd, message, MESSAGE_MIN_SIZE, 0);
@@ -117,7 +97,7 @@ bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, con
         while (total < message->length-1) {
             bytes_received = recv(sockfd, (message->payload)+total, message->length-1, 0);
             if (bytes_received == -1) {
-                fprintf(logerr, "Errno %d when attempting to read_message() on socket %d\n", errno, sockfd);
+                if (log_code >= LOG_ERR) fprintf(stderr, "Errno %d when attempting to read_message() on socket %d\n", errno, sockfd);
                 break;
             }
             total+=bytes_received;
