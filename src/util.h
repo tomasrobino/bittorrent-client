@@ -1,10 +1,20 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
-// Logging codes
-#define LOG_NO 0
-#define LOG_ERR 1
-#define LOG_SUMM 2
-#define LOG_FULL 3
+
+/**
+ * Enumeration to represent different levels of logging.
+ *
+ * @param LOG_NO No logging.
+ * @param LOG_ERR Logs error messages.
+ * @param LOG_SUMM Logs a summary of operations or events.
+ * @param LOG_FULL Logs detailed information including all operations or events.
+ */
+enum log_level {
+    LOG_NO = 0,
+    LOG_ERR = 1,
+    LOG_SUMM = 2,
+    LOG_FULL = 3
+};
 // This client's client id
 #define CLIENT_ID "-IT0001-"
 
