@@ -36,7 +36,7 @@ int main(const int argc, char* argv[]) {
         const char* magnet_link = argv[2];
         //Check if the link begins correctly
         if (strncmp(magnet_link, "magnet:", 7) == 0) {
-            magnet_data* data = process_magnet(magnet_link+7);
+            magnet_data* data = process_magnet(magnet_link+7, 0);
 
 
             //Freeing magnet data
