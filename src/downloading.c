@@ -46,11 +46,12 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
         filepath_ptr = filepath_ptr->next;
     }
     char* return_charpath = malloc(filepath_size);
+    filepath_size = 0;
     filepath_ptr = filepath;
     // Copying full path as string into *return_charpath
     struct stat st;
     while (filepath_ptr != nullptr) {
-        strncpy(return_charpath + filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
+        memcpy(return_charpath + filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
         filepath_size += (int)strlen(filepath_ptr->val);
         return_charpath[filepath_size] = '/';
 
