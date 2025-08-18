@@ -159,19 +159,22 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, unsigne
  * @param uploaded The total amount of data uploaded by the client, in bytes.
  * @param event A numeric value representing the event type (e.g., start, stop, complete).
  * @param key A random numerical key used to verify the announce request.
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @return A pointer to an announce_response_t structure containing the tracker's response, or nullptr if the request fails.
  */
-announce_response_t* handle_predownload_udp(metainfo_t metainfo, const char* peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key);
+announce_response_t* handle_predownload_udp(metainfo_t metainfo, const char* peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key, LOG_CODE log_code);
 
 /**
  * @brief Downloads & uploads torrent
  * @param metainfo The torrent metainfo extracted from the .torrent file
  * @param peer_id The chosen peer_id
- * @param log_setting An enumeration value specifying the desired logging level.
+ * @param log_code An enumeration value specifying the desired logging level.
  *                    It can be one of the following:
  *                    LOG_NO (no logging), LOG_ERR (error logging),
  *                    LOG_SUMM (summary logging), or LOG_FULL (detailed logging).
  * @return 0 for success, !0 for failure
  */
-int torrent(metainfo_t metainfo, const char *peer_id, LOG_CODE log_setting);
+int torrent(metainfo_t metainfo, const char *peer_id, LOG_CODE log_code);
 #endif //DOWNLOADING_H

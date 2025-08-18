@@ -267,7 +267,7 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, const u
     }
 }
 
-announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const char* peer_id, const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key) {
+announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const char* peer_id, const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const LOG_CODE log_code) {
     // For storing socket that successfully connected
     int successful_index = 0;
     int* successful_index_pt = &successful_index;
@@ -285,7 +285,7 @@ announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const cha
     }
     connection_data_t connection_data = {nullptr, nullptr, 0, nullptr};
 
-    const uint64_t connection_id = connect_udp(counter, metainfo.announce_list, successful_index_pt, &connection_data);
+    const uint64_t connection_id = connect_udp(counter, metainfo.announce_list, successful_index_pt, &connection_data, log_code);
     if (connection_id == 0) {
         // Couldn't connect to any tracker
         return nullptr;
@@ -294,7 +294,7 @@ announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const cha
                                                                   connection_id, metainfo.info->hash, peer_id,
                                                                   downloaded, left, uploaded, event, key,
                                                                   decode_bencode_int(
-                                                                      connection_data.split_addr->port, nullptr));
+                                                                      connection_data.split_addr->port, nullptr), log_code);
     if (announce_response == nullptr) {
         // Invalid response from tracker or error
         return nullptr;
@@ -321,7 +321,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
 
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();
-    announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key);
+    announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key, log_code);
     if (announce_response == nullptr) return -1;
     // Creating TCP sockets for all peers
     /*

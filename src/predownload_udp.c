@@ -114,7 +114,12 @@ char* url_to_ip(address_t* address) {
     return ip;
 }
 
-int* try_request_udp(const int amount, const int sockfd[], const void *req[], const size_t req_size, const struct sockaddr *server_addr[]) {
+int* try_request_udp(const int amount, const int sockfd[], const void *req[], const size_t req_size, const struct sockaddr *server_addr[], const LOG_CODE log_code) {
+    // Logging variables
+    FILE* logout;
+    if (log_code == LOG_FULL) {
+        logout = stdout;
+    } else logout = fopen("dev/null", "w");
     struct pollfd pfd[amount];
     memset(pfd, 0, amount*sizeof(struct pollfd));
     for (int i = 0; i < amount; ++i) {
@@ -135,7 +140,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
                 }
                 return nullptr;
             }
-            fprintf(stdout, "Sent %zd bytes\n", sent);
+            fprintf(logout, "Sent %zd bytes\n", sent);
         }
 
         // Wait for response
@@ -165,7 +170,16 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
     return nullptr;
 }
 
-uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int sockfd[], const int amount, int* successful_index) {
+uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int sockfd[], const int amount, int* successful_index, const LOG_CODE log_code) {
+    // Logging variables
+    FILE* summout;
+    FILE* logout;
+    if (log_code == LOG_FULL) {
+        logout = stdout;
+    } else logout = fopen("dev/null", "w");
+    if (log_code >= LOG_SUMM) {
+        summout = stdout;
+    } else summout = fopen("dev/null", "w");
     connect_request_t* req_array[amount];
     for (int i = 0; i < amount; ++i) {
         req_array[i] = malloc(sizeof(connect_request_t));
@@ -174,13 +188,13 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
         req_array[i]->protocol_id = htobe64(0x41727101980LL);
         req_array[i]->action = htobe32(0);
         req_array[i]->transaction_id = htobe32(arc4random());
-        fprintf(stdout, "Connection request:\n");
-        fprintf(stdout, "action: %u\n", req_array[i]->action);
-        fprintf(stdout, "transaction_id: %u\n", req_array[i]->transaction_id);
-        fprintf(stdout, "protocol_id: %lu\n", req_array[i]->protocol_id);
+        fprintf(summout, "Connection request:\n");
+        fprintf(summout, "action: %u\n", req_array[i]->action);
+        fprintf(summout, "transaction_id: %u\n", req_array[i]->transaction_id);
+        fprintf(summout, "protocol_id: %lu\n", req_array[i]->protocol_id);
     }
 
-    int* available_connections = try_request_udp(amount, sockfd, (const void**)req_array, sizeof(connect_request_t), server_addr);
+    int* available_connections = try_request_udp(amount, sockfd, (const void**)req_array, sizeof(connect_request_t), server_addr, log_code);
     if (available_connections == nullptr) {
         // All connections failed
         free(available_connections);
@@ -212,12 +226,12 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
         return 0;
     }
 
-    fprintf(stdout, "Received %ld bytes\n", received);
+    fprintf(logout, "Received %ld bytes\n", received);
 
-    fprintf(stdout, "Server response:\n");
-    fprintf(stdout, "action: %u\n", res->action);
-    fprintf(stdout, "transaction_id: %u\n", res->transaction_id);
-    fprintf(stdout, "connection_id: %lu\n", res->connection_id);
+    fprintf(summout, "Server response:\n");
+    fprintf(summout, "action: %u\n", res->action);
+    fprintf(summout, "transaction_id: %u\n", res->transaction_id);
+    fprintf(summout, "connection_id: %lu\n", res->connection_id);
     if (req_array[i]->transaction_id == res->transaction_id && req_array[i]->action == res->action) {
         // Convert back to host endianness
         res->connection_id = htobe64(res->connection_id);
@@ -239,7 +253,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     return id;
 }
 
-uint64_t connect_udp(const int amount, announce_list_ll* current, int* successful_index_pt, connection_data_t* connection_data) {
+uint64_t connect_udp(const int amount, announce_list_ll* current, int* successful_index_pt, connection_data_t* connection_data, const LOG_CODE log_code) {
     int successful_index = *successful_index_pt;
     // Creating outer list arrays
     address_t** split_addr_array[amount];
@@ -314,7 +328,7 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
         }
 
         // Atempting connection of all trackers in current list
-        uint64_t connection_id = connect_request_udp((const struct sockaddr**)server_addr_array[counter], sockfd_array[counter], list_sizes[counter], successful_index_pt);
+        uint64_t connection_id = connect_request_udp((const struct sockaddr**)server_addr_array[counter], sockfd_array[counter], list_sizes[counter], successful_index_pt, log_code);
         if (connection_id != 0) {
             // Successful connection, exit loop
 
@@ -350,7 +364,12 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
     return 0;
 }
 
-announce_response_t* announce_request_udp(const struct sockaddr *server_addr, const int sockfd, uint64_t connection_id, const char info_hash[], const char peer_id[], const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const uint16_t port) {
+announce_response_t* announce_request_udp(const struct sockaddr *server_addr, const int sockfd, uint64_t connection_id, const char info_hash[], const char peer_id[], const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const uint16_t port, const LOG_CODE log_code) {
+    // Logging variables
+    FILE* summout;
+    if (log_code >= LOG_SUMM) {
+        summout = stdout;
+    } else summout = fopen("dev/null", "w");
     announce_request_t req = {0};
     // Convert to network endianness
     req.connection_id = htobe64(connection_id);
@@ -367,25 +386,25 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     req.num_want = htobe32(-1);
     req.port = htobe16(port);
 
-    fprintf(stdout, "Announce request:\n");
-    fprintf(stdout, "action: %d\n", req.action);
-    fprintf(stdout, "transaction_id: %d\n", req.transaction_id);
-    fprintf(stdout, "connection_id: %lu\n", req.connection_id);
-    fprintf(stdout, "info_hash: ");
+    fprintf(summout, "Announce request:\n");
+    fprintf(summout, "action: %d\n", req.action);
+    fprintf(summout, "transaction_id: %d\n", req.transaction_id);
+    fprintf(summout, "connection_id: %lu\n", req.connection_id);
+    fprintf(summout, "info_hash: ");
     char human_hash[41];
     sha1_to_hex((unsigned char*)req.info_hash, human_hash);
-    fprintf(stdout, "%s", human_hash);
-    fprintf(stdout, "\n");
-    fprintf(stdout, "peer_id: ");
+    fprintf(summout, "%s", human_hash);
+    fprintf(summout, "\n");
+    fprintf(summout, "peer_id: ");
     for (int j = 0; j < 20; ++j) {
-        fprintf(stdout, "%d",req.peer_id[j]);
+        fprintf(summout, "%d",req.peer_id[j]);
     }
-    fprintf(stdout, "\n");
-    fprintf(stdout, "downloaded: %lu\n", req.downloaded);
-    fprintf(stdout, "left: %lu\n", req.left);
-    fprintf(stdout, "uploaded: %lu\n", req.uploaded);
-    fprintf(stdout, "key: %u\n", req.key);
-    fprintf(stdout, "port: %hu\n", req.port);
+    fprintf(summout, "\n");
+    fprintf(summout, "downloaded: %lu\n", req.downloaded);
+    fprintf(summout, "left: %lu\n", req.left);
+    fprintf(summout, "uploaded: %lu\n", req.uploaded);
+    fprintf(summout, "key: %u\n", req.key);
+    fprintf(summout, "port: %hu\n", req.port);
     // Explicit malloc to avoid sendto() error
     char* req_buffer = malloc(ANNOUNCE_REQUEST_SIZE);
     memcpy(req_buffer, &req.connection_id, 8);
@@ -403,7 +422,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     memcpy(req_buffer+96, &req.port, 2);
 
 
-    int* announce_res_socket = try_request_udp(1, &sockfd, (const void**)&req_buffer, ANNOUNCE_REQUEST_SIZE, &server_addr);
+    int* announce_res_socket = try_request_udp(1, &sockfd, (const void**)&req_buffer, ANNOUNCE_REQUEST_SIZE, &server_addr, log_code);
     free(req_buffer);
     if (announce_res_socket == nullptr) {
         fprintf(stderr, "Error while receiving announce response\n");
@@ -416,10 +435,10 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     const ssize_t recv_bytes = recvfrom(sockfd, buffer, MAX_RESPONSE_SIZE, 0, nullptr, nullptr);
     /*
     for (int i = 0; i < recv_bytes; ++i) {
-        fprintf(stdout, "buffer[%d]: %d\n", i, buffer[i]);
+        fprintf(logout, "buffer[%d]: %d\n", i, buffer[i]);
     }
-    fprintf(stdout, "\n");
-    fprintf(stdout, "\n");
+    fprintf(logout, "\n");
+    fprintf(logout, "\n");
     */
     if (((error_response*) buffer)->action == 3) {
         // 3 means error
@@ -493,16 +512,16 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
         return nullptr;
     }
 
-    fprintf(stdout, "Server response:\n");
-    fprintf(stdout, "action: %u\n", res->action);
-    fprintf(stdout, "transaction_id: %u\n", res->transaction_id);
-    fprintf(stdout, "interval: %u\n", res->interval);
-    fprintf(stdout, "leechers: %u\n", res->leechers);
-    fprintf(stdout, "seeders: %u\n", res->seeders);
-    fprintf(stdout, "peer_list: \n");
+    fprintf(summout, "Server response:\n");
+    fprintf(summout, "action: %u\n", res->action);
+    fprintf(summout, "transaction_id: %u\n", res->transaction_id);
+    fprintf(summout, "interval: %u\n", res->interval);
+    fprintf(summout, "leechers: %u\n", res->leechers);
+    fprintf(summout, "seeders: %u\n", res->seeders);
+    fprintf(summout, "peer_list: \n");
     int counter = 0;
     while (res->peer_list != nullptr) {
-        fprintf(stdout, "peer #%d: %s:%d\n", counter+1, res->peer_list->ip, res->peer_list->port);
+        fprintf(summout, "peer #%d: %s:%d\n", counter+1, res->peer_list->ip, res->peer_list->port);
         counter++;
         res->peer_list = res->peer_list->next;
     }
@@ -510,30 +529,35 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     return res;
 }
 
-scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, const int sockfd, const uint64_t connection_id, const char info_hash[], const unsigned int torrent_amount) {
+scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, const int sockfd, const uint64_t connection_id, const char info_hash[], const unsigned int torrent_amount, const LOG_CODE log_code) {
+    // Logging variables
+    FILE* summout;
+    if (log_code >= LOG_SUMM) {
+        summout = stdout;
+    } else summout = fopen("dev/null", "w");
     scrape_request_t req;
     req.connection_id = htobe64(connection_id);
     req.action = htobe32(2);
     req.transaction_id = htobe32(arc4random());
     req.info_hash_list = info_hash;
 
-    fprintf(stdout, "Scrape request:\n");
-    fprintf(stdout, "action: %d\n", req.action);
-    fprintf(stdout, "transaction_id: %d\n", req.transaction_id);
-    fprintf(stdout, "connection_id: %lu\n", req.connection_id);
-    fprintf(stdout, "info_hash: \n");
+    fprintf(summout, "Scrape request:\n");
+    fprintf(summout, "action: %d\n", req.action);
+    fprintf(summout, "transaction_id: %d\n", req.transaction_id);
+    fprintf(summout, "connection_id: %lu\n", req.connection_id);
+    fprintf(summout, "info_hash: \n");
     for (int i = 0; i < torrent_amount; ++i) {
-        fprintf(stdout, "#%d: ", i+1);
+        fprintf(summout, "#%d: ", i+1);
         for (int j = 0; j < 20; ++j) {
-            fprintf(stdout, "%c",req.info_hash_list[j+20*i]);
+            fprintf(summout, "%c",req.info_hash_list[j+20*i]);
         }
-        fprintf(stdout, "\n");
+        fprintf(summout, "\n");
     }
     char* buffer = malloc(SCRAPE_REQUEST_SIZE+20*torrent_amount);
     memcpy(buffer, &req, SCRAPE_REQUEST_SIZE);
     memcpy(buffer+SCRAPE_REQUEST_SIZE, req.info_hash_list, torrent_amount*20);
     socklen_t socklen = sizeof(struct sockaddr);
-    int* scrape_res_socket = try_request_udp(1, &sockfd, (const void**)&buffer, SCRAPE_REQUEST_SIZE+20*torrent_amount, &server_addr);
+    int* scrape_res_socket = try_request_udp(1, &sockfd, (const void**)&buffer, SCRAPE_REQUEST_SIZE+20*torrent_amount, &server_addr, log_code);
     if (scrape_res_socket == nullptr) {
         fprintf(stderr, "Error while receiving scrape response\n");
         free(scrape_res_socket);
@@ -580,15 +604,15 @@ scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, const 
         return nullptr;
     }
 
-    fprintf(stdout, "Server response:\n");
-    fprintf(stdout, "action: %u\n", res->action);
-    fprintf(stdout, "transaction_id: %u\n", res->transaction_id);
-    fprintf(stdout, "scraped_data_array:\n");
+    fprintf(summout, "Server response:\n");
+    fprintf(summout, "action: %u\n", res->action);
+    fprintf(summout, "transaction_id: %u\n", res->transaction_id);
+    fprintf(summout, "scraped_data_array:\n");
     for (int i = 0; i < torrent_amount; ++i) {
-        fprintf(stdout, "torrent #%d:\n", i+1);
-        fprintf(stdout, "seeders: %d\n", res->scraped_data_array[i].seeders);
-        fprintf(stdout, "completed: %d\n", res->scraped_data_array[i].completed);
-        fprintf(stdout, "leechers: %d\n", res->scraped_data_array[i].leechers);
+        fprintf(summout, "torrent #%d:\n", i+1);
+        fprintf(summout, "seeders: %d\n", res->scraped_data_array[i].seeders);
+        fprintf(summout, "completed: %d\n", res->scraped_data_array[i].completed);
+        fprintf(summout, "leechers: %d\n", res->scraped_data_array[i].leechers);
     }
     return res;
 }
