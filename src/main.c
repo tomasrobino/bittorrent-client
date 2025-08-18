@@ -28,6 +28,23 @@ int main(const int argc, char* argv[]) {
         fprintf(stderr, "Usage: bittorrent-client.sh <command> <args>\n");
         return 1;
     }
+    // Logging
+    int log_code = LOG_NO;
+    if (argc > 3) {
+        if (strcmp("no", argv[3]) == 0) {
+            log_code = LOG_NO;
+        } else if (strcmp("error", argv[3]) == 0) {
+            log_code = LOG_ERR;
+        } else if (strcmp("summary", argv[3]) == 0) {
+            log_code = LOG_SUMM;
+        } else if (strcmp("full", argv[3]) == 0) {
+            log_code = LOG_FULL;
+        } else log_code = LOG_NO;
+    }
+    FILE* logerr;
+    if (log_code >= LOG_ERR) {
+        logerr = stderr;
+    } else logerr = fopen("/dev/null", "w");
 
     const char* command = argv[1];
     fprintf(stderr, "Logging will appear here.\n");
@@ -42,7 +59,7 @@ int main(const int argc, char* argv[]) {
             //Freeing magnet data
             free_magnet_data(data);
         } else {
-            fprintf(stderr, "Invalid link: %s\n", command);
+            fprintf(logerr, "Invalid link: %s\n", command);
             return 1;
         }
     } else if (strcmp(command, "file") == 0) {
@@ -58,37 +75,24 @@ int main(const int argc, char* argv[]) {
                 fread (buffer, 1, length, f);
             }
             fclose (f);
-        } else fprintf(stderr, "Torrent file not found");
+        } else fprintf(logerr, "Torrent file not found");
 
         if (buffer && length != 0) {
             errno = 0;
             const int mk_res = mkdir("download-folder", 0755);
             if (mk_res == -1 && errno != 0 && errno != 17) {
-                fprintf(stderr, "Error when creating torrent directory. Errno: %d", errno);
+                fprintf(logerr, "Error when creating torrent directory. Errno: %d", errno);
                 return 2;
             }
             metainfo_t* metainfo = parse_metainfo(buffer, length);
             if (metainfo != nullptr) {
-                if (argc > 3) {
-                    int log_code = LOG_NO;
-                    if (strcmp("no", argv[3]) == 0) {
-                        log_code = LOG_NO;
-                    } else if (strcmp("error", argv[3]) == 0) {
-                        log_code = LOG_ERR;
-                    } else if (strcmp("summary", argv[3]) == 0) {
-                        log_code = LOG_SUMM;
-                    } else if (strcmp("full", argv[3]) == 0) {
-                        log_code = LOG_FULL;
-                    }
-                    torrent(*metainfo, peer_id, log_code);
-                } else torrent(*metainfo, peer_id, LOG_NO);
-
+                torrent(*metainfo, peer_id, log_code);
                 free_metainfo(metainfo);
             }
             free(buffer);
-        } else fprintf(stderr, "File reading buffer error");
+        } else fprintf(logerr, "File reading buffer error");
     } else {
-        fprintf(stderr, "Unknown command: %s\n", command);
+        fprintf(logerr, "Unknown command: %s\n", command);
         return 1;
     }
     return 0;
