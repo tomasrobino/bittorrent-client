@@ -6,7 +6,12 @@
 #include "whole_bencode.h"
 #include "magnet.h"
 
-magnet_data* process_magnet(const char* magnet) {
+magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
+    // Logging variables
+    FILE* logout;
+    if (log_code == LOG_FULL) {
+        logout = stdout;
+    } else logout = fopen("dev/null", "w");
     const int length = (int) strlen(magnet);
     int start = 4;
     Magnet_Attributes current_attribute = none;
@@ -28,7 +33,7 @@ magnet_data* process_magnet(const char* magnet) {
     head->val = nullptr;
     ll* current = head;
     int tracker_count = 0;
-    fprintf(stdout, "magnet data:\n");
+    fprintf(logout, "magnet data:\n");
     for (int i = 0; i <= length; ++i) {
         if (magnet[i] == '&' || magnet[i] == '?' || magnet[i] == '\0') {
             //Processing previous attribute
@@ -43,7 +48,7 @@ magnet_data* process_magnet(const char* magnet) {
                             fprintf(stderr, "Invalid URN");
                             exit(1);
                         }
-                        fprintf(stdout, "xt:\n%s\n", data->xt);
+                        fprintf(logout, "xt:\n%s\n", data->xt);
                         break;
                     case dn:
                         data->dn = malloc(sizeof(char)*(i-start+1));
@@ -53,11 +58,11 @@ magnet_data* process_magnet(const char* magnet) {
                             } else data->dn[j] = magnet[start+j];
                         }
                         data->dn[i-start] = '\0';
-                        fprintf(stdout, "dn:\n%s\n", data->dn);
+                        fprintf(logout, "dn:\n%s\n", data->dn);
                         break;
                     case xl:
                         data->xl = (int) decode_bencode_int(magnet+start, nullptr);
-                        fprintf(stdout, "xl:\n%ld\n", data->xl);
+                        fprintf(logout, "xl:\n%ld\n", data->xl);
                         break;
                     case tr:
                         if (tracker_count > 0) {
@@ -67,19 +72,19 @@ magnet_data* process_magnet(const char* magnet) {
                         }
                         current->val = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
                         tracker_count++;
-                        fprintf(stdout, "tr:\n%s\n", current->val);
+                        fprintf(logout, "tr:\n%s\n", current->val);
                         break;
                     case ws:
                         data->ws = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
-                        fprintf(stdout, "ws:\n%s\n", data->ws);
+                        fprintf(logout, "ws:\n%s\n", data->ws);
                         break;
                     case as:
                         data->as = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
-                        fprintf(stdout, "as:\n%s\n", data->as);
+                        fprintf(logout, "as:\n%s\n", data->as);
                         break;
                     case xs:
                         data->xs = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
-                        fprintf(stdout, "xs:\n%s\n", data->xs);
+                        fprintf(logout, "xs:\n%s\n", data->xs);
                         break;
                     case kt:
                         data->kt = malloc(sizeof(char)*(i-start+1));
@@ -89,11 +94,11 @@ magnet_data* process_magnet(const char* magnet) {
                             } else data->kt[j] = magnet[start+j];
                         }
                         data->kt[i-start] = '\0';
-                        fprintf(stdout, "kt:\n%s\n", data->kt);
+                        fprintf(logout, "kt:\n%s\n", data->kt);
                         break;
                     case mt:
                         data->mt = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
-                        fprintf(stdout, "mt:\n%s\n", data->mt);
+                        fprintf(logout, "mt:\n%s\n", data->mt);
                         break;
                     case so:
                         data->so = malloc(sizeof(char)*(i-start+1));
