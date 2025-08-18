@@ -71,7 +71,12 @@ void shuffle_address_array(address_t* array[], const int length) {
     }
 }
 
-char* url_to_ip(address_t* address) {
+char* url_to_ip(address_t* address, const LOG_CODE log_code) {
+    // Logging variables
+    FILE* logout;
+    if (log_code == LOG_FULL) {
+        logout = stdout;
+    } else logout = fopen("dev/null", "w");
     struct addrinfo hints = {0}, *res;
     hints.ai_family = AF_UNSPEC;
     char* ip = nullptr;
@@ -96,7 +101,7 @@ char* url_to_ip(address_t* address) {
             inet_ntop(rp->ai_family, addr_ptr, buf, sizeof(buf));
             ip = malloc(INET6_ADDRSTRLEN);
             if (ip) strcpy(ip, buf);
-            printf("Resolved IPv6: %s\n", ip);
+            fprintf(logout, "Resolved IPv6: %s\n", ip);
         }
 
         //IPv4
@@ -106,7 +111,7 @@ char* url_to_ip(address_t* address) {
             inet_ntop(rp->ai_family, addr_ptr, buf, sizeof(buf));
             ip = malloc(INET_ADDRSTRLEN);
             if (ip) strcpy(ip, buf);
-            printf("Resolved IPv4: %s\n", ip);
+            fprintf(logout, "Resolved IPv4: %s\n", ip);
             break;
         }
     }
@@ -119,7 +124,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
     FILE* logout;
     if (log_code == LOG_FULL) {
         logout = stdout;
-    } else logout = fopen("dev/null", "w");
+    } else logout = fopen("/dev/null", "w");
     struct pollfd pfd[amount];
     memset(pfd, 0, amount*sizeof(struct pollfd));
     for (int i = 0; i < amount; ++i) {
@@ -176,10 +181,10 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     FILE* logout;
     if (log_code == LOG_FULL) {
         logout = stdout;
-    } else logout = fopen("dev/null", "w");
+    } else logout = fopen("/dev/null", "w");
     if (log_code >= LOG_SUMM) {
         summout = stdout;
-    } else summout = fopen("dev/null", "w");
+    } else summout = fopen("/dev/null", "w");
     connect_request_t* req_array[amount];
     for (int i = 0; i < amount; ++i) {
         req_array[i] = malloc(sizeof(connect_request_t));
@@ -305,7 +310,7 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
         // Iterating over inner lists' newly-created arrays
         for (int i = 0; i < counter2; ++i) {
             // Gettign IPs
-            ip_array[counter][i] = url_to_ip(split_addr_array[counter][i]);
+            ip_array[counter][i] = url_to_ip(split_addr_array[counter][i], log_code);
             // Creating sockets
             sockfd_array[counter][i] = socket(split_addr_array[counter][i]->ip_version, SOCK_DGRAM, IPPROTO_UDP);
 
@@ -369,7 +374,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     FILE* summout;
     if (log_code >= LOG_SUMM) {
         summout = stdout;
-    } else summout = fopen("dev/null", "w");
+    } else summout = fopen("/dev/null", "w");
     announce_request_t req = {0};
     // Convert to network endianness
     req.connection_id = htobe64(connection_id);
@@ -534,7 +539,7 @@ scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, const 
     FILE* summout;
     if (log_code >= LOG_SUMM) {
         summout = stdout;
-    } else summout = fopen("dev/null", "w");
+    } else summout = fopen("/dev/null", "w");
     scrape_request_t req;
     req.connection_id = htobe64(connection_id);
     req.action = htobe32(2);

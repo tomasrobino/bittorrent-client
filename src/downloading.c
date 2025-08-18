@@ -32,7 +32,7 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
     FILE* logout;
     if (log_code == LOG_FULL) {
         logout = stdout;
-    } else logout = fopen("dev/null", "w");
+    } else logout = fopen("/dev/null", "w");
     // Getting the amount of chars in the complete filepath
     int filepath_size = 0;
     const ll* filepath_ptr = filepath;
@@ -86,7 +86,7 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
     FILE* logout;
     if (log_code == LOG_FULL) {
         logout = stdout;
-    } else logout = fopen("dev/null", "w");
+    } else logout = fopen("/dev/null", "w");
     const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
     if (bytes_written != amount) {
         fprintf(stderr, "Failed to write to file %p\n", file);
@@ -317,7 +317,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
     FILE* logout;
     if (log_code == LOG_FULL) {
         logout = stdout;
-    } else logout = fopen("dev/null", "w");
+    } else logout = fopen("/dev/null", "w");
 
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();

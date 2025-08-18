@@ -174,9 +174,12 @@ address_t* split_address(const char* address);
 void shuffle_address_array(address_t* array[], int length);
 /** Converts domain to IP. Supports UDP, HTTP, and HTTPS; IPv4 and IPv6
  * @param address The domain as a string
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @returns The IP of the domain as a string
  **/
-char* url_to_ip(address_t* address);
+char* url_to_ip(address_t* address, LOG_CODE log_code);
 
 /**
  * Attempts to send requests to an array of trackers
