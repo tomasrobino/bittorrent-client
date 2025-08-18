@@ -23,9 +23,6 @@ int main(const int argc, char* argv[]) {
     setbuf(stdout, nullptr);
     setbuf(stderr, nullptr);
     // Buffer variables for logging options
-    FILE* logout = stdout;
-    FILE* summout = stdout;
-    FILE* logerr = stderr;
 
     if (argc < 3) {
         fprintf(stderr, "Usage: bittorrent-client.sh <command> <args>\n");
