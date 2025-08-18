@@ -76,7 +76,7 @@ char* url_to_ip(address_t* address, const LOG_CODE log_code) {
     FILE* logout;
     if (log_code == LOG_FULL) {
         logout = stdout;
-    } else logout = fopen("dev/null", "w");
+    } else logout = fopen("/dev/null", "w");
     struct addrinfo hints = {0}, *res;
     hints.ai_family = AF_UNSPEC;
     char* ip = nullptr;
