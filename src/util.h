@@ -9,12 +9,12 @@
  * @param LOG_SUMM Logs a summary of operations or events.
  * @param LOG_FULL Logs detailed information including all operations or events.
  */
-enum log_level {
+typedef enum {
     LOG_NO = 0,
     LOG_ERR = 1,
     LOG_SUMM = 2,
     LOG_FULL = 3
-};
+} LOG_CODE;
 // This client's client id
 #define CLIENT_ID "-IT0001-"
 
