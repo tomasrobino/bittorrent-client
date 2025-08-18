@@ -1,5 +1,10 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
+// Logging codes
+#define LOG_NO 0
+#define LOG_ERR 1
+#define LOG_SUMM 2
+#define LOG_FULL 3
 // This client's client id
 #define CLIENT_ID "-IT0001-"
 
