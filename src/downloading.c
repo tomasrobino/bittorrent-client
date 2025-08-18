@@ -436,12 +436,16 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 continue;
             }
             // Send handshake
-            if (peer.status == PEER_CONNECTION_SUCCESS) {
+            if (peer.status == PEER_CONNECTION_SUCCESS && epoll_events[i].events & EPOLLOUT) {
                 const int result = send_handshake(fd, metainfo.info->hash, peer_id);
                 peer.last_msg = time(nullptr);
                 if (result > 0) {
                     peer.status = PEER_HANDSHAKE_SENT;
                     fprintf(stdout, "Handshake sent through socket %d\n", fd);
+                } else {
+                    peer.status = PEER_NOTHING;
+                    fprintf(stderr, "Error when sending handshake sent through socket %d\n", fd);
+                    close(fd);
                 }
                 continue;
             }

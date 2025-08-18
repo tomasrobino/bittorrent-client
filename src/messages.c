@@ -34,7 +34,7 @@ int send_handshake(const int sockfd, const char* info_hash, const char* peer_id)
     memcpy(buffer+48, peer_id, 20);
 
     // Send handshake request
-    const ssize_t bytes_sent = send(sockfd, buffer, HANDSHAKE_LEN, 0);
+    const ssize_t bytes_sent = send(sockfd, buffer, HANDSHAKE_LEN, MSG_NOSIGNAL);
     if (bytes_sent < 0) {
         fprintf(stderr, "Error in handshake for socket: %d\n", sockfd);
     }
