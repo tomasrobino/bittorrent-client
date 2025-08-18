@@ -93,6 +93,7 @@ bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, con
     message->length = htobe32(message->length);
     if (message->length-1 > 0) {
         message->payload = malloc(message->length-1);
+        memset(message->payload, 0, message->length-1);
         long total = 0;
         while (total < message->length-1) {
             bytes_received = recv(sockfd, (message->payload)+total, message->length-1, 0);
