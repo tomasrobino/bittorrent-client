@@ -84,7 +84,7 @@ int main(const int argc, char* argv[]) {
                 fprintf(logerr, "Error when creating torrent directory. Errno: %d", errno);
                 return 2;
             }
-            metainfo_t* metainfo = parse_metainfo(buffer, length);
+            metainfo_t* metainfo = parse_metainfo(buffer, length, log_code);
             if (metainfo != nullptr) {
                 torrent(*metainfo, peer_id, log_code);
                 free_metainfo(metainfo);

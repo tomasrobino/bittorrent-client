@@ -9,9 +9,13 @@
 magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
     // Logging variables
     FILE* logout;
+    FILE* logerr;
     if (log_code == LOG_FULL) {
         logout = stdout;
     } else logout = fopen("/dev/null", "w");
+    if (log_code >= LOG_ERR) {
+        logerr = stderr;
+    } else logerr = fopen("/dev/null", "w");
     const int length = (int) strlen(magnet);
     int start = 4;
     Magnet_Attributes current_attribute = none;
@@ -45,7 +49,7 @@ magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
                             strncpy(data->xt, magnet+start+9, i-start-9);
                             data->xt[i-start-9] = '\0';
                         } else {
-                            fprintf(stderr, "Invalid URN");
+                            fprintf(logerr, "Invalid URN");
                             exit(1);
                         }
                         fprintf(logout, "xt:\n%s\n", data->xt);
@@ -61,7 +65,7 @@ magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
                         fprintf(logout, "dn:\n%s\n", data->dn);
                         break;
                     case xl:
-                        data->xl = (int) decode_bencode_int(magnet+start, nullptr);
+                        data->xl = (int) decode_bencode_int(magnet+start, nullptr, log_code);
                         fprintf(logout, "xl:\n%ld\n", data->xl);
                         break;
                     case tr:

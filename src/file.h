@@ -91,10 +91,13 @@ void sha1_to_hex(const unsigned char *sha1_bytes, char *hex_output);
  *                       the metainfo structure of a torrent file.
  * @param length The length of the bencoded string in bytes.
  *               Must be accurate to avoid memory violations.
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @return A pointer to a dynamically allocated `metainfo_t` structure containing
  *         extracted metadata, or nullptr if parsing fails or the input is invalid.
  */
-metainfo_t *parse_metainfo(const char *bencoded_value, unsigned long length);
+metainfo_t *parse_metainfo(const char *bencoded_value, unsigned long length, LOG_CODE log_code);
 
 /**
  * @brief Frees all dynamically allocated memory associated with a linked list of files.

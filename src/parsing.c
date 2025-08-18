@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index) {
+announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index, const LOG_CODE log_code) {
     if (announce_list[0] == 'l') {
         announce_list_ll* head;
         announce_list_ll* current;
@@ -26,7 +26,7 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
             }
             unsigned int length = 0;
             unsigned int* length_ptr = &length;
-            current->list = decode_bencode_list(announce_list+start, length_ptr);
+            current->list = decode_bencode_list(announce_list+start, length_ptr, log_code);
             start+=length+1;
             element_num++;
         }
@@ -36,7 +36,7 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
     return nullptr;
 }
 
-files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* index) {
+files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* index, const LOG_CODE log_code) {
     files_ll *head = malloc(sizeof(files_ll));
     head->path = nullptr;
     head->next = nullptr;
@@ -61,7 +61,7 @@ files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* ind
         if ( (parse_index = strstr(bencode+start, "length")) != nullptr) {
             start = parse_index-bencode + 7;
             char *endptr = nullptr;
-            current->length = decode_bencode_int(bencode+start, &endptr);
+            current->length = (int64_t)decode_bencode_int(bencode+start, &endptr, log_code);
             start = strchr(bencode+start, ':') - bencode + 1;
         } else return nullptr;
 
@@ -70,14 +70,14 @@ files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* ind
         if (multiple) { // Parsing path
             if ( (parse_index = strstr(bencode+start, "path")) != nullptr) {
                 start = parse_index-bencode + 4;
-                current->path = decode_bencode_list(bencode+start, start_ptr);
+                current->path = decode_bencode_list(bencode+start, start_ptr, log_code);
                 start+=2;
             } else return nullptr;
         } else { // Parsing name
             if ( (parse_index = strstr(bencode+start, "name")) != nullptr) {
                 start = parse_index-bencode + 4;
                 char *endptr = nullptr;
-                const int amount = (int) decode_bencode_int(bencode+start, &endptr);
+                const int amount = (int) decode_bencode_int(bencode+start, &endptr, log_code);
                 current->path = malloc(sizeof(ll));
                 current->path->next = nullptr;
                 current->path->val = malloc(sizeof(char)*(amount+1));
