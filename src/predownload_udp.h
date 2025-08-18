@@ -174,9 +174,12 @@ address_t* split_address(const char* address);
 void shuffle_address_array(address_t* array[], int length);
 /** Converts domain to IP. Supports UDP, HTTP, and HTTPS; IPv4 and IPv6
  * @param address The domain as a string
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @returns The IP of the domain as a string
  **/
-char* url_to_ip(address_t* address);
+char* url_to_ip(address_t* address, LOG_CODE log_code);
 
 /**
  * Attempts to send requests to an array of trackers
@@ -185,9 +188,12 @@ char* url_to_ip(address_t* address);
  * @param req An array with connection requests for each tracker
  * @param req_size The size of the connection request
  * @param server_addr An array with each tracker's server address
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @returns A pointer to the socket file descriptor of the tracker whose connection was successful; or nullptr
  */
-int* try_request_udp(int amount, const int sockfd[], const void *req[], size_t req_size, const struct sockaddr *server_addr[]);
+int* try_request_udp(int amount, const int sockfd[], const void *req[], size_t req_size, const struct sockaddr *server_addr[], LOG_CODE log_code);
 
 /**
  * Sends a connection request to a list of trackers.
@@ -196,9 +202,12 @@ int* try_request_udp(int amount, const int sockfd[], const void *req[], size_t r
  * @param amount The amount of trackers to try
  * @param successful_index A pointer to allocated memory
  * to store the index in the array of the tracker that successfully connected; or nullptr
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @returns The connection id successfully returned from the tracker; or 0
  */
-uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int sockfd[], int amount, int* successful_index);
+uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int sockfd[], int amount, int* successful_index, LOG_CODE log_code);
 
 /**
  * Attempts to connect to a tracker. Takes either a list of lists or a single one
@@ -207,9 +216,12 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
  * @param successful_index_pt A pointer to allocated memory
  * to store the index in the array of the tracker that successfully connected; or nullptr
  * @param connection_data A pointer to allocated memory to store the details of the connection
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @return The connection id successfully returned from the tracker; or 0
  */
-uint64_t connect_udp(int amount, announce_list_ll* current, int* successful_index_pt, connection_data_t* connection_data);
+uint64_t connect_udp(int amount, announce_list_ll* current, int* successful_index_pt, connection_data_t* connection_data, LOG_CODE log_code);
 
 /**
  * Sends an announce request to the tracker
@@ -224,6 +236,9 @@ uint64_t connect_udp(int amount, announce_list_ll* current, int* successful_inde
  * @param event
  * @param key Torrent key
  * @param port Tracker port
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @return The announce response from the server or nullptr if an error ocurred
  */
 announce_response_t* announce_request_udp(
@@ -237,7 +252,8 @@ announce_response_t* announce_request_udp(
     uint64_t uploaded,
     uint32_t event,
     uint32_t key,
-    uint16_t port
+    uint16_t port,
+    LOG_CODE log_code
 );
 
 /**
@@ -247,8 +263,11 @@ announce_response_t* announce_request_udp(
  * @param connection_id Returned from connect response of the tracker
  * @param info_hash Info hash of all the torrents
  * @param torrent_amount The amount of torrents to ask about
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @return The data returned or nullptr if there's an error
  */
-scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, int sockfd, uint64_t connection_id, const char info_hash[], unsigned int torrent_amount);
+scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, int sockfd, uint64_t connection_id, const char info_hash[], unsigned int torrent_amount, LOG_CODE log_code);
 
 #endif //CONNECTION

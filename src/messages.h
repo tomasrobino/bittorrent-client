@@ -2,6 +2,8 @@
 #define MESSAGES_H
 #include <netinet/in.h>
 
+#include "util.h"
+
 // Handshake length
 #define HANDSHAKE_LEN 68
 // Bittorrent message size without payload (only length and id).
@@ -70,11 +72,14 @@ void bitfield_to_hex(const unsigned char *bitfield, unsigned int byte_amount, ch
  * Attempts to establish a connection to a peer using the specified socket and address.
  * @param sockfd The file descriptor of the socket to be used for the connection.
  * @param peer_addr Pointer to a sockaddr_in structure containing the peer's address.
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @return Returns 1 if the connection is successfully initiated or is in progress;
  *         returns 0 and closes the socket if the connection fails with an error
  *         other than EINPROGRESS.
  */
-int try_connect(int sockfd, const struct sockaddr_in* peer_addr);
+int try_connect(int sockfd, const struct sockaddr_in* peer_addr, LOG_CODE log_code);
 
 /**
  * Sends a BitTorrent handshake message through the specified socket.
@@ -83,10 +88,13 @@ int try_connect(int sockfd, const struct sockaddr_in* peer_addr);
  * @param sockfd The file descriptor of the socket used to communicate with the peer.
  * @param info_hash A 20-byte string representing the SHA1 hash of the torrent's info dictionary.
  * @param peer_id A 20-byte unique identifier for the peer initiating the handshake.
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @return Returns the number of bytes successfully sent (68 bytes for a complete handshake);
  *         returns a negative value if an error occurs while sending the handshake.
  */
-int send_handshake(int sockfd, const char* info_hash, const char* peer_id);
+int send_handshake(int sockfd, const char* info_hash, const char* peer_id, LOG_CODE log_code);
 
 /**
  * Processes the response during a handshake interaction by validating the
@@ -94,11 +102,14 @@ int send_handshake(int sockfd, const char* info_hash, const char* peer_id);
  * @param sockfd The file descriptor of the socket from which the response is received.
  * @param info_hash A pointer to the 20-byte info hash that is expected to match the
  *                  handshake response.
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @return Returns a dynamically allocated 20-byte character array containing the
  *         peer's ID if the handshake is successful; returns nullptr if the validation
  *         fails or an error occurs.
  */
-char* handshake_response(int sockfd, const char* info_hash);
+char* handshake_response(int sockfd, const char* info_hash, LOG_CODE log_code);
 
 /**
  * Processes two bitfields to identify pending bits by performing a bitwise
@@ -123,10 +134,13 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
  *
  * @param sockfd The socket file descriptor from which the message will be read.
  * @param peer_timestamp Pointer to a timestamp that will be updated with the current time when a message is successfully read.
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  *
  * @return A pointer to a dynamically allocated `bittorrent_message_t` structure
  * containing the read message. Returns a null pointer if the read operation fails
  * or if an invalid message is received.
  */
-bittorrent_message_t* read_message(int sockfd, time_t* peer_timestamp);
+bittorrent_message_t* read_message(int sockfd, time_t* peer_timestamp, LOG_CODE log_code);
 #endif //MESSAGES_H

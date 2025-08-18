@@ -6,7 +6,7 @@
 #include "whole_bencode.h"
 #include "magnet.h"
 
-magnet_data* process_magnet(const char* magnet) {
+magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
     const int length = (int) strlen(magnet);
     int start = 4;
     Magnet_Attributes current_attribute = none;
@@ -28,7 +28,7 @@ magnet_data* process_magnet(const char* magnet) {
     head->val = nullptr;
     ll* current = head;
     int tracker_count = 0;
-    fprintf(stdout, "magnet data:\n");
+    if (log_code >= LOG_SUMM) fprintf(stdout, "magnet data:\n");
     for (int i = 0; i <= length; ++i) {
         if (magnet[i] == '&' || magnet[i] == '?' || magnet[i] == '\0') {
             //Processing previous attribute
@@ -40,10 +40,10 @@ magnet_data* process_magnet(const char* magnet) {
                             strncpy(data->xt, magnet+start+9, i-start-9);
                             data->xt[i-start-9] = '\0';
                         } else {
-                            fprintf(stderr, "Invalid URN");
+                            if (log_code >= LOG_ERR) fprintf(stderr, "Invalid URN");
                             exit(1);
                         }
-                        fprintf(stdout, "xt:\n%s\n", data->xt);
+                        if (log_code >= LOG_SUMM) fprintf(stdout, "xt:\n%s\n", data->xt);
                         break;
                     case dn:
                         data->dn = malloc(sizeof(char)*(i-start+1));
@@ -53,11 +53,11 @@ magnet_data* process_magnet(const char* magnet) {
                             } else data->dn[j] = magnet[start+j];
                         }
                         data->dn[i-start] = '\0';
-                        fprintf(stdout, "dn:\n%s\n", data->dn);
+                        if (log_code >= LOG_SUMM) fprintf(stdout, "dn:\n%s\n", data->dn);
                         break;
                     case xl:
-                        data->xl = (int) decode_bencode_int(magnet+start, nullptr);
-                        fprintf(stdout, "xl:\n%ld\n", data->xl);
+                        data->xl = (int) decode_bencode_int(magnet+start, nullptr, log_code);
+                        if (log_code >= LOG_SUMM) fprintf(stdout, "xl:\n%ld\n", data->xl);
                         break;
                     case tr:
                         if (tracker_count > 0) {
@@ -67,19 +67,19 @@ magnet_data* process_magnet(const char* magnet) {
                         }
                         current->val = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
                         tracker_count++;
-                        fprintf(stdout, "tr:\n%s\n", current->val);
+                        if (log_code >= LOG_SUMM) fprintf(stdout, "tr:\n%s\n", current->val);
                         break;
                     case ws:
                         data->ws = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
-                        fprintf(stdout, "ws:\n%s\n", data->ws);
+                        if (log_code >= LOG_SUMM) fprintf(stdout, "ws:\n%s\n", data->ws);
                         break;
                     case as:
                         data->as = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
-                        fprintf(stdout, "as:\n%s\n", data->as);
+                        if (log_code >= LOG_SUMM) fprintf(stdout, "as:\n%s\n", data->as);
                         break;
                     case xs:
                         data->xs = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
-                        fprintf(stdout, "xs:\n%s\n", data->xs);
+                        if (log_code >= LOG_SUMM) fprintf(stdout, "xs:\n%s\n", data->xs);
                         break;
                     case kt:
                         data->kt = malloc(sizeof(char)*(i-start+1));
@@ -89,11 +89,11 @@ magnet_data* process_magnet(const char* magnet) {
                             } else data->kt[j] = magnet[start+j];
                         }
                         data->kt[i-start] = '\0';
-                        fprintf(stdout, "kt:\n%s\n", data->kt);
+                        if (log_code >= LOG_SUMM) fprintf(stdout, "kt:\n%s\n", data->kt);
                         break;
                     case mt:
                         data->mt = curl_easy_unescape(nullptr, magnet+start, i-start, nullptr);
-                        fprintf(stdout, "mt:\n%s\n", data->mt);
+                        if (log_code >= LOG_SUMM) fprintf(stdout, "mt:\n%s\n", data->mt);
                         break;
                     case so:
                         data->so = malloc(sizeof(char)*(i-start+1));

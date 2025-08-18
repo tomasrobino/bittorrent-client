@@ -45,11 +45,14 @@ typedef struct {
  *
  * @param magnet A null-terminated string representing a magnet link, starting with "magnet:".
  *               The string should contain valid magnet link attributes separated by '&' or '?'.
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
  * @return A pointer to a dynamically allocated magnet_data structure containing the extracted
  *         attributes. The caller is responsible for freeing the returned structure using an
  *         appropriate function.
  */
-magnet_data* process_magnet(const char* magnet);
+magnet_data* process_magnet(const char* magnet, LOG_CODE log_code);
 
 /**
  * Frees the memory allocated for the `magnet_data` structure, including its dynamically allocated members.
