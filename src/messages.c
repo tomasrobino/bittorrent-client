@@ -94,6 +94,10 @@ bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp) {
         long total = 0;
         while (total < message->length-1) {
             bytes_received = recv(sockfd, (message->payload)+total, message->length-1, 0);
+            if (bytes_received == -1) {
+                fprintf(stderr, "Errno %d when attempting to read_message() on socket %d\n", errno, sockfd);
+                break;
+            }
             total+=bytes_received;
         }
         if (bytes_received < message->length-1) {

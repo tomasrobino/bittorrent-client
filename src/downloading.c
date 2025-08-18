@@ -467,6 +467,9 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 unsigned int byte_index = 0;
                 unsigned int bit_offset = 0;
                 const bittorrent_message_t* message = read_message(fd, &peer->last_msg);
+                if (message == nullptr) {
+                    continue;
+                }
                 switch (message->id) {
                     case CHOKE:
                         peer->client_choked = true;
@@ -481,6 +484,11 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         peer->peer_interest = false;
                         break;
                     case HAVE:
+                        // If the peer sends a HAVE without previously having sent a BITFIELD
+                        if (peer->bitfield == nullptr) {
+                            peer->bitfield = malloc(bitfield_byte_size);
+                            memset(peer->bitfield, 0, bitfield_byte_size);
+                        }
                         // Endianness
                         *message->payload = ntohl(*message->payload);
                         // Adding the new piece to the peer's bitfield
@@ -492,7 +500,11 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                         peer->bitfield = message->payload;
                         if (message->payload != nullptr) {
                             fprintf(stdout, "Bitfield received successfully for socket %d\n", fd);
-                        } else fprintf(stdout, "Error receiving bitfield for socket %d\n", fd);
+                            peer->status = PEER_BITFIELD_RECEIVED;
+                        } else {
+                            fprintf(stdout, "Error receiving bitfield for socket %d\n", fd);
+                            peer->status = PEER_NO_BITFIELD;
+                        }
                         break;
                     case REQUEST:
                         if (peer->peer_choked == false) {
