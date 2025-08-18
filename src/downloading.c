@@ -27,7 +27,12 @@ int64_t calc_block_size(const unsigned int piece_size, const unsigned int byte_o
     return asked_bytes;
 }
 
-char* get_path(const ll* filepath) {
+char* get_path(const ll* filepath, const LOG_CODE log_code) {
+    // Logging variables
+    FILE* logout;
+    if (log_code == LOG_FULL) {
+        logout = stdout;
+    } else logout = fopen("dev/null", "w");
     // Getting the amount of chars in the complete filepath
     int filepath_size = 0;
     const ll* filepath_ptr = filepath;
@@ -49,7 +54,7 @@ char* get_path(const ll* filepath) {
         if (filepath_ptr->next != nullptr && stat(return_charpath, &st) == -1) {
             // Doesn't exist, create it
             if (mkdir(return_charpath, 0755) == 0) {
-                fprintf(stdout, "Created directory: %s", return_charpath);
+                fprintf(logout, "Created directory: %s", return_charpath);
             } else {
                 fprintf(stderr, "Couldn't create directory: %s", return_charpath);
                 exit(1);
@@ -76,17 +81,22 @@ int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const in
     return total_received;
 }
 
-int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* file) {
+int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* file, const LOG_CODE log_code) {
+    // Logging variables
+    FILE* logout;
+    if (log_code == LOG_FULL) {
+        logout = stdout;
+    } else logout = fopen("dev/null", "w");
     const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
     if (bytes_written != amount) {
         fprintf(stderr, "Failed to write to file %p\n", file);
         return -1;
     }
-    fprintf(stdout, "Wrote %d bytes to file %p\n", bytes_written, file);
+    fprintf(logout, "Wrote %d bytes to file %p\n", bytes_written, file);
     return bytes_written;
 }
 
-int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, files_ll* files_metainfo) {
+int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, files_ll* files_metainfo, const LOG_CODE log_code) {
     // Checking whether arguments are invalid
     if (byte_offset >= piece_size) return 4;
     if (piece_size == 0) return 4;
@@ -117,7 +127,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                 current = current->next;
                 continue;
             }
-            char* filepath_char = get_path(current->path);
+            char* filepath_char = get_path(current->path, log_code);
             // If file not open yet
             if (current->file_ptr == nullptr) {
                 current->file_ptr = fopen(filepath_char, "rb+");
@@ -143,7 +153,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             fseeko(current->file_ptr, current->length-local_bytes, SEEK_SET);
 
             // Writing to file
-            const int64_t bytes_written = write_block(buffer+buffer_offset, this_file_ask, current->file_ptr);
+            const int64_t bytes_written = write_block(buffer+buffer_offset, this_file_ask, current->file_ptr, log_code);
             if (bytes_written < 0) {
                 // Error when writing
                 free(filepath_char);
@@ -302,7 +312,13 @@ announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const cha
     return announce_response;
 }
 
-int torrent(const metainfo_t metainfo, const char* peer_id) {
+int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_code) {
+    // Logging variables
+    FILE* logout;
+    if (log_code == LOG_FULL) {
+        logout = stdout;
+    } else logout = fopen("dev/null", "w");
+
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();
     announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key);
@@ -344,7 +360,6 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
             exit(1);
         }
         // Try connecting
-        //fprintf(stdout, "Attempting to connect to peer\n");
         int connect_result = connect(peer_socket_array[counter2], (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
         if (connect_result < 0 && errno != EINPROGRESS) {
             fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, peer_socket_array[counter2]);
@@ -421,7 +436,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                     } else if (err != 0) {
                         fprintf(stderr, "Connection failed in socket %d\n", fd);
                     } else {
-                        fprintf(stdout, "Connection successful in socket %d\n", fd);
+                        fprintf(logout, "Connection successful in socket %d\n", fd);
                         peer->status = PEER_CONNECTION_SUCCESS;
                     }
                 } else {
@@ -441,7 +456,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 peer->last_msg = time(nullptr);
                 if (result > 0) {
                     peer->status = PEER_HANDSHAKE_SENT;
-                    fprintf(stdout, "Handshake sent through socket %d\n", fd);
+                    fprintf(logout, "Handshake sent through socket %d\n", fd);
                 } else {
                     peer->status = PEER_NOTHING;
                     fprintf(stderr, "Error when sending handshake sent through socket %d\n", fd);
@@ -456,7 +471,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                 if (foreign_id != nullptr) {
                     peer->status = PEER_HANDSHAKE_SUCCESS;
                     peer->id = (char*)foreign_id;
-                    fprintf(stdout, "Handshake successful in socket %d\n", fd);
+                    fprintf(logout, "Handshake successful in socket %d\n", fd);
                 } else {
                     peer->status = PEER_CONNECTION_SUCCESS;
                 }
@@ -499,10 +514,10 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                     case BITFIELD:
                         peer->bitfield = message->payload;
                         if (message->payload != nullptr) {
-                            fprintf(stdout, "Bitfield received successfully for socket %d\n", fd);
+                            fprintf(logout, "Bitfield received successfully for socket %d\n", fd);
                             peer->status = PEER_BITFIELD_RECEIVED;
                         } else {
-                            fprintf(stdout, "Error receiving bitfield for socket %d\n", fd);
+                            fprintf(logout, "Error receiving bitfield for socket %d\n", fd);
                             peer->status = PEER_NO_BITFIELD;
                         }
                         break;
@@ -562,7 +577,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id) {
                                     p_len = metainfo.info->length - piece->index*metainfo.info->piece_length;
                                 } else p_len = metainfo.info->piece_length;
                                 // ACTUAL DOWNLOAD
-                                int block_result = download_block(fd, piece->index, metainfo.info->piece_length, piece->begin, metainfo.info->files);
+                                int block_result = download_block(fd, piece->index, metainfo.info->piece_length, piece->begin, metainfo.info->files, log_code);
                                 // Successful block download
                                 if (block_result == 0) {
                                     int64_t this_block = calc_block_size(p_len, piece->begin);
