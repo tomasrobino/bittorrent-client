@@ -22,6 +22,10 @@ int main(const int argc, char* argv[]) {
     // Disable output buffering
     setbuf(stdout, nullptr);
     setbuf(stderr, nullptr);
+    // Buffer variables for logging options
+    FILE* logout = stdout;
+    FILE* summout = stdout;
+    FILE* logerr = stderr;
 
     if (argc < 3) {
         fprintf(stderr, "Usage: bittorrent-client.sh <command> <args>\n");
@@ -67,10 +71,23 @@ int main(const int argc, char* argv[]) {
                 return 2;
             }
             metainfo_t* metainfo = parse_metainfo(buffer, length);
-            torrent(*metainfo, peer_id);
+            if (metainfo != nullptr) {
+                if (argc > 3) {
+                    int log_code = LOG_NO;
+                    if (strcmp("no", argv[3]) == 0) {
+                        log_code = LOG_NO;
+                    } else if (strcmp("error", argv[3]) == 0) {
+                        log_code = LOG_ERR;
+                    } else if (strcmp("summary", argv[3]) == 0) {
+                        log_code = LOG_SUMM;
+                    } else if (strcmp("full", argv[3]) == 0) {
+                        log_code = LOG_FULL;
+                    }
+                    torrent(*metainfo, peer_id, log_code);
+                } else torrent(*metainfo, peer_id, LOG_NO);
 
-            // Freeing memory
-            free_metainfo(metainfo);
+                free_metainfo(metainfo);
+            }
             free(buffer);
         } else fprintf(stderr, "File reading buffer error");
     } else {
