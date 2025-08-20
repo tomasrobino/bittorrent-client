@@ -408,6 +408,21 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
             const int fd = peer_socket_array[index];
             peer_t* peer = &peer_array[index];
 
+            // Fatal error in socket
+            if (epoll_events[i].events == EPOLLERR) {
+                int err = 0;
+                socklen_t len = sizeof(err);
+                if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Getsockopt error %d in socket %d\n", errno, fd);
+                } else if (err != 0) {
+                    errno = err;
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Socket error %d in socket %d\n", errno, fd);
+                }
+                close(fd);
+                continue;
+            }
+
+
             // DEALING WITH CONNECTING
             // After calling connect()
             if (peer->status == PEER_NOTHING) {
