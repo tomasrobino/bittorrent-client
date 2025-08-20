@@ -38,7 +38,7 @@ int send_handshake(const int sockfd, const char* info_hash, const char* peer_id,
     // Send handshake request
     const ssize_t bytes_sent = send(sockfd, buffer, HANDSHAKE_LEN, MSG_NOSIGNAL);
     if (bytes_sent < 0) {
-        if (log_code >= LOG_ERR) fprintf(stderr, "Error in handshake for socket: %d\n", sockfd);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake for socket: %d\n", sockfd);
     }
     return (int) bytes_sent;
 }
@@ -49,7 +49,7 @@ char* handshake_response(const int sockfd, const char* info_hash, const LOG_CODE
     char res_buffer[HANDSHAKE_LEN];
     const ssize_t bytes_received = recv(sockfd, res_buffer, HANDSHAKE_LEN, 0);
     if (bytes_received < HANDSHAKE_LEN) {
-        if (log_code >= LOG_ERR) fprintf(stderr, "Error in handshake for socket: %d\n", sockfd);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Error when receiving in handshake for socket: %d\n", sockfd);
         close(sockfd);
         return nullptr;
     }
@@ -97,10 +97,15 @@ bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, con
         long total = 0;
         while (total < message->length-1) {
             bytes_received = recv(sockfd, (message->payload)+total, message->length-1, 0);
+
             if (bytes_received == -1) {
-                if (log_code >= LOG_ERR) fprintf(stderr, "Errno %d when attempting to read_message() on socket %d\n", errno, sockfd);
-                break;
-            }
+                if (log_code >= LOG_ERR) fprintf(stderr, "Errno %d when attempting to read_message() in socket %d\n", errno, sockfd);
+                if (errno == 11) {
+                    // Nonsensical length, drop peer
+                    close(sockfd);
+                    return nullptr;
+                }
+            } else if (log_code == LOG_FULL) fprintf(stdout, "Read %ld bytes in read_message() in socket %d\n", bytes_received, sockfd);
             total+=bytes_received;
         }
         if (bytes_received < message->length-1) {

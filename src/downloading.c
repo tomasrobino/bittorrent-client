@@ -490,19 +490,22 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                             memset(peer->bitfield, 0, bitfield_byte_size);
                         }
                         // Endianness
-                        *message->payload = ntohl(*message->payload);
+                        uint32_t p_num;
+                        memcpy(&p_num, message->payload, 4);
+                        p_num = ntohl(p_num);
+                        if (log_code == LOG_FULL) fprintf(stdout, "Received HAVE for piece %d in socket %d\n", p_num, fd);
                         // Adding the new piece to the peer's bitfield
-                        byte_index = *message->payload / 8;
-                        bit_offset = 7 - *message->payload % 8;
+                        byte_index = p_num / 8;
+                        bit_offset = 7 - p_num % 8;
                         peer->bitfield[byte_index] |= (1u << bit_offset);
                         break;
                     case BITFIELD:
                         peer->bitfield = message->payload;
                         if (message->payload != nullptr) {
-                            if (log_code == LOG_FULL) fprintf(stdout, "Bitfield received successfully for socket %d\n", fd);
+                            if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", fd);
                             peer->status = PEER_BITFIELD_RECEIVED;
                         } else {
-                            if (log_code == LOG_FULL) fprintf(stdout, "Error receiving bitfield for socket %d\n", fd);
+                            if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", fd);
                             peer->status = PEER_NO_BITFIELD;
                         }
                         break;
