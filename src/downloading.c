@@ -408,11 +408,10 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
             const int fd = peer_socket_array[index];
             peer_t* peer = &peer_array[index];
 
-            // DEALING WITH CONNECTING
-            // After calling connect()
-            if (peer->status == PEER_NOTHING) {
-                peer->status = PEER_CONNECTION_FAILURE;
-                if (epoll_events[i].events & EPOLLOUT) {
+            if (epoll_events[i].events & EPOLLOUT) {
+                // After calling connect()
+                if (peer->status == PEER_NOTHING) {
+                    peer->status = PEER_CONNECTION_FAILURE;
                     int err = 0;
                     socklen_t len = sizeof(err);
                     // Check whether connect() was successful
@@ -424,193 +423,196 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                         if (log_code == LOG_FULL) fprintf(stdout, "Connection successful in socket %d\n", fd);
                         peer->status = PEER_CONNECTION_SUCCESS;
                     }
-                } else {
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
+                    // Retry connection if connect() failed
+                    if (peer->status == PEER_CONNECTION_FAILURE) {
+                        if (try_connect(fd, &peer_addr_array[index], log_code)) {
+                            peer->status = PEER_NOTHING;
+                        }
+                        continue;
+                    }
                 }
-            }
-            // Retry connection if connect() failed
-            if (peer->status == PEER_CONNECTION_FAILURE) {
-                if (try_connect(fd, &peer_addr_array[index], log_code)) {
-                    peer->status = PEER_NOTHING;
-                }
-                continue;
-            }
-            // Send handshake
-            if (peer->status == PEER_CONNECTION_SUCCESS && epoll_events[i].events & EPOLLOUT) {
-                const int result = send_handshake(fd, metainfo.info->hash, peer_id, log_code);
-                peer->last_msg = time(nullptr);
-                if (result > 0) {
-                    peer->status = PEER_HANDSHAKE_SENT;
-                    if (log_code == LOG_FULL) fprintf(stdout, "Handshake sent through socket %d\n", fd);
-                } else {
-                    peer->status = PEER_NOTHING;
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n", fd);
-                    close(fd);
-                }
-                continue;
-            }
-            // Receive handshake
-            if (peer->status == PEER_HANDSHAKE_SENT && epoll_events[i].events & EPOLLIN) {
-                const char* foreign_id = handshake_response(fd, metainfo.info->hash, log_code);
-                peer->last_msg = time(nullptr);
-                if (foreign_id != nullptr) {
-                    peer->status = PEER_HANDSHAKE_SUCCESS;
-                    peer->id = (char*)foreign_id;
-                    if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
-                } else {
-                    peer->status = PEER_CONNECTION_SUCCESS;
-                }
-                continue;
-            }
-            // Process messages
-            if (peer->status >= PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
-                unsigned int byte_index = 0;
-                unsigned int bit_offset = 0;
-                const bittorrent_message_t* message = read_message(fd, &peer->last_msg, log_code);
-                if (message == nullptr) {
+
+                // Send handshake
+                if (peer->status == PEER_CONNECTION_SUCCESS) {
+                    const int result = send_handshake(fd, metainfo.info->hash, peer_id, log_code);
+                    peer->last_msg = time(nullptr);
+                    if (result > 0) {
+                        peer->status = PEER_HANDSHAKE_SENT;
+                        if (log_code == LOG_FULL) fprintf(stdout, "Handshake sent through socket %d\n", fd);
+                    } else {
+                        peer->status = PEER_NOTHING;
+                        if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n", fd);
+                        close(fd);
+                    }
                     continue;
                 }
-                switch (message->id) {
-                    case CHOKE:
-                        peer->client_choked = true;
-                        break;
-                    case UNCHOKE:
-                        peer->client_choked = false;
-                        break;
-                    case INTERESTED:
-                        peer->peer_interest = true;
-                        break;
-                    case NOT_INTERESTED:
-                        peer->peer_interest = false;
-                        break;
-                    case HAVE:
-                        // If the peer sends a HAVE without previously having sent a BITFIELD
-                        if (peer->bitfield == nullptr) {
-                            peer->bitfield = malloc(bitfield_byte_size);
-                            memset(peer->bitfield, 0, bitfield_byte_size);
-                        }
-                        // Endianness
-                        uint32_t p_num;
-                        memcpy(&p_num, message->payload, 4);
-                        p_num = ntohl(p_num);
-                        if (log_code == LOG_FULL) fprintf(stdout, "Received HAVE for piece %d in socket %d\n", p_num, fd);
-                        // Adding the new piece to the peer's bitfield
-                        byte_index = p_num / 8;
-                        bit_offset = 7 - p_num % 8;
-                        peer->bitfield[byte_index] |= (1u << bit_offset);
-                        break;
-                    case BITFIELD:
-                        peer->bitfield = message->payload;
-                        if (message->payload != nullptr) {
-                            if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", fd);
-                            peer->status = PEER_BITFIELD_RECEIVED;
-                        } else {
-                            if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", fd);
-                            peer->status = PEER_NO_BITFIELD;
-                        }
-                        break;
-                    case REQUEST:
-                        if (peer->peer_choked == false) {
-                            request_t* request = (request_t*) message->payload;
-                            // Endianness
-                            request->index = ntohl(request->index);
-                            request->begin = ntohl(request->begin);
-                            request->length = ntohl(request->length);
-                            byte_index = request->index / 8;
-                            bit_offset = 7 - request->index % 8;
-                            // If this client has the requested piece
-                            if (( peer->bitfield[byte_index] & (1u << bit_offset) ) != 0) {
-                                // Constructing message buffer
-                                uint32_t buffer_size = 5 + 8 + request->length;
-                                char* buffer = malloc(buffer_size);
-                                uint32_t l = ntohl(9+request->length);
-                                memcpy(buffer, &l, 4);
-                                buffer[4] = 7;
-                                l = ntohl(request->index);
-                                memcpy(buffer+5, &l, 4);
-                                l = ntohl(request->begin);
-                                memcpy(buffer+9, &l, 4);
-
-                                // Sending block
-                                int32_t sent_bytes = 0;
-                                while (sent_bytes < buffer_size) {
-                                    int32_t sent = (int32_t)send(peer->socket, buffer, buffer_size, 0);
-                                    if (sent == -1) {
-                                        if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending piece in socket %d", peer->socket);
-                                    } else sent_bytes += sent;
-                                }
-
-                                free(buffer);
+            } else if (epoll_events[i].events & EPOLLIN) {
+                // Receive handshake
+                if (peer->status == PEER_HANDSHAKE_SENT) {
+                    const char* foreign_id = handshake_response(fd, metainfo.info->hash, log_code);
+                    peer->last_msg = time(nullptr);
+                    if (foreign_id != nullptr) {
+                        peer->status = PEER_HANDSHAKE_SUCCESS;
+                        peer->id = (char*)foreign_id;
+                        if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
+                    } else {
+                        peer->status = PEER_CONNECTION_SUCCESS;
+                    }
+                    continue;
+                }
+                // Process messages
+                if (peer->status >= PEER_HANDSHAKE_SUCCESS) {
+                    unsigned int byte_index = 0;
+                    unsigned int bit_offset = 0;
+                    const bittorrent_message_t* message = read_message(fd, &peer->last_msg, log_code);
+                    if (message == nullptr) {
+                        continue;
+                    }
+                    switch (message->id) {
+                        case CHOKE:
+                            peer->client_choked = true;
+                            break;
+                        case UNCHOKE:
+                            peer->client_choked = false;
+                            break;
+                        case INTERESTED:
+                            peer->peer_interest = true;
+                            break;
+                        case NOT_INTERESTED:
+                            peer->peer_interest = false;
+                            break;
+                        case HAVE:
+                            // If the peer sends a HAVE without previously having sent a BITFIELD
+                            if (peer->bitfield == nullptr) {
+                                peer->bitfield = malloc(bitfield_byte_size);
+                                memset(peer->bitfield, 0, bitfield_byte_size);
                             }
-                        }
-                        break;
-                    case PIECE:
-                        piece_t* piece = (piece_t*) message->payload;
-                        // Endianness
-                        piece->begin = ntohl(piece->begin);
-                        piece->index = ntohl(piece->index);
-                        byte_index = piece->index / 8;
-                        bit_offset = 7 - piece->index % 8;
-                        // If this client doesn't have the piece received
-                        if ((bitfield[byte_index] & (1u << bit_offset)) == 0) {
-                            // If this client doesn't have the block received
-                            unsigned int global_block_index = piece->index * blocks_per_piece + piece->begin;
-                            byte_index = global_block_index / 8;
-                            bit_offset = 7 - global_block_index % 8;
-                            if ( (block_tracker[byte_index] & (1u << bit_offset)) == 0) {
-                                // If last piece, it's smaller
-                                int64_t p_len;
-                                if (piece->index == metainfo.info->piece_number-1) {
-                                    // Conversion is fine beacuse single pieces aren't that large
-                                    p_len = metainfo.info->length - piece->index*metainfo.info->piece_length;
-                                } else p_len = metainfo.info->piece_length;
-                                // ACTUAL DOWNLOAD
-                                int block_result = download_block(fd, piece->index, metainfo.info->piece_length, piece->begin, metainfo.info->files, log_code);
-                                // Successful block download
-                                if (block_result == 0) {
-                                    int64_t this_block = calc_block_size(p_len, piece->begin);
-                                    // Update block tracker
-                                    block_tracker[byte_index] |= (1u << bit_offset);
-                                    // If all the blocks in a piece are downloaded, mark it in the bitfield and prepare
-                                    // to send "have" message to all peers
-                                    if (piece_complete(block_tracker, piece->index, metainfo.info->piece_length, metainfo.info->length)) {
-                                        byte_index = piece->index / 8;
-                                        bit_offset = 7 - piece->index % 8;
-                                        bitfield[byte_index] |= (1u << bit_offset);
-                                        closing_files(metainfo.info->files, bitfield, piece->index, metainfo.info->piece_length, p_len);
-                                        // Sending have message to all peers
-                                        char* buffer = malloc(9);
-                                        for (int j = 0; j < peer_amount; ++j) {
-                                            if (peer_array[j].status >= PEER_HANDSHAKE_SUCCESS) {
-                                                uint32_t l = htonl(5);
-                                                memcpy(buffer, &l, 4);
-                                                buffer[4] = 4;
-                                                l = htonl(piece->index);
-                                                memcpy(buffer+5, &l, 4);
-                                                int32_t sent_bytes = 0;
-                                                while (sent_bytes < 9) {
-                                                    int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, 9, 0);
-                                                    if (res == -1) {
-                                                        if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending have in socket %d", peer_array[j].socket);
-                                                    } else sent_bytes += res;
-                                                }
-                                            }
-                                        }
-                                        free(buffer);
+                            // Endianness
+                            uint32_t p_num;
+                            memcpy(&p_num, message->payload, 4);
+                            p_num = ntohl(p_num);
+                            if (log_code == LOG_FULL) fprintf(stdout, "Received HAVE for piece %d in socket %d\n", p_num, fd);
+                            // Adding the new piece to the peer's bitfield
+                            byte_index = p_num / 8;
+                            bit_offset = 7 - p_num % 8;
+                            peer->bitfield[byte_index] |= (1u << bit_offset);
+                            break;
+                        case BITFIELD:
+                            peer->bitfield = message->payload;
+                            if (message->payload != nullptr) {
+                                if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", fd);
+                                peer->status = PEER_BITFIELD_RECEIVED;
+                            } else {
+                                if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", fd);
+                                peer->status = PEER_NO_BITFIELD;
+                            }
+                            break;
+                        case REQUEST:
+                            if (peer->peer_choked == false) {
+                                request_t* request = (request_t*) message->payload;
+                                // Endianness
+                                request->index = ntohl(request->index);
+                                request->begin = ntohl(request->begin);
+                                request->length = ntohl(request->length);
+                                byte_index = request->index / 8;
+                                bit_offset = 7 - request->index % 8;
+                                // If this client has the requested piece
+                                if (( peer->bitfield[byte_index] & (1u << bit_offset) ) != 0) {
+                                    // Constructing message buffer
+                                    uint32_t buffer_size = 5 + 8 + request->length;
+                                    char* buffer = malloc(buffer_size);
+                                    uint32_t l = ntohl(9+request->length);
+                                    memcpy(buffer, &l, 4);
+                                    buffer[4] = 7;
+                                    l = ntohl(request->index);
+                                    memcpy(buffer+5, &l, 4);
+                                    l = ntohl(request->begin);
+                                    memcpy(buffer+9, &l, 4);
+
+                                    // Sending block
+                                    int32_t sent_bytes = 0;
+                                    while (sent_bytes < buffer_size) {
+                                        int32_t sent = (int32_t)send(peer->socket, buffer, buffer_size, 0);
+                                        if (sent == -1) {
+                                            if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending piece in socket %d", peer->socket);
+                                        } else sent_bytes += sent;
                                     }
 
-                                    left -= this_block;
+                                    free(buffer);
                                 }
-                            } else if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
-                        } else if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", fd);
-                        break;
-                    case CANCEL:
-                        break;
-                    case PORT:
-                        break;
-                    default: ;
+                            }
+                            break;
+                        case PIECE:
+                            piece_t* piece = (piece_t*) message->payload;
+                            // Endianness
+                            piece->begin = ntohl(piece->begin);
+                            piece->index = ntohl(piece->index);
+                            byte_index = piece->index / 8;
+                            bit_offset = 7 - piece->index % 8;
+                            // If this client doesn't have the piece received
+                            if ((bitfield[byte_index] & (1u << bit_offset)) == 0) {
+                                // If this client doesn't have the block received
+                                unsigned int global_block_index = piece->index * blocks_per_piece + piece->begin;
+                                byte_index = global_block_index / 8;
+                                bit_offset = 7 - global_block_index % 8;
+                                if ( (block_tracker[byte_index] & (1u << bit_offset)) == 0) {
+                                    // If last piece, it's smaller
+                                    int64_t p_len;
+                                    if (piece->index == metainfo.info->piece_number-1) {
+                                        // Conversion is fine beacuse single pieces aren't that large
+                                        p_len = metainfo.info->length - piece->index*metainfo.info->piece_length;
+                                    } else p_len = metainfo.info->piece_length;
+                                    // ACTUAL DOWNLOAD
+                                    int block_result = download_block(fd, piece->index, metainfo.info->piece_length, piece->begin, metainfo.info->files, log_code);
+                                    // Successful block download
+                                    if (block_result == 0) {
+                                        int64_t this_block = calc_block_size(p_len, piece->begin);
+                                        // Update block tracker
+                                        block_tracker[byte_index] |= (1u << bit_offset);
+                                        // If all the blocks in a piece are downloaded, mark it in the bitfield and prepare
+                                        // to send "have" message to all peers
+                                        if (piece_complete(block_tracker, piece->index, metainfo.info->piece_length, metainfo.info->length)) {
+                                            byte_index = piece->index / 8;
+                                            bit_offset = 7 - piece->index % 8;
+                                            bitfield[byte_index] |= (1u << bit_offset);
+                                            closing_files(metainfo.info->files, bitfield, piece->index, metainfo.info->piece_length, p_len);
+                                            // Sending have message to all peers
+                                            char* buffer = malloc(9);
+                                            for (int j = 0; j < peer_amount; ++j) {
+                                                if (peer_array[j].status >= PEER_HANDSHAKE_SUCCESS) {
+                                                    uint32_t l = htonl(5);
+                                                    memcpy(buffer, &l, 4);
+                                                    buffer[4] = 4;
+                                                    l = htonl(piece->index);
+                                                    memcpy(buffer+5, &l, 4);
+                                                    int32_t sent_bytes = 0;
+                                                    while (sent_bytes < 9) {
+                                                        int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, 9, 0);
+                                                        if (res == -1) {
+                                                            if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending have in socket %d", peer_array[j].socket);
+                                                        } else sent_bytes += res;
+                                                    }
+                                                }
+                                            }
+                                            free(buffer);
+                                        }
+
+                                        left -= this_block;
+                                    }
+                                } else if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
+                            } else if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", fd);
+                            break;
+                        case CANCEL:
+                            break;
+                        case PORT:
+                            break;
+                        default: ;
+                    }
+                    continue;
                 }
-                continue;
+            } else {
+                // This shouldn't happen
+                fprintf(stderr, "Unrecognized event in epoll");
             }
         }
     }
