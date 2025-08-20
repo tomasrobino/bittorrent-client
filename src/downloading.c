@@ -418,6 +418,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                     errno = err;
                     if (log_code >= LOG_ERR) fprintf(stderr, "Socket error %d in socket %d\n", errno, fd);
                 }
+                peer->status = PEER_CLOSED;
                 close(fd);
                 continue;
             }
@@ -446,7 +447,10 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
             // Retry connection if connect() failed
             if (peer->status == PEER_CONNECTION_FAILURE) {
                 if (try_connect(fd, &peer_addr_array[index], log_code)) {
-                    peer->status = PEER_NOTHING;
+                    if (errno != EINPROGRESS) {
+                        peer->status = PEER_CLOSED;
+                    } else peer->status = PEER_NOTHING;
+
                 }
                 continue;
             }
@@ -458,7 +462,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                     peer->status = PEER_HANDSHAKE_SENT;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake sent through socket %d\n", fd);
                 } else {
-                    peer->status = PEER_NOTHING;
+                    peer->status = PEER_CLOSED;
                     if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n", fd);
                     close(fd);
                 }
@@ -473,7 +477,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                     peer->id = (char*)foreign_id;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
-                    peer->status = PEER_CONNECTION_SUCCESS;
+                    peer->status = PEER_CLOSED;
                 }
                 continue;
             }
@@ -481,8 +485,12 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
             if (peer->status >= PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
                 unsigned int byte_index = 0;
                 unsigned int bit_offset = 0;
+                errno = 0;
                 const bittorrent_message_t* message = read_message(fd, &peer->last_msg, log_code);
                 if (message == nullptr) {
+                    if (errno == 11) {
+                        peer->status = PEER_CLOSED;
+                    }
                     continue;
                 }
                 switch (message->id) {
@@ -520,8 +528,10 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                             if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", fd);
                             peer->status = PEER_BITFIELD_RECEIVED;
                         } else {
+                            peer->bitfield = malloc(bitfield_byte_size);
+                            memset(peer->bitfield, 0, bitfield_byte_size);
                             if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", fd);
-                            peer->status = PEER_NO_BITFIELD;
+                            peer->status = PEER_BITFIELD_RECEIVED;
                         }
                         break;
                     case REQUEST:

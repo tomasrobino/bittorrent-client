@@ -11,14 +11,13 @@
 
 /// @brief Enum for peer statuses
 typedef enum {
+    PEER_CLOSED, /** This peer's socket has been closed */
     PEER_NOTHING, /**< Untouched peer */
     PEER_CONNECTION_SUCCESS, /**< Peer connected */
     PEER_CONNECTION_FAILURE, /**< Peer failed connection */
     PEER_HANDSHAKE_SENT, /**< Handshake sent to peer */
     PEER_HANDSHAKE_SUCCESS, /**< Handshake completed successfully */
     PEER_BITFIELD_RECEIVED, /**< Received bitfield from peer */
-    PEER_NO_BITFIELD, /**< No bitfield received from peer */
-    PEER_PENDING_HAVE /**< Need to send have message to all peers */
 } PEER_STATUS;
 
 /// @brief Represents peer data and state in a BitTorrent connection

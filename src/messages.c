@@ -19,6 +19,7 @@ void bitfield_to_hex(const unsigned char *bitfield, const unsigned int byte_amou
     hex_output[byte_amount*2] = '\0';  // Null-terminate the string
 }
 int try_connect(const int sockfd, const struct sockaddr_in* peer_addr, const LOG_CODE log_code) {
+    errno = 0;
     const int connect_result = connect(sockfd, (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
     if (connect_result < 0 && errno != EINPROGRESS) {
         if (log_code >= LOG_ERR) fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, sockfd);
