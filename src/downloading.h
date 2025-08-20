@@ -25,10 +25,10 @@ typedef struct {
     unsigned char *bitfield; /**< Bit array representing the pieces this peer has */
     char *id; /**< 20-byte string peer ID used during handshake */
     PEER_STATUS status; /**< Current status of the peer connection */
-    bool peer_choked; /**< Whether we are choking by the peer */
-    bool client_choked; /**< Whether we are choked the peer */
-    bool peer_interest; /**< Whether peer is interested in our pieces */
-    bool client_interest; /**< Whether we are interested in peer's pieces */
+    bool am_choking; /**< Whether we are choking the peer */
+    bool am_interested; /**< Whether we are interested in peer's pieces */
+    bool peer_choking; /**< Whether we are choked the peer */
+    bool peer_interested; /**< Whether peer is interested in our pieces */
     int socket; /**< Socket file descriptor for this peer connection */
     time_t last_msg; /**< Timestamp of last message received from peer */
 } peer_t;

@@ -384,6 +384,10 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
     memset(peer_array, 0, sizeof(peer_t)*peer_amount);
     for (int i = 0; i < peer_amount; ++i) {
         peer_array[i].socket = peer_socket_array[i];
+        peer_array[i].am_choking = true;
+        peer_array[i].am_interested = false;
+        peer_array[i].peer_choking = true;
+        peer_array[i].peer_interested = false;
     }
 
     /*
@@ -495,16 +499,16 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 }
                 switch (message->id) {
                     case CHOKE:
-                        peer->client_choked = true;
+                        peer->peer_choking = true;
                         break;
                     case UNCHOKE:
-                        peer->client_choked = false;
+                        peer->peer_choking = false;
                         break;
                     case INTERESTED:
-                        peer->peer_interest = true;
+                        peer->peer_interested = true;
                         break;
                     case NOT_INTERESTED:
-                        peer->peer_interest = false;
+                        peer->peer_interested = false;
                         break;
                     case HAVE:
                         // If the peer sends a HAVE without previously having sent a BITFIELD
@@ -535,7 +539,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                         }
                         break;
                     case REQUEST:
-                        if (peer->peer_choked == false) {
+                        if (peer->am_choking == false) {
                             request_t* request = (request_t*) message->payload;
                             // Endianness
                             request->index = ntohl(request->index);
@@ -649,6 +653,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 send(fd, buffer, MESSAGE_MIN_SIZE+bitfield_byte_size, 0);
                 free(buffer);
             }
+
         }
     }
 
