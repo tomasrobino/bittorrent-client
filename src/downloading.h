@@ -8,7 +8,10 @@
 #define EPOLL_TIMEOUT 5000
 /// @brief Download block size in bytes (16KB)
 #define BLOCK_SIZE 16384
+// TODO Temporal solution, this should be changed to be adjusted dynamically
 
+/// @brief Amount of block requests to queue for each peer
+#define QUEUE_SIZE 5
 /// @brief Enum for peer statuses
 typedef enum {
     PEER_CLOSED, /** This peer's socket has been closed */

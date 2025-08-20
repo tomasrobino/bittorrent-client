@@ -525,6 +525,10 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                         byte_index = p_num / 8;
                         bit_offset = 7 - p_num % 8;
                         peer->bitfield[byte_index] |= (1u << bit_offset);
+                        // Checking my interest for peer's newly-downloaded piece
+                        if ( (~bitfield[byte_index] & peer->bitfield[byte_index]) != 0 ) {
+                            peer->am_interested = true;
+                        }
                         break;
                     case BITFIELD:
                         peer->bitfield = message->payload;
@@ -536,6 +540,14 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                             memset(peer->bitfield, 0, bitfield_byte_size);
                             if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", fd);
                             peer->status = PEER_BITFIELD_RECEIVED;
+                            int j = 0;
+                            // Checking whether peer has any piece of interest
+                            while (!peer->am_interested) {
+                                if ( (~bitfield[j] & peer->bitfield[j]) != 0) {
+                                    peer->am_interested = true;
+                                }
+                                j++;
+                            }
                         }
                         break;
                     case REQUEST:
