@@ -481,7 +481,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 }
                 continue;
             }
-            // Process messages
+            // Process sending messages
             if (peer->status >= PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
                 unsigned int byte_index = 0;
                 unsigned int bit_offset = 0;
@@ -636,6 +636,18 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                     default: ;
                 }
                 continue;
+            }
+
+            // Send bitfield
+            if (peer->status == PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLOUT) {
+                char* buffer = malloc(MESSAGE_MIN_SIZE+bitfield_byte_size);
+                uint32_t length = 1 + bitfield_byte_size;
+                length = htonl(length);
+                memcpy(buffer, &length, MESSAGE_MIN_SIZE-1);
+                buffer[MESSAGE_MIN_SIZE-1] = BITFIELD;
+                memcpy(buffer+5, bitfield, MESSAGE_MIN_SIZE+bitfield_byte_size);
+                send(fd, buffer, MESSAGE_MIN_SIZE+bitfield_byte_size, 0);
+                free(buffer);
             }
         }
     }
