@@ -531,15 +531,14 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                         }
                         break;
                     case BITFIELD:
+                        peer->status = PEER_BITFIELD_RECEIVED;
                         peer->bitfield = message->payload;
                         if (message->payload != nullptr) {
                             if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", fd);
-                            peer->status = PEER_BITFIELD_RECEIVED;
                         } else {
                             peer->bitfield = malloc(bitfield_byte_size);
                             memset(peer->bitfield, 0, bitfield_byte_size);
                             if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", fd);
-                            peer->status = PEER_BITFIELD_RECEIVED;
                             int j = 0;
                             // Checking whether peer has any piece of interest
                             while (!peer->am_interested) {
@@ -655,7 +654,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
             }
 
             // Send bitfield
-            if (peer->status == PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLOUT) {
+            if ( (peer->status == PEER_HANDSHAKE_SUCCESS || peer->status == PEER_BITFIELD_RECEIVED)  && epoll_events[i].events & EPOLLOUT) {
                 char* buffer = malloc(MESSAGE_MIN_SIZE+bitfield_byte_size);
                 uint32_t length = 1 + bitfield_byte_size;
                 length = htonl(length);
