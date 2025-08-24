@@ -574,7 +574,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                                 // Sending block
                                 int32_t sent_bytes = 0;
                                 while (sent_bytes < buffer_size) {
-                                    int32_t sent = (int32_t)send(peer->socket, buffer, buffer_size, 0);
+                                    int32_t sent = (int32_t)send(peer->socket, buffer+sent_bytes, buffer_size-sent_bytes, 0);
                                     if (sent == -1) {
                                         if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending piece in socket %d", peer->socket);
                                     } else sent_bytes += sent;
@@ -622,14 +622,14 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                                         char* buffer = malloc(9);
                                         for (int j = 0; j < peer_amount; ++j) {
                                             if (peer_array[j].status >= PEER_HANDSHAKE_SUCCESS) {
-                                                uint32_t l = htonl(5);
-                                                memcpy(buffer, &l, 4);
-                                                buffer[4] = 4;
+                                                uint32_t l = htonl(MESSAGE_MIN_SIZE);
+                                                memcpy(buffer, &l, MESSAGE_MIN_SIZE-1);
+                                                buffer[MESSAGE_MIN_SIZE-1] = MESSAGE_MIN_SIZE-1;
                                                 l = htonl(piece->index);
-                                                memcpy(buffer+5, &l, 4);
+                                                memcpy(buffer+MESSAGE_MIN_SIZE, &l, MESSAGE_MIN_SIZE-1);
                                                 int32_t sent_bytes = 0;
-                                                while (sent_bytes < 9) {
-                                                    int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, 9, 0);
+                                                while (sent_bytes < MESSAGE_MIN_SIZE+4) {
+                                                    int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, MESSAGE_MIN_SIZE+4-sent_bytes, 0);
                                                     if (res == -1) {
                                                         if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending have in socket %d", peer_array[j].socket);
                                                     } else sent_bytes += res;
