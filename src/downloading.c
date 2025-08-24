@@ -69,7 +69,7 @@ int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const in
     while (total_received < amount) {
         // this_file_ask can never be larger than BLOCK_SIZE, so narrowing conversion is fine
         const int32_t bytes_received = (int32_t) recv(sockfd, buffer, amount, 0);
-        if (bytes_received < 1) {
+        if (bytes_received < 1  && errno != EAGAIN && errno != EWOULDBLOCK) {
             return -1;
         }
         total_received += bytes_received;
@@ -575,7 +575,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                                 int32_t sent_bytes = 0;
                                 while (sent_bytes < buffer_size) {
                                     int32_t sent = (int32_t)send(peer->socket, buffer+sent_bytes, buffer_size-sent_bytes, 0);
-                                    if (sent == -1) {
+                                    if (sent < 0) {
                                         if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending piece in socket %d", peer->socket);
                                     } else sent_bytes += sent;
                                 }
@@ -661,7 +661,12 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 memcpy(buffer, &length, MESSAGE_MIN_SIZE-1);
                 buffer[MESSAGE_MIN_SIZE-1] = BITFIELD;
                 memcpy(buffer+5, bitfield, MESSAGE_MIN_SIZE+bitfield_byte_size);
-                send(fd, buffer, MESSAGE_MIN_SIZE+bitfield_byte_size, 0);
+                int64_t sent_bytes = 0;
+                while (sent_bytes < MESSAGE_MIN_SIZE+bitfield_byte_size) {
+                    int64_t sent = send(fd, buffer+sent_bytes, MESSAGE_MIN_SIZE+bitfield_byte_size-sent_bytes, 0);
+                    if (sent > 0) sent_bytes+=sent;
+                }
+
                 free(buffer);
             }
 

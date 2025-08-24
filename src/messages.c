@@ -37,23 +37,33 @@ int send_handshake(const int sockfd, const char* info_hash, const char* peer_id,
     memcpy(buffer+48, peer_id, 20);
 
     // Send handshake request
-    const ssize_t bytes_sent = send(sockfd, buffer, HANDSHAKE_LEN, MSG_NOSIGNAL);
-    if (bytes_sent < 0) {
-        if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake for socket: %d\n", sockfd);
+    ssize_t total_sent = 0;
+    errno = 0;
+    while (total_sent < HANDSHAKE_LEN) {
+        const ssize_t sent = send(sockfd, buffer+total_sent, HANDSHAKE_LEN-total_sent, MSG_NOSIGNAL);
+        if (sent < 0) {
+            if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake for socket: %d\n", sockfd);
+        } else total_sent+=sent;
     }
-    return (int) bytes_sent;
+    return (int) total_sent;
 }
 
 char* handshake_response(const int sockfd, const char* info_hash, const LOG_CODE log_code) {
     // Receive response
     char* res = malloc(20);
     char res_buffer[HANDSHAKE_LEN];
-    const ssize_t bytes_received = recv(sockfd, res_buffer, HANDSHAKE_LEN, 0);
-    if (bytes_received < HANDSHAKE_LEN) {
-        if (log_code >= LOG_ERR) fprintf(stderr, "Error when receiving in handshake for socket: %d\n", sockfd);
-        close(sockfd);
-        return nullptr;
+    ssize_t total_received = 0;
+    errno = 0;
+    while (total_received < HANDSHAKE_LEN) {
+        const ssize_t bytes_received = recv(sockfd, res_buffer+total_received, HANDSHAKE_LEN-total_received, 0);
+        if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+            if (log_code >= LOG_ERR) fprintf(stderr, "Error when receiving in handshake for socket: %d\n", sockfd);
+            close(sockfd);
+            return nullptr;
+        }
+        if (bytes_received > 0) total_received += bytes_received;
     }
+
 
     if (memcmp(info_hash, res_buffer+28, 20) != 0) {
         if (log_code >= LOG_ERR) fprintf(stderr, "Error in handshake: returned wrong info hash\n");
@@ -75,42 +85,47 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
 bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, const LOG_CODE log_code) {
     bittorrent_message_t* message = malloc(sizeof(bittorrent_message_t));
     memset(message, 0, sizeof(bittorrent_message_t));
-    ssize_t bytes_received = recv(sockfd, message, MESSAGE_MIN_SIZE, 0);
-    if (bytes_received < 5) {
-        // Either keep-alive or error
-        if (message->length == 0) {
-            // keep-alive message, just update timestamp
-            *peer_timestamp = time(nullptr);
+    ssize_t total_received = 0;
+    errno = 0;
+    while (total_received < MESSAGE_MIN_SIZE) {
+        const ssize_t bytes_received = recv(sockfd, message+total_received, MESSAGE_MIN_SIZE-total_received, 0);
+        if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+            if (log_code >= LOG_ERR) fprintf(stderr, "Error when reading message in socket: %d\n", sockfd);
+            return nullptr;
         }
-        free(message);
-        return nullptr;
+        if (bytes_received > 0) total_received += bytes_received;
+
+        // keep-alive message, just update timestamp
+        if (total_received == 4) {
+            message->length = ntohl(message->length);
+            if (message->length == 0) {
+                *peer_timestamp = time(nullptr);
+                free(message);
+                return nullptr;
+            }
+        }
     }
+
     if (message->id < 0 || message->id > 9) {
         // Invalid id
         free(message);
         return nullptr;
     }
     *peer_timestamp = time(nullptr);
-    message->length = htobe32(message->length);
     if (message->length-1 > 0) {
         message->payload = malloc(message->length-1);
         memset(message->payload, 0, message->length-1);
-        long total = 0;
-        while (total < message->length-1) {
-            bytes_received = recv(sockfd, (message->payload)+total, message->length-1, 0);
-
-            if (bytes_received == -1) {
+        total_received = 0;
+        errno = 0;
+        while (total_received < message->length-1 ) {
+            const ssize_t bytes_received = recv(sockfd, message->payload+total_received, message->length-1, 0);
+            if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
                 if (log_code >= LOG_ERR) fprintf(stderr, "Errno %d when attempting to read_message() in socket %d\n", errno, sockfd);
-                if (errno == 11) {
-                    // Nonsensical length, drop peer
-                    close(sockfd);
-                    return nullptr;
-                }
-            } else if (log_code == LOG_FULL) fprintf(stdout, "Read %ld bytes in read_message() in socket %d\n", bytes_received, sockfd);
-            total+=bytes_received;
-        }
-        if (bytes_received < message->length-1) {
-            return nullptr;
+                free(message);
+                return nullptr;
+            }
+            if (log_code == LOG_FULL) fprintf(stdout, "Read %ld bytes in read_message() in socket %d\n", bytes_received, sockfd);
+            if (bytes_received > 0) total_received+=bytes_received;
         }
     }
     return message;
