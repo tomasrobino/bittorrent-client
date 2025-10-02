@@ -120,7 +120,7 @@ bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer
  *         The caller is responsible for freeing the allocated memory.
  */
 unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, unsigned int size);
-
+/*
 /**
  * Reads a BitTorrent message from a socket descriptor.
  *
@@ -138,6 +138,7 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
  * @return A pointer to a dynamically allocated `bittorrent_message_t` structure
  * containing the read message. Returns a null pointer if the read operation fails
  * or if an invalid message is received.
- */
+
 bittorrent_message_t* read_message(int sockfd, time_t* peer_timestamp, LOG_CODE log_code);
+*/
 #endif //MESSAGES_H

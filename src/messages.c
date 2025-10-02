@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/socket.h>
-
 #include "util.h"
 
 void bitfield_to_hex(const unsigned char *bitfield, const unsigned int byte_amount, char *hex_output) {
@@ -87,7 +87,7 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
     }
     return pending_bits;
 }
-/*
+
 bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, const LOG_CODE log_code) {
     bittorrent_message_t* message = malloc(sizeof(bittorrent_message_t));
     memset(message, 0, sizeof(bittorrent_message_t));
@@ -136,4 +136,3 @@ bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, con
     }
     return message;
 }
-*/

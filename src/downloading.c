@@ -514,7 +514,8 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                 const bool result = check_handshake(metainfo.info->hash, peer->reception_cache);
                 if (result) {
                     peer->status = PEER_HANDSHAKE_SUCCESS;
-                    peer->id = peer->reception_cache+48;
+                    peer->id = malloc(20);
+                    memcpy(peer->id, peer->reception_cache+48, 20);
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
                     peer->status = PEER_CLOSED;
