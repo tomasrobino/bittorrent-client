@@ -95,23 +95,17 @@ int try_connect(int sockfd, const struct sockaddr_in* peer_addr, LOG_CODE log_co
  *         returns a negative value if an error occurs while sending the handshake.
  */
 int send_handshake(int sockfd, const char* info_hash, const char* peer_id, LOG_CODE log_code);
-/*
+
 /**
- * Processes the response during a handshake interaction by validating the
- * info hash and extracting the peer's ID.
- * @param sockfd The file descriptor of the socket from which the response is received.
- * @param info_hash A pointer to the 20-byte info hash that is expected to match the
- *                  handshake response.
- * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
- *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
- *                 LOG_FULL (detailed logging).
- * @return Returns a dynamically allocated 20-byte character array containing the
- *         peer's ID if the handshake is successful; returns nullptr if the validation
- *         fails or an error occurs.
-
-char* handshake_response(int sockfd, const char* info_hash, LOG_CODE log_code);
-*/
-
+ * Validates the handshake response from a peer to ensure it complies with the expected
+ * BitTorrent protocol format and matches the provided info hash.
+ *
+ * @param info_hash A pointer to a 20-byte info hash that uniquely identifies the torrent.
+ * @param buffer A pointer to the handshake buffer received from the peer, which includes
+ * the protocol identifier, reserved bytes, and the info hash.
+ * @return True if the handshake is valid (protocol matches "BitTorrent protocol" and
+ * info hashes are identical), otherwise false.
+ */
 bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer);
 
 /**

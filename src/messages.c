@@ -74,9 +74,9 @@ char* handshake_response(const int sockfd, const char* info_hash, const LOG_CODE
 }
 
 bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer) {
-    if (memcmp(info_hash, buffer, 20) != 0) {
-        return false;
-    }
+    if (buffer[0] != 19) return false;
+    if (memcmp(buffer+1, "BitTorrent protocol", 19) != 0) return false;
+    if (memcmp(info_hash, buffer+28, 20) != 0) return false;
     return true;
 }
 
