@@ -350,14 +350,18 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
     return 0;
 }
 
-announce_response_t* announce_request_udp(const struct sockaddr *server_addr, const int sockfd, uint64_t connection_id, const char info_hash[], const char peer_id[], const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const uint16_t port, const LOG_CODE log_code) {
+announce_response_t *announce_request_udp(const struct sockaddr *server_addr, const int sockfd,
+                                          const uint64_t connection_id, const unsigned char info_hash[],
+                                          const unsigned char peer_id[], const uint64_t downloaded, const uint64_t left,
+                                          const uint64_t uploaded, const uint32_t event, const uint32_t key,
+                                          const uint16_t port, const LOG_CODE log_code) {
     announce_request_t req = {0};
     // Convert to network endianness
     req.connection_id = htobe64(connection_id);
     req.action = htobe32(1);
     req.transaction_id = htobe32(arc4random());
-    strncpy(req.info_hash, info_hash, 20);
-    strncpy(req.peer_id, peer_id, 20);
+    memcpy(req.info_hash, info_hash, 20);
+    memcpy(req.peer_id, peer_id, 20);
     req.downloaded = htobe64(downloaded);
     req.left = htobe64(left);
     req.uploaded = htobe64(uploaded);

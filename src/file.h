@@ -42,10 +42,10 @@ typedef struct {
     char *name; /**< Name of the torrent (single file) or directory name (multiple files) */
     unsigned int piece_length; /**< Size of each piece in bytes */
     unsigned int piece_number; /**< Total number of pieces */
-    char *pieces; /**< String containing SHA1 hashes of all pieces concatenated */
+    unsigned char *pieces; /**< String containing SHA1 hashes of all pieces concatenated */
     bool priv; /**< Whether the torrent is private (true) or public (false) */
-    char hash[21]; /**< 20-byte SHA1 hash of the info dictionary */
-    char human_hash[41]; /**< 40-character hex string representation of info hash */
+    unsigned char hash[21]; /**< 20-byte SHA1 hash of the info dictionary */
+    unsigned char human_hash[41]; /**< 40-character hex string representation of info hash */
 } info_t;
 
 /**
