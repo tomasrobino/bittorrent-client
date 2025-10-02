@@ -323,6 +323,7 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
             peer->reception_pointer += bytes_received;
         }
     }
+    peer->last_msg = time(nullptr);
     errno = 0;
     return true;
 }
@@ -499,6 +500,8 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 if (result > 0) {
                     peer->status = PEER_HANDSHAKE_SENT;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake sent through socket %d\n", fd);
+                    peer->reception_pointer = 0;
+                    peer->reception_target = HANDSHAKE_LEN;
                 } else {
                     peer->status = PEER_CLOSED;
                     if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n", fd);
@@ -506,13 +509,12 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 }
                 continue;
             }
-            // Receive handshake
-            if (peer->status == PEER_HANDSHAKE_SENT && epoll_events[i].events & EPOLLIN) {
-                const char* foreign_id = handshake_response(fd, metainfo.info->hash, log_code);
-                peer->last_msg = time(nullptr);
-                if (foreign_id != nullptr) {
+            // Check if handshake was received in full, and process it
+            if (peer->status == PEER_HANDSHAKE_SENT && peer->reception_target == peer->reception_pointer) {
+                const bool result = check_handshake(metainfo.info->hash, peer->reception_cache);
+                if (result) {
                     peer->status = PEER_HANDSHAKE_SUCCESS;
-                    peer->id = (char*)foreign_id;
+                    peer->id = (unsigned char*) peer->reception_cache+48;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
                     peer->status = PEER_CLOSED;
