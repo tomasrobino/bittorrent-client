@@ -36,6 +36,8 @@ typedef struct {
     bool peer_interested; /**< Whether peer is interested in our pieces */
     int socket; /**< Socket file descriptor for this peer connection */
     time_t last_msg; /**< Timestamp of last message received from peer */
+    unsigned char reception_cache[MAX_TRANS_SIZE]; /**< Cache for storing read bytes before interpreting them */
+    int reception_target; /**< The amount of bytes this peer is expecting to receive */
 } peer_t;
 
 /**
