@@ -94,7 +94,7 @@ int try_connect(int sockfd, const struct sockaddr_in* peer_addr, LOG_CODE log_co
  * @return Returns the number of bytes successfully sent (68 bytes for a complete handshake);
  *         returns a negative value if an error occurs while sending the handshake.
  */
-int send_handshake(int sockfd, const char* info_hash, const char* peer_id, LOG_CODE log_code);
+int send_handshake(int sockfd, const unsigned char *info_hash, const unsigned char *peer_id, LOG_CODE log_code);
 
 /**
  * Validates the handshake response from a peer to ensure it complies with the expected

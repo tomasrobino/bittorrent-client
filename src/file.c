@@ -69,7 +69,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         }
 
         // Reading of creation date
-        char* creation_date_index = strstr(bencoded_value+start, "creation date");
+        const char* creation_date_index = strstr(bencoded_value+start, "creation date");
         if ( creation_date_index != nullptr) {
             start = creation_date_index-bencoded_value + 13 + 1;
             metainfo->creation_date = decode_bencode_int(bencoded_value+start, nullptr, log_code);
@@ -87,7 +87,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
         }
 
         // Reading info
-        char* info_index = strstr(bencoded_value+start, "info");
+        const char* info_index = strstr(bencoded_value+start, "info");
         // If info not found, invalid file
         if (info_index != nullptr) {
             bool multiple;
@@ -104,7 +104,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 multiple = true;
                 metainfo->info->files = read_info_files(bencoded_value+start, multiple, start_ptr, log_code);
                 // Adding up total torrent size
-                files_ll* current = metainfo->info->files;
+                const files_ll* current = metainfo->info->files;
                 while (current != nullptr) {
                     metainfo->info->length+=current->length;
                     current = current->next;
@@ -141,7 +141,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 // 20 is the size of each piece's SHA1 hash
                 metainfo->info->piece_number = amount / 20;
                 metainfo->info->pieces = malloc(sizeof(char)*(amount+1));
-                strncpy(metainfo->info->pieces, bencoded_value+start, amount);
+                memcpy(metainfo->info->pieces, bencoded_value+start, amount);
                 metainfo->info->pieces[amount] = '\0';
                 start+=amount;
             } else return nullptr;
@@ -162,7 +162,7 @@ metainfo_t* parse_metainfo(const char* bencoded_value, const unsigned long lengt
                 20);
 
             //Creating human-readable hash
-            sha1_to_hex((unsigned char*)metainfo->info->hash, metainfo->info->human_hash);
+            sha1_to_hex(metainfo->info->hash, metainfo->info->human_hash);
         } else return nullptr;
 
         return metainfo;

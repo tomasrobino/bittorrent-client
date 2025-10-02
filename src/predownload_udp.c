@@ -85,7 +85,7 @@ char* url_to_ip(address_t* address, const LOG_CODE log_code) {
     }
 
     // Iterating over received IPs
-    for (struct addrinfo *rp = res; rp != nullptr; rp = rp->ai_next) {
+    for (const struct addrinfo *rp = res; rp != nullptr; rp = rp->ai_next) {
         void* addr_ptr;
 
         address->ip_version = rp->ai_family;
@@ -240,7 +240,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
 }
 
 uint64_t connect_udp(const int amount, announce_list_ll* current, int* successful_index_pt, connection_data_t* connection_data, const LOG_CODE log_code) {
-    int successful_index = *successful_index_pt;
+    const int successful_index = *successful_index_pt;
     // Creating outer list arrays
     address_t** split_addr_array[amount];
     memset(split_addr_array, 0, amount*sizeof(address_t**));
@@ -314,7 +314,7 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
         }
 
         // Atempting connection of all trackers in current list
-        uint64_t connection_id = connect_request_udp((const struct sockaddr**)server_addr_array[counter], sockfd_array[counter], list_sizes[counter], successful_index_pt, log_code);
+        const uint64_t connection_id = connect_request_udp((const struct sockaddr**)server_addr_array[counter], sockfd_array[counter], list_sizes[counter], successful_index_pt, log_code);
         if (connection_id != 0) {
             // Successful connection, exit loop
 

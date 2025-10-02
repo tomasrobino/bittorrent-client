@@ -45,7 +45,7 @@ typedef struct {
     unsigned char *pieces; /**< String containing SHA1 hashes of all pieces concatenated */
     bool priv; /**< Whether the torrent is private (true) or public (false) */
     unsigned char hash[21]; /**< 20-byte SHA1 hash of the info dictionary */
-    unsigned char human_hash[41]; /**< 40-character hex string representation of info hash */
+    char human_hash[41]; /**< 40-character hex string representation of info hash */
 } info_t;
 
 /**

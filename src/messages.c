@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <time.h>
 #include <unistd.h>
 #include <sys/socket.h>
 
@@ -29,7 +28,7 @@ int try_connect(const int sockfd, const struct sockaddr_in* peer_addr, const LOG
     return 1;
 }
 
-int send_handshake(const int sockfd, const char* info_hash, const char* peer_id, const LOG_CODE log_code) {
+int send_handshake(const int sockfd, const unsigned char *info_hash, const unsigned char *peer_id, const LOG_CODE log_code) {
     char buffer[HANDSHAKE_LEN] = {0};
     buffer[0] = 19;
     memcpy(buffer+1, "BitTorrent protocol", 19);

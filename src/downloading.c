@@ -258,12 +258,12 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, const u
     }
 }
 
-announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const char* peer_id, const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const LOG_CODE log_code) {
+announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id, const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const LOG_CODE log_code) {
     // For storing socket that successfully connected
     int successful_index = 0;
     int* successful_index_pt = &successful_index;
     // connection id from server response
-    announce_list_ll* current = metainfo.announce_list;
+    const announce_list_ll* current = metainfo.announce_list;
     int counter = 0;
     // Get annnounce_list size
     if (current != nullptr) {
@@ -320,7 +320,7 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
             return false;
         }
         if (bytes_received > 0) {
-            peer->reception_pointer += bytes_received;
+            peer->reception_pointer += (int)bytes_received;
         }
     }
     peer->last_msg = time(nullptr);
@@ -328,7 +328,7 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
     return true;
 }
 
-int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_code) {
+int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();
     announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key, log_code);
@@ -514,7 +514,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 const bool result = check_handshake(metainfo.info->hash, peer->reception_cache);
                 if (result) {
                     peer->status = PEER_HANDSHAKE_SUCCESS;
-                    peer->id = (unsigned char*) peer->reception_cache+48;
+                    peer->id = peer->reception_cache+48;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
                     peer->status = PEER_CLOSED;
@@ -681,7 +681,6 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                         } else if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", fd);
                         break;
                     case CANCEL:
-                        break;
                     case PORT:
                         break;
                     default: ;

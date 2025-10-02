@@ -15,7 +15,7 @@
 
 int main(const int argc, char* argv[]) {
     // Generating peer id
-    char peer_id[21] = CLIENT_ID;
+    unsigned char peer_id[21] = CLIENT_ID;
     peer_id[20] = '\0';
     arc4random_buf(peer_id+8, 12);
 

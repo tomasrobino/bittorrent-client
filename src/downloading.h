@@ -29,7 +29,7 @@ typedef enum {
 /// @brief Represents peer data and state in a BitTorrent connection
 typedef struct {
     unsigned char *bitfield; /**< Bit array representing the pieces this peer has */
-    char *id; /**< 20-byte string peer ID used during handshake */
+    unsigned char *id; /**< 20-byte string peer ID used during handshake */
     PEER_STATUS status; /**< Current status of the peer connection */
     bool am_choking; /**< Whether we are choking the peer */
     bool am_interested; /**< Whether we are interested in peer's pieces */
@@ -174,7 +174,7 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, unsigne
  *                 LOG_FULL (detailed logging).
  * @return A pointer to an announce_response_t structure containing the tracker's response, or nullptr if the request fails.
  */
-announce_response_t* handle_predownload_udp(metainfo_t metainfo, const char* peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key, LOG_CODE log_code);
+announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned char *peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key, LOG_CODE log_code);
 
 
 /**
@@ -208,5 +208,5 @@ bool read_from_socket(peer_t* peer, LOG_CODE log_code);
  *                    LOG_SUMM (summary logging), or LOG_FULL (detailed logging).
  * @return 0 for success, !0 for failure
  */
-int torrent(metainfo_t metainfo, const char *peer_id, LOG_CODE log_code);
+int torrent(metainfo_t metainfo, const unsigned char *peer_id, LOG_CODE log_code);
 #endif //DOWNLOADING_H
