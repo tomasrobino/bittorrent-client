@@ -377,7 +377,7 @@ announce_response_t *announce_request_udp(const struct sockaddr *server_addr, co
     if (log_code >= LOG_SUMM) fprintf(stdout, "connection_id: %lu\n", req.connection_id);
     if (log_code >= LOG_SUMM) fprintf(stdout, "info_hash: ");
     char human_hash[41];
-    sha1_to_hex((unsigned char*)req.info_hash, human_hash);
+    sha1_to_hex(req.info_hash, human_hash);
     if (log_code >= LOG_SUMM) fprintf(stdout, "%s", human_hash);
     if (log_code >= LOG_SUMM) fprintf(stdout, "\n");
     if (log_code >= LOG_SUMM) fprintf(stdout, "peer_id: ");
