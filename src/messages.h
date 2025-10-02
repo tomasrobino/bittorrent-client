@@ -95,7 +95,7 @@ int try_connect(int sockfd, const struct sockaddr_in* peer_addr, LOG_CODE log_co
  *         returns a negative value if an error occurs while sending the handshake.
  */
 int send_handshake(int sockfd, const char* info_hash, const char* peer_id, LOG_CODE log_code);
-
+/*
 /**
  * Processes the response during a handshake interaction by validating the
  * info hash and extracting the peer's ID.
@@ -108,8 +108,11 @@ int send_handshake(int sockfd, const char* info_hash, const char* peer_id, LOG_C
  * @return Returns a dynamically allocated 20-byte character array containing the
  *         peer's ID if the handshake is successful; returns nullptr if the validation
  *         fails or an error occurs.
- */
+
 char* handshake_response(int sockfd, const char* info_hash, LOG_CODE log_code);
+*/
+
+bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer);
 
 /**
  * Processes two bitfields to identify pending bits by performing a bitwise
