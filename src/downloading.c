@@ -384,10 +384,15 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
     memset(peer_array, 0, sizeof(peer_t)*peer_amount);
     for (int i = 0; i < peer_amount; ++i) {
         peer_array[i].socket = peer_socket_array[i];
+        // This could really be skipped. Here just in case
+        memset(peer_array[i].reception_cache, 0, MAX_TRANS_SIZE);
+        peer_array[i].reception_target = 0;
         peer_array[i].am_choking = true;
         peer_array[i].am_interested = false;
         peer_array[i].peer_choking = true;
         peer_array[i].peer_interested = false;
+        peer_array[i].bitfield = nullptr;
+        peer_array[i].status = PEER_NOTHING;
     }
 
     /*
