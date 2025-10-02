@@ -99,7 +99,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
      */
     int64_t asked_bytes = calc_block_size(piece_size, byte_offset);
     // Buffer for recv()
-    unsigned char buffer[BLOCK_SIZE];
+    unsigned char buffer[MAX_TRANS_SIZE];
     if (read_block_from_socket(sockfd, buffer, asked_bytes) < 0) {
         return 5;
     }

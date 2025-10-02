@@ -8,6 +8,8 @@
 #define EPOLL_TIMEOUT 5000
 /// @brief Download block size in bytes (16KB)
 #define BLOCK_SIZE 16384
+/// @brief Maximum amount of bytes to be transmited in any request or response
+#define MAX_TRANS_SIZE (BLOCK_SIZE+9)
 // TODO Temporal solution, this should be changed to be adjusted dynamically
 
 /// @brief Amount of block requests to queue for each peer
