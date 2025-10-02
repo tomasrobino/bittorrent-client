@@ -47,7 +47,7 @@ int send_handshake(const int sockfd, const char* info_hash, const char* peer_id,
     }
     return (int) total_sent;
 }
-
+/*
 char* handshake_response(const int sockfd, const char* info_hash, const LOG_CODE log_code) {
     // Receive response
     char* res = malloc(20);
@@ -72,7 +72,7 @@ char* handshake_response(const int sockfd, const char* info_hash, const LOG_CODE
     memcpy(res, res_buffer+48, 20);
     return res;
 }
-
+*/
 unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, const unsigned int size) {
     const unsigned int byte_size = ceil(size/8.0);
     unsigned char* pending_bits = malloc(byte_size);
@@ -81,7 +81,7 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
     }
     return pending_bits;
 }
-
+/*
 bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, const LOG_CODE log_code) {
     bittorrent_message_t* message = malloc(sizeof(bittorrent_message_t));
     memset(message, 0, sizeof(bittorrent_message_t));
@@ -130,3 +130,4 @@ bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, con
     }
     return message;
 }
+*/

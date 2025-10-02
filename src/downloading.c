@@ -62,7 +62,7 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
     return_charpath[filepath_size] = '\0';
     return return_charpath;
 }
-
+/*
 int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const int64_t amount) {
     // Reading data from socket
     int32_t total_received = 0;
@@ -76,7 +76,7 @@ int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const in
     }
     return total_received;
 }
-
+*/
 int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* file, const LOG_CODE log_code) {
     const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
     if (bytes_written != amount) {
