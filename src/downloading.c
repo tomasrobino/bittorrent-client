@@ -303,6 +303,29 @@ announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const cha
     return announce_response;
 }
 
+bool read_from_socket(peer_t* peer) {
+    ssize_t total_received = 0;
+    errno = 0;
+    while (total_received < peer->reception_target && errno != EAGAIN && errno != EWOULDBLOCK ) {
+        const ssize_t bytes_received = recv(peer->socket, peer->reception_cache+total_received, peer->reception_target-total_received, 0);
+        if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+            //if (log_code >= LOG_ERR) fprintf(stderr, "Error when reading message in socket: %d\n", sockfd);
+            return false;
+        }
+        // Peer shutdown the connection. Shutting down my side too
+        if (bytes_received == 0) {
+            shutdown(peer->socket, SHUT_RDWR);
+            close(peer->socket);
+            peer->status = PEER_CLOSED;
+            errno = 0;
+            return false;
+        }
+        if (bytes_received > 0) total_received += bytes_received;
+    }
+    errno = 0;
+    return true;
+}
+
 int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_code) {
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();
@@ -464,6 +487,13 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 }
                 continue;
             }
+
+            // Reading from socket
+
+
+
+
+
             // Send handshake
             if (peer->status == PEER_CONNECTION_SUCCESS && epoll_events[i].events & EPOLLOUT) {
                 const int result = send_handshake(fd, metainfo.info->hash, peer_id, log_code);

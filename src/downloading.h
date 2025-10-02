@@ -2,6 +2,7 @@
 #define DOWNLOADING_H
 #include "file.h"
 #include "predownload_udp.h"
+
 /// @brief Maximum events cached by epoll
 #define MAX_EVENTS 128
 /// @brief Maximum amount of time epoll will wait for sockets to be ready (in milliseconds)
@@ -174,6 +175,27 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, unsigne
  * @return A pointer to an announce_response_t structure containing the tracker's response, or nullptr if the request fails.
  */
 announce_response_t* handle_predownload_udp(metainfo_t metainfo, const char* peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key, LOG_CODE log_code);
+
+/**
+ * Reads data from the given peer's socket into the reception cache until the
+ * target number of bytes, defined by `reception_target`, is reached or an error
+ * is encountered.
+ *
+ * The function continuously attempts to read from the socket associated with
+ * the specified peer until either all data is received, the socket is closed,
+ * or a non-recoverable error occurs. When the peer closes the connection, the
+ * socket is shut down and closed, and the peer's status is updated to
+ * `PEER_CLOSED`.
+ *
+ * @param peer Pointer to a `peer_t` structure representing the peer whose
+ *             socket is to be read. The structure must contain the socket
+ *             file descriptor, reception cache, reception target, and other
+ *             related attributes.
+ * @return `true` if the data was successfully read or no non-recoverable error
+ *         occurred, `false` if the peer closed the connection or a serious
+ *         error was encountered.
+ */
+bool read_from_socket(peer_t* peer);
 
 /**
  * @brief Downloads & uploads torrent
