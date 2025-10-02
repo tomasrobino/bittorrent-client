@@ -36,8 +36,11 @@ typedef struct {
     bool peer_interested; /**< Whether peer is interested in our pieces */
     int socket; /**< Socket file descriptor for this peer connection */
     time_t last_msg; /**< Timestamp of last message received from peer */
-    unsigned char reception_cache[MAX_TRANS_SIZE]; /**< Cache for storing read bytes before interpreting them */
+    unsigned char reception_cache[MAX_TRANS_SIZE]; /**< Cache for storing read bytes before interpreting them
+                                                    * TODO Maybe make this dynamic, to save on RAM
+                                                    */
     int reception_target; /**< The amount of bytes this peer is expecting to receive */
+    int reception_pointer; /**< How many bytes were already red into reception_cache for this reception_target */
 } peer_t;
 
 /**

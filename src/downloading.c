@@ -387,6 +387,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
         // This could really be skipped. Here just in case
         memset(peer_array[i].reception_cache, 0, MAX_TRANS_SIZE);
         peer_array[i].reception_target = 0;
+        peer_array[i].reception_pointer = 0;
         peer_array[i].am_choking = true;
         peer_array[i].am_interested = false;
         peer_array[i].peer_choking = true;
