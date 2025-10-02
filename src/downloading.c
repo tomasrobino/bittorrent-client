@@ -303,13 +303,12 @@ announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const cha
     return announce_response;
 }
 
-bool read_from_socket(peer_t* peer) {
-    ssize_t total_received = 0;
+bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
     errno = 0;
-    while (total_received < peer->reception_target && errno != EAGAIN && errno != EWOULDBLOCK ) {
-        const ssize_t bytes_received = recv(peer->socket, peer->reception_cache+total_received, peer->reception_target-total_received, 0);
+    while (peer->reception_pointer < peer->reception_target && errno != EAGAIN && errno != EWOULDBLOCK ) {
+        const ssize_t bytes_received = recv(peer->socket, peer->reception_cache+peer->reception_pointer, peer->reception_target-peer->reception_pointer, 0);
         if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-            //if (log_code >= LOG_ERR) fprintf(stderr, "Error when reading message in socket: %d\n", sockfd);
+            if (log_code >= LOG_ERR) fprintf(stderr, "Error when reading message in socket: %d\n", peer->socket);
             return false;
         }
         // Peer shutdown the connection. Shutting down my side too
@@ -320,7 +319,9 @@ bool read_from_socket(peer_t* peer) {
             errno = 0;
             return false;
         }
-        if (bytes_received > 0) total_received += bytes_received;
+        if (bytes_received > 0) {
+            peer->reception_pointer += bytes_received;
+        }
     }
     errno = 0;
     return true;
@@ -489,10 +490,7 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
             }
 
             // Reading from socket
-
-
-
-
+            read_from_socket(peer, log_code);
 
             // Send handshake
             if (peer->status == PEER_CONNECTION_SUCCESS && epoll_events[i].events & EPOLLOUT) {

@@ -176,26 +176,27 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, unsigne
  */
 announce_response_t* handle_predownload_udp(metainfo_t metainfo, const char* peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key, LOG_CODE log_code);
 
+
 /**
- * Reads data from the given peer's socket into the reception cache until the
- * target number of bytes, defined by `reception_target`, is reached or an error
- * is encountered.
+ * Reads available data from a peer's socket into the reception cache.
  *
- * The function continuously attempts to read from the socket associated with
- * the specified peer until either all data is received, the socket is closed,
- * or a non-recoverable error occurs. When the peer closes the connection, the
- * socket is shut down and closed, and the peer's status is updated to
- * `PEER_CLOSED`.
+ * This method attempts to read data from the peer's socket until the
+ * specified `reception_target` is reached or until an error occurs
+ * (non-blocking errors excluded). In case the peer has closed the
+ * connection, the socket is shut down and closed, and the peer's
+ * status is updated accordingly.
  *
- * @param peer Pointer to a `peer_t` structure representing the peer whose
- *             socket is to be read. The structure must contain the socket
- *             file descriptor, reception cache, reception target, and other
- *             related attributes.
- * @return `true` if the data was successfully read or no non-recoverable error
- *         occurred, `false` if the peer closed the connection or a serious
- *         error was encountered.
+ * @param peer A pointer to the peer_t structure representing the peer
+ *             whose socket is to be read from. Contains state information
+ *             for the peer, including the reception cache and pointers.
+ * @param log_code Specifies the level of logging. Acceptable values are
+ *                 LOG_NO (no logging), LOG_ERR (log errors), LOG_SUMM (log summary),
+ *                 or LOG_FULL (full logging).
+ * @return true if data was successfully read or no errors occurred that
+ *         require terminating the connection. Returns false if an unrecoverable
+ *         error occurs or if the remote peer has closed the connection.
  */
-bool read_from_socket(peer_t* peer);
+bool read_from_socket(peer_t* peer, LOG_CODE log_code);
 
 /**
  * @brief Downloads & uploads torrent
