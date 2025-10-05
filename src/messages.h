@@ -125,6 +125,4 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
 
 bool read_message_length(const unsigned char buffer[], time_t* peer_timestamp);
 
-bittorrent_message_t* read_message_body(bittorrent_message_t* message, const unsigned char buffer[], time_t* peer_timestamp);
-
 #endif //MESSAGES_H

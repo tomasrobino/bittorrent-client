@@ -100,21 +100,3 @@ bool read_message_length(const unsigned char buffer[], time_t* peer_timestamp) {
     // rest of messages
     return true;
 }
-
-bittorrent_message_t* read_message_body(bittorrent_message_t* message, const unsigned char buffer[], time_t* peer_timestamp) {
-    *peer_timestamp = time(nullptr);
-
-    if (message->id < 0 || message->id > 9) {
-        // Invalid id
-        free(message);
-        return nullptr;
-    }
-    *peer_timestamp = time(nullptr);
-    // If the message contains a payload. The -1 is because of the id
-    if (message->length-1 > 0) {
-        message->payload = malloc(message->length-1);
-        memset(message->payload, 0, message->length-1);
-        memcpy(message->payload, buffer, message->length-1);
-    }
-    return message;
-}
