@@ -47,31 +47,6 @@ int send_handshake(const int sockfd, const unsigned char *info_hash, const unsig
     return (int) total_sent;
 }
 
-char* handshake_response(const int sockfd, const char* info_hash, const LOG_CODE log_code) {
-    // Receive response
-    char* res = malloc(20);
-    char res_buffer[HANDSHAKE_LEN];
-    ssize_t total_received = 0;
-    errno = 0;
-    while (total_received < HANDSHAKE_LEN) {
-        const ssize_t bytes_received = recv(sockfd, res_buffer+total_received, HANDSHAKE_LEN-total_received, 0);
-        if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-            if (log_code >= LOG_ERR) fprintf(stderr, "Error when receiving in handshake for socket: %d\n", sockfd);
-            close(sockfd);
-            return nullptr;
-        }
-        if (bytes_received > 0) total_received += bytes_received;
-    }
-
-
-    if (memcmp(info_hash, res_buffer+28, 20) != 0) {
-        if (log_code >= LOG_ERR) fprintf(stderr, "Error in handshake: returned wrong info hash\n");
-        return nullptr;
-    }
-    memcpy(res, res_buffer+48, 20);
-    return res;
-}
-
 bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer) {
     if (buffer[0] != 19) return false;
     if (memcmp(buffer+1, "BitTorrent protocol", 19) != 0) return false;
