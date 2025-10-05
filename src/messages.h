@@ -123,7 +123,7 @@ bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer
  */
 unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, unsigned int size);
 
-bool read_message_header(const unsigned char buffer[], time_t* peer_timestamp);
+bool read_message_length(const unsigned char buffer[], time_t* peer_timestamp);
 
 bittorrent_message_t* read_message_body(bittorrent_message_t* message, const unsigned char buffer[], time_t* peer_timestamp);
 

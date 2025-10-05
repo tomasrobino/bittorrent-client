@@ -517,7 +517,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                     peer->id = malloc(20);
                     memcpy(peer->id, peer->reception_cache+48, 20);
                     peer->reception_pointer = 0;
-                    peer->reception_target = MESSAGE_LENGTH_AND_ID_SIZE;
+                    peer->reception_target = MESSAGE_LENGTH_SIZE;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
                     peer->status = PEER_CLOSED;
@@ -529,20 +529,38 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
              * Message reception
              */
 
-            // Message header
-            if (peer->status >= PEER_HANDSHAKE_SUCCESS && peer->reception_target == peer->reception_pointer && peer->reception_target == MESSAGE_LENGTH_AND_ID_SIZE) {
-                if (read_message_header(peer->reception_cache, &peer->last_msg)) {
-                    peer->reception_target += (int) ((bittorrent_message_t *) peer->reception_cache)->length - 1;
+            // Message length
+            if (peer->status >= PEER_HANDSHAKE_SUCCESS && peer->reception_target == peer->reception_pointer && peer->reception_target == MESSAGE_LENGTH_SIZE) {
+                if (read_message_length(peer->reception_cache, &peer->last_msg)) {
+                    peer->reception_target = MESSAGE_LENGTH_AND_ID_SIZE;
+                    peer->status = PEER_AWAITING_ID;
                 } else {
                     // If message ended, be ready to receive or send the next message
-                    peer->reception_target = MESSAGE_LENGTH_AND_ID_SIZE;
+                    peer->reception_target = MESSAGE_LENGTH_SIZE;
                     peer->reception_pointer = 0;
                 }
                 continue;
             }
+
+            // Message id
+            if (peer->status >= PEER_AWAITING_ID && peer->reception_target == peer->reception_pointer && peer->reception_target == MESSAGE_LENGTH_AND_ID_SIZE) {
+                bittorrent_message_t* message = (bittorrent_message_t*) peer->reception_cache;
+                if (message->length > 1) {
+                    // message has payload
+                    peer->reception_target += (int) message->length - 1;
+                    peer->status = PEER_AWAITING_PAYLOAD;
+                } else {
+                    // message without payload
+                    // If message ended, be ready to receive or send the next message
+                    peer->reception_target = MESSAGE_LENGTH_SIZE;
+                    peer->reception_pointer = 0;
+                    continue;
+                }
+            }
+
             // Message payload (if exists)
-            if (peer->status >= PEER_HANDSHAKE_SUCCESS && peer->reception_target == peer->reception_pointer) {
-                bittorrent_message_t* message = read_message_body((bittorrent_message_t*)peer->reception_cache, peer->reception_cache+5, &peer->last_msg);
+            if (peer->status >= PEER_AWAITING_PAYLOAD && peer->reception_target == peer->reception_pointer) {
+                bittorrent_message_t* message = (bittorrent_message_t*)peer->reception_cache;
                 unsigned int byte_index = 0;
                 unsigned int bit_offset = 0;
 

@@ -88,7 +88,7 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
     return pending_bits;
 }
 
-bool read_message_header(const unsigned char buffer[], time_t* peer_timestamp) {
+bool read_message_length(const unsigned char buffer[], time_t* peer_timestamp) {
     *peer_timestamp = time(nullptr);
     bittorrent_message_t* message = (bittorrent_message_t*)buffer;
     message->length = ntohl(message->length);
