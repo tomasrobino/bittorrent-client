@@ -23,6 +23,8 @@ typedef enum {
     PEER_CONNECTION_FAILURE, /**< Peer failed connection */
     PEER_HANDSHAKE_SENT, /**< Handshake sent to peer */
     PEER_HANDSHAKE_SUCCESS, /**< Handshake completed successfully */
+    PEER_AWAITING_ID, /**< Already received message length, so now waiting for id */
+    PEER_AWAITING_PAYLOAD, /**< Already received message length and id, so now waiting for the payload */
     PEER_BITFIELD_RECEIVED, /**< Received bitfield from peer */
 } PEER_STATUS;
 
