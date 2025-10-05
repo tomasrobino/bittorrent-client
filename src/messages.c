@@ -88,29 +88,21 @@ unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsi
     return pending_bits;
 }
 
-bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, const LOG_CODE log_code) {
-    bittorrent_message_t* message = malloc(sizeof(bittorrent_message_t));
-    memset(message, 0, sizeof(bittorrent_message_t));
-    ssize_t total_received = 0;
-    errno = 0;
-    while (total_received < MESSAGE_MIN_SIZE) {
-        const ssize_t bytes_received = recv(sockfd, message+total_received, MESSAGE_MIN_SIZE-total_received, 0);
-        if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-            if (log_code >= LOG_ERR) fprintf(stderr, "Error when reading message in socket: %d\n", sockfd);
-            return nullptr;
-        }
-        if (bytes_received > 0) total_received += bytes_received;
-
-        // keep-alive message, just update timestamp
-        if (total_received == 4) {
-            message->length = ntohl(message->length);
-            if (message->length == 0) {
-                *peer_timestamp = time(nullptr);
-                free(message);
-                return nullptr;
-            }
-        }
+bool read_message_header(const unsigned char buffer[], time_t* peer_timestamp) {
+    *peer_timestamp = time(nullptr);
+    bittorrent_message_t* message = (bittorrent_message_t*)buffer;
+    message->length = ntohl(message->length);
+    // keep-alive message, just update timestamp
+    if (message->length == 0) {
+        free(message);
+        return false;
     }
+    // rest of messages
+    return true;
+}
+
+bittorrent_message_t* read_message_body(bittorrent_message_t* message, const unsigned char buffer[], time_t* peer_timestamp) {
+    *peer_timestamp = time(nullptr);
 
     if (message->id < 0 || message->id > 9) {
         // Invalid id
@@ -118,21 +110,11 @@ bittorrent_message_t* read_message(const int sockfd, time_t* peer_timestamp, con
         return nullptr;
     }
     *peer_timestamp = time(nullptr);
+    // If the message contains a payload. The -1 is because of the id
     if (message->length-1 > 0) {
         message->payload = malloc(message->length-1);
         memset(message->payload, 0, message->length-1);
-        total_received = 0;
-        errno = 0;
-        while (total_received < message->length-1 ) {
-            const ssize_t bytes_received = recv(sockfd, message->payload+total_received, message->length-1, 0);
-            if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-                if (log_code >= LOG_ERR) fprintf(stderr, "Errno %d when attempting to read_message() in socket %d\n", errno, sockfd);
-                free(message);
-                return nullptr;
-            }
-            if (log_code == LOG_FULL) fprintf(stdout, "Read %ld bytes in read_message() in socket %d\n", bytes_received, sockfd);
-            if (bytes_received > 0) total_received+=bytes_received;
-        }
+        memcpy(message->payload, buffer, message->length-1);
     }
     return message;
 }

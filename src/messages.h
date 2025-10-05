@@ -120,25 +120,9 @@ bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer
  *         The caller is responsible for freeing the allocated memory.
  */
 unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, unsigned int size);
-/*
-/**
- * Reads a BitTorrent message from a socket descriptor.
- *
- * This function attempts to read a BitTorrent message from the given socket.
- * It reads the message length, type, and optional payload if the length indicates
- * the presence of one, and updates the peer's timestamp with the current time.
- * In case of an error while receiving the message, it may return a null pointer.
- *
- * @param sockfd The socket file descriptor from which the message will be read.
- * @param peer_timestamp Pointer to a timestamp that will be updated with the current time when a message is successfully read.
- * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
- *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
- *                 LOG_FULL (detailed logging).
- *
- * @return A pointer to a dynamically allocated `bittorrent_message_t` structure
- * containing the read message. Returns a null pointer if the read operation fails
- * or if an invalid message is received.
 
-bittorrent_message_t* read_message(int sockfd, time_t* peer_timestamp, LOG_CODE log_code);
-*/
+bool read_message_header(const unsigned char buffer[], time_t* peer_timestamp);
+
+bittorrent_message_t* read_message_body(bittorrent_message_t* message, const unsigned char buffer[], time_t* peer_timestamp);
+
 #endif //MESSAGES_H

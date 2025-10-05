@@ -516,24 +516,36 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                     peer->status = PEER_HANDSHAKE_SUCCESS;
                     peer->id = malloc(20);
                     memcpy(peer->id, peer->reception_cache+48, 20);
+                    peer->reception_pointer = 0;
+                    peer->reception_target = MESSAGE_MIN_SIZE;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
                     peer->status = PEER_CLOSED;
                 }
                 continue;
             }
-            // Process sending messages
-            if (peer->status >= PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
+
+            /*
+             * Message reception
+             */
+
+            // Message header
+            if (peer->status >= PEER_HANDSHAKE_SUCCESS && peer->reception_target == peer->reception_pointer && peer->reception_target == MESSAGE_MIN_SIZE) {
+                if (read_message_header(peer->reception_cache, &peer->last_msg)) {
+                    peer->reception_target += (int) ((bittorrent_message_t *) peer->reception_cache)->length - 1;
+                } else {
+                    // If message ended, be ready to receive or send the next message
+                    peer->reception_target = MESSAGE_MIN_SIZE;
+                    peer->reception_pointer = 0;
+                }
+                continue;
+            }
+            // Message payload (if exists)
+            if (peer->status >= PEER_HANDSHAKE_SUCCESS && peer->reception_target == peer->reception_pointer) {
+                bittorrent_message_t* message = read_message_body((bittorrent_message_t*)peer->reception_cache, peer->reception_cache+5, &peer->last_msg);
                 unsigned int byte_index = 0;
                 unsigned int bit_offset = 0;
-                errno = 0;
-                const bittorrent_message_t* message = read_message(fd, &peer->last_msg, log_code);
-                if (message == nullptr) {
-                    if (errno == 11) {
-                        peer->status = PEER_CLOSED;
-                    }
-                    continue;
-                }
+
                 switch (message->id) {
                     case CHOKE:
                         peer->peer_choking = true;
