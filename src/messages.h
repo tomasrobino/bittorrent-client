@@ -6,8 +6,10 @@
 
 // Handshake length
 #define HANDSHAKE_LEN 68
+// Bittorrent message length's size
+#define MESSAGE_LENGTH_SIZE 4
 // Bittorrent message size without payload (only length and id).
-#define MESSAGE_MIN_SIZE 5
+#define MESSAGE_LENGTH_AND_ID_SIZE 5
 /**
  * Enumeration of BitTorrent protocol message types.
  * Each value represents a specific message ID that can be sent between peers:

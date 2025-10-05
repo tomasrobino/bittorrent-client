@@ -517,7 +517,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                     peer->id = malloc(20);
                     memcpy(peer->id, peer->reception_cache+48, 20);
                     peer->reception_pointer = 0;
-                    peer->reception_target = MESSAGE_MIN_SIZE;
+                    peer->reception_target = MESSAGE_LENGTH_AND_ID_SIZE;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
                     peer->status = PEER_CLOSED;
@@ -530,12 +530,12 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
              */
 
             // Message header
-            if (peer->status >= PEER_HANDSHAKE_SUCCESS && peer->reception_target == peer->reception_pointer && peer->reception_target == MESSAGE_MIN_SIZE) {
+            if (peer->status >= PEER_HANDSHAKE_SUCCESS && peer->reception_target == peer->reception_pointer && peer->reception_target == MESSAGE_LENGTH_AND_ID_SIZE) {
                 if (read_message_header(peer->reception_cache, &peer->last_msg)) {
                     peer->reception_target += (int) ((bittorrent_message_t *) peer->reception_cache)->length - 1;
                 } else {
                     // If message ended, be ready to receive or send the next message
-                    peer->reception_target = MESSAGE_MIN_SIZE;
+                    peer->reception_target = MESSAGE_LENGTH_AND_ID_SIZE;
                     peer->reception_pointer = 0;
                 }
                 continue;
@@ -671,14 +671,14 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                                         char* buffer = malloc(9);
                                         for (int j = 0; j < peer_amount; ++j) {
                                             if (peer_array[j].status >= PEER_HANDSHAKE_SUCCESS) {
-                                                uint32_t l = htonl(MESSAGE_MIN_SIZE);
-                                                memcpy(buffer, &l, MESSAGE_MIN_SIZE-1);
-                                                buffer[MESSAGE_MIN_SIZE-1] = MESSAGE_MIN_SIZE-1;
+                                                uint32_t l = htonl(MESSAGE_LENGTH_AND_ID_SIZE);
+                                                memcpy(buffer, &l, MESSAGE_LENGTH_SIZE);
+                                                buffer[MESSAGE_LENGTH_SIZE] = MESSAGE_LENGTH_SIZE;
                                                 l = htonl(piece->index);
-                                                memcpy(buffer+MESSAGE_MIN_SIZE, &l, MESSAGE_MIN_SIZE-1);
+                                                memcpy(buffer+MESSAGE_LENGTH_AND_ID_SIZE, &l, MESSAGE_LENGTH_SIZE);
                                                 int32_t sent_bytes = 0;
-                                                while (sent_bytes < MESSAGE_MIN_SIZE+4) {
-                                                    int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, MESSAGE_MIN_SIZE+4-sent_bytes, 0);
+                                                while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE+4) {
+                                                    int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, MESSAGE_LENGTH_AND_ID_SIZE+4-sent_bytes, 0);
                                                     if (res == -1) {
                                                         if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending have in socket %d", peer_array[j].socket);
                                                     } else sent_bytes += res;
@@ -703,15 +703,15 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
 
             // Send bitfield
             if ( (peer->status == PEER_HANDSHAKE_SUCCESS || peer->status == PEER_BITFIELD_RECEIVED)  && epoll_events[i].events & EPOLLOUT) {
-                char* buffer = malloc(MESSAGE_MIN_SIZE+bitfield_byte_size);
+                char* buffer = malloc(MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size);
                 uint32_t length = 1 + bitfield_byte_size;
                 length = htonl(length);
-                memcpy(buffer, &length, MESSAGE_MIN_SIZE-1);
-                buffer[MESSAGE_MIN_SIZE-1] = BITFIELD;
-                memcpy(buffer+5, bitfield, MESSAGE_MIN_SIZE+bitfield_byte_size);
+                memcpy(buffer, &length, MESSAGE_LENGTH_SIZE);
+                buffer[MESSAGE_LENGTH_SIZE] = BITFIELD;
+                memcpy(buffer+5, bitfield, MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size);
                 int64_t sent_bytes = 0;
-                while (sent_bytes < MESSAGE_MIN_SIZE+bitfield_byte_size) {
-                    int64_t sent = send(fd, buffer+sent_bytes, MESSAGE_MIN_SIZE+bitfield_byte_size-sent_bytes, 0);
+                while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size) {
+                    int64_t sent = send(fd, buffer+sent_bytes, MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size-sent_bytes, 0);
                     if (sent > 0) sent_bytes+=sent;
                 }
 
