@@ -62,21 +62,6 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
     return_charpath[filepath_size] = '\0';
     return return_charpath;
 }
-/*
-int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const int64_t amount) {
-    // Reading data from socket
-    int32_t total_received = 0;
-    while (total_received < amount) {
-        // this_file_ask can never be larger than BLOCK_SIZE, so narrowing conversion is fine
-        const int32_t bytes_received = (int32_t) recv(sockfd, buffer, amount, 0);
-        if (bytes_received < 1  && errno != EAGAIN && errno != EWOULDBLOCK) {
-            return -1;
-        }
-        total_received += bytes_received;
-    }
-    return total_received;
-}
-*/
 int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* file, const LOG_CODE log_code) {
     const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
     if (bytes_written != amount) {
@@ -87,7 +72,15 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
     return bytes_written;
 }
 
-int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, files_ll* files_metainfo, const LOG_CODE log_code) {
+int download_block(const unsigned char *buffer, const unsigned int piece_size, files_ll* files_metainfo, const LOG_CODE log_code) {
+    const unsigned char* block = buffer+8;
+    int32_t piece_index = 0;
+    int32_t byte_offset = 0;
+    memcpy(&piece_index, buffer, 4);
+    memcpy(&byte_offset, buffer+4, 4);
+    piece_index = (int32_t) ntohl(piece_index);
+    byte_offset = (int32_t) ntohl(byte_offset);
+
     // Checking whether arguments are invalid
     if (byte_offset >= piece_size) return 4;
     if (piece_size == 0) return 4;
@@ -98,12 +91,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
      * Maybe I'll turn this into a parameter instead
      */
     int64_t asked_bytes = calc_block_size(piece_size, byte_offset);
-    // Buffer for recv()
-    unsigned char buffer[MAX_TRANS_SIZE];
-    if (read_block_from_socket(sockfd, buffer, asked_bytes) < 0) {
-        return 5;
-    }
-    int64_t buffer_offset = 0;
+    int64_t block_offset = 0;
 
     // Finding out to which file the block belongs
     files_ll* current = files_metainfo;
@@ -127,7 +115,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                     current->file_ptr = fopen(filepath_char, "wb+");
                 }
                 if (current->file_ptr == NULL) {
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in download_block() for piece %d, and offset %d\n", piece_index, byte_offset);
                     free(filepath_char);
                     return 1;
                 }
@@ -144,13 +132,13 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             fseeko(current->file_ptr, current->length-local_bytes, SEEK_SET);
 
             // Writing to file
-            const int64_t bytes_written = write_block(buffer+buffer_offset, this_file_ask, current->file_ptr, log_code);
+            const int64_t bytes_written = write_block(block+block_offset, this_file_ask, current->file_ptr, log_code);
             if (bytes_written < 0) {
                 // Error when writing
                 free(filepath_char);
                 return 3;
             }
-            buffer_offset+=bytes_written;
+            block_offset+=bytes_written;
 
             asked_bytes -= this_file_ask;
             byte_counter += this_file_ask;
@@ -671,8 +659,12 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                                     // Conversion is fine beacuse single pieces aren't that large
                                     p_len = metainfo.info->length - piece->index*metainfo.info->piece_length;
                                 } else p_len = metainfo.info->piece_length;
-                                // ACTUAL DOWNLOAD
-                                int block_result = download_block(fd, piece->index, metainfo.info->piece_length, piece->begin, metainfo.info->files, log_code);
+                                /*
+                                 *
+                                 * ACTUAL DOWNLOAD
+                                 *
+                                 */
+                                int block_result = download_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
                                 // Successful block download
                                 if (block_result == 0) {
                                     int64_t this_block = calc_block_size(p_len, piece->begin);
@@ -705,7 +697,6 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                                         }
                                         free(buffer);
                                     }
-
                                     left -= this_block;
                                 }
                             } else if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);

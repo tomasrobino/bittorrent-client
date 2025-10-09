@@ -72,19 +72,6 @@ int64_t calc_block_size(unsigned int piece_size, unsigned int byte_offset);
 char *get_path(const ll *filepath, LOG_CODE log_code);
 
 /**
- * @brief Reads a block of data from a specified socket and writes it into the provided buffer.
- *
- * This function continuously reads data from the given socket until the requested
- * amount of data is read or an error occurs.
- *
- * @param sockfd The socket file descriptor from which data is to be read.
- * @param buffer A pointer to the buffer where the read data will be stored.
- * @param amount The amount of data, in bytes, to read from the socket.
- * @return The total number of bytes successfully read from the socket. Returns -1 in case of an error.
- */
-int32_t read_block_from_socket(int sockfd, unsigned char *buffer, int64_t amount);
-
-/**
  * @brief Writes a specified number of bytes from a buffer to a given file.
  *
  * @param buffer Pointer to the buffer containing the data to be written.
@@ -100,10 +87,8 @@ int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG
 /**
  * @brief Downloads a specific block of data from a peer and writes it to the corresponding file(s).
  *
- * @param sockfd The socket file descriptor used for communication with the peer.
- * @param piece_index The index of the piece to which the block belongs.
+ *
  * @param piece_size The size of the piece in bytes.
- * @param byte_offset The offset within the piece where the block begins.
  * @param files_metainfo A linked list containing metadata about the files managed by the torrent client,
  *                       including their lengths and paths. The files must be in order according to their index
  * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
@@ -111,7 +96,7 @@ int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG
  *                 LOG_FULL (detailed logging).
  * @return Returns 0 on successful downloading and writing of the block. An error code may otherwise be returned.
  */
-int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size, unsigned int byte_offset,
+int download_block(const unsigned char *buffer, unsigned int piece_size,
                    files_ll *files_metainfo, LOG_CODE log_code);
 
 /**
