@@ -72,7 +72,7 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
     return bytes_written;
 }
 
-int download_block(const unsigned char *buffer, const unsigned int piece_size, files_ll* files_metainfo, const LOG_CODE log_code) {
+int process_block(const unsigned char *buffer, const unsigned int piece_size, files_ll* files_metainfo, const LOG_CODE log_code) {
     const unsigned char* block = buffer+8;
     int32_t piece_index = 0;
     int32_t byte_offset = 0;
@@ -115,7 +115,7 @@ int download_block(const unsigned char *buffer, const unsigned int piece_size, f
                     current->file_ptr = fopen(filepath_char, "wb+");
                 }
                 if (current->file_ptr == NULL) {
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in download_block() for piece %d, and offset %d\n", piece_index, byte_offset);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece_index, byte_offset);
                     free(filepath_char);
                     return 1;
                 }
@@ -664,7 +664,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                                  * ACTUAL DOWNLOAD
                                  *
                                  */
-                                int block_result = download_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
+                                int block_result = process_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
                                 // Successful block download
                                 if (block_result == 0) {
                                     int64_t this_block = calc_block_size(p_len, piece->begin);

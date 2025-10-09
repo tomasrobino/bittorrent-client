@@ -96,7 +96,7 @@ int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG
  *                 LOG_FULL (detailed logging).
  * @return Returns 0 on successful downloading and writing of the block. An error code may otherwise be returned.
  */
-int download_block(const unsigned char *buffer, unsigned int piece_size,
+int process_block(const unsigned char *buffer, unsigned int piece_size,
                    files_ll *files_metainfo, LOG_CODE log_code);
 
 /**
