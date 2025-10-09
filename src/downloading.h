@@ -83,21 +83,26 @@ char *get_path(const ll *filepath, LOG_CODE log_code);
  * @return The number of bytes successfully written, or -1 if an error occurred.
  */
 int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG_CODE log_code);
-
 /**
- * @brief Downloads a specific block of data from a peer and writes it to the corresponding file(s).
+ * Processes a block of data downloaded from a peer. The function determines the piece and offset
+ * from the provided buffer, validates the input parameters, and processes the data within the
+ * linked list of file metadata.
  *
+ * @param buffer Pointer to the received buffer containing the block data as well as piece index
+ *               and byte offset in network byte order.
+ * @param piece_size The size of a single piece in bytes. This value is used to validate the offset.
+ * @param files_metainfo Pointer to the linked list of file metadata containing information
+ *                       about the files in the torrent and their respective byte ranges.
+ * @param log_code Logging level indicating the verbosity of the logging for debugging and error reporting.
  *
- * @param piece_size The size of the piece in bytes.
- * @param files_metainfo A linked list containing metadata about the files managed by the torrent client,
- *                       including their lengths and paths. The files must be in order according to their index
- * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
- *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
- *                 LOG_FULL (detailed logging).
- * @return Returns 0 on successful downloading and writing of the block. An error code may otherwise be returned.
+ * @return An integer status code:
+ *         - 0: Block processed successfully.
+ *         - 1: Invalid arguments (e.g., offset greater than piece size or piece size is 0).
+ *         - 2: Failed to open file.
+ *         - 3: Write error.
  */
 int process_block(const unsigned char *buffer, unsigned int piece_size,
-                   files_ll *files_metainfo, LOG_CODE log_code);
+                  files_ll *files_metainfo, LOG_CODE log_code);
 
 /**
  * Determines if a specific piece of a torrent has been fully downloaded.

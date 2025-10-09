@@ -82,8 +82,8 @@ int process_block(const unsigned char *buffer, const unsigned int piece_size, fi
     byte_offset = (int32_t) ntohl(byte_offset);
 
     // Checking whether arguments are invalid
-    if (byte_offset >= piece_size) return 4;
-    if (piece_size == 0) return 4;
+    if (byte_offset >= piece_size) return 1;
+    if (piece_size == 0) return 1;
 
     int64_t byte_counter = (int64_t)piece_index*(int64_t)piece_size + (int64_t)byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
@@ -117,7 +117,7 @@ int process_block(const unsigned char *buffer, const unsigned int piece_size, fi
                 if (current->file_ptr == NULL) {
                     if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece_index, byte_offset);
                     free(filepath_char);
-                    return 1;
+                    return 2;
                 }
             }
 
