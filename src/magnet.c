@@ -7,8 +7,8 @@
 #include "magnet.h"
 
 magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
-    const int length = (int) strlen(magnet);
-    int start = 4;
+    const int32_t length = (int32_t) strlen(magnet);
+    int32_t start = 4;
     Magnet_Attributes current_attribute = none;
     magnet_data* data = malloc(sizeof(magnet_data));
     // Initializing pointers to null
@@ -27,9 +27,9 @@ magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
     head->next = nullptr;
     head->val = nullptr;
     ll* current = head;
-    int tracker_count = 0;
+    int32_t tracker_count = 0;
     if (log_code >= LOG_SUMM) fprintf(stdout, "magnet data:\n");
-    for (int i = 0; i <= length; ++i) {
+    for (int32_t i = 0; i <= length; ++i) {
         if (magnet[i] == '&' || magnet[i] == '?' || magnet[i] == '\0') {
             //Processing previous attribute
             if (current_attribute != none) {
@@ -47,7 +47,7 @@ magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
                         break;
                     case dn:
                         data->dn = malloc(sizeof(char)*(i-start+1));
-                        for (int j = 0; j < i-start; ++j) {
+                        for (int32_t j = 0; j < i-start; ++j) {
                             if (magnet[start+j] == '+') {
                                 data->dn[j] = ' ';
                             } else data->dn[j] = magnet[start+j];
@@ -56,7 +56,7 @@ magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
                         if (log_code >= LOG_SUMM) fprintf(stdout, "dn:\n%s\n", data->dn);
                         break;
                     case xl:
-                        data->xl = (int) decode_bencode_int(magnet+start, nullptr, log_code);
+                        data->xl = (int32_t) decode_bencode_int(magnet+start, nullptr, log_code);
                         if (log_code >= LOG_SUMM) fprintf(stdout, "xl:\n%ld\n", data->xl);
                         break;
                     case tr:
@@ -83,7 +83,7 @@ magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
                         break;
                     case kt:
                         data->kt = malloc(sizeof(char)*(i-start+1));
-                        for (int j = 0; j < i-start; ++j) {
+                        for (int32_t j = 0; j < i-start; ++j) {
                             if (magnet[start+j] == '+') {
                                 data->kt[j] = ' ';
                             } else data->kt[j] = magnet[start+j];
