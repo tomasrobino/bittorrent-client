@@ -40,8 +40,8 @@ typedef struct {
     files_ll *files; /**< Linked list of file information for multi-file torrents */
     int64_t length; /**< Total size of all files in the torrent in bytes */
     char *name; /**< Name of the torrent (single file) or directory name (multiple files) */
-    unsigned int piece_length; /**< Size of each piece in bytes */
-    unsigned int piece_number; /**< Total number of pieces */
+    uint32_t piece_length; /**< Size of each piece in bytes */
+    uint32_t piece_number; /**< Total number of pieces */
     unsigned char *pieces; /**< String containing SHA1 hashes of all pieces concatenated */
     bool priv; /**< Whether the torrent is private (true) or public (false) */
     unsigned char hash[21]; /**< 20-byte SHA1 hash of the info dictionary */
@@ -59,7 +59,7 @@ typedef struct {
     announce_list_ll *announce_list; /**< List of backup tracker URLs organized in tiers */
     char *comment; /**< Optional descriptive comment about the torrent */
     char *created_by; /**< Optional string identifying the program used to create the torrent */
-    unsigned int creation_date; /**< Unix timestamp when the torrent was created */
+    uint32_t creation_date; /**< Unix timestamp when the torrent was created */
     char *encoding; /**< Optional string specifying character encoding of strings in the torrent */
     info_t *info; /**< Pointer to structure containing core torrent content information */
 } metainfo_t;
@@ -97,7 +97,7 @@ void sha1_to_hex(const unsigned char *sha1_bytes, char *hex_output);
  * @return A pointer to a dynamically allocated `metainfo_t` structure containing
  *         extracted metadata, or nullptr if parsing fails or the input is invalid.
  */
-metainfo_t *parse_metainfo(const char *bencoded_value, unsigned long length, LOG_CODE log_code);
+metainfo_t *parse_metainfo(const char *bencoded_value, uint64_t length, LOG_CODE log_code);
 
 /**
  * @brief Frees all dynamically allocated memory associated with a linked list of files.
