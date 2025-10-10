@@ -527,6 +527,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                     peer->reception_target = MESSAGE_LENGTH_SIZE;
                     peer->reception_pointer = 0;
                 }
+                if (log_code == LOG_FULL) fprintf(stdout, "Peer %d received length\n", peer->socket);
                 continue;
             }
 
@@ -544,10 +545,12 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                     peer->reception_pointer = 0;
                     continue;
                 }
+                if (log_code == LOG_FULL) fprintf(stdout, "Peer %d received id of %d with length of %d\n", peer->socket, message->id, message->length);
             }
 
             // Message payload (if exists)
             if (peer->status >= PEER_AWAITING_PAYLOAD && peer->reception_target == peer->reception_pointer) {
+                if (log_code == LOG_FULL) fprintf(stdout, "Peer %d received payload\n", peer->socket);
                 bittorrent_message_t* message = (bittorrent_message_t*)peer->reception_cache;
                 unsigned int byte_index = 0;
                 unsigned int bit_offset = 0;
