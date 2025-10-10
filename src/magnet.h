@@ -27,7 +27,7 @@ typedef enum {
 typedef struct {
     char *xt; //URN containing file hash
     char *dn; //A filename to display to the user
-    long xl; //The file size, in bytes
+    int64_t xl; //The file size, in bytes
     ll *tr; //Tracker URL linked list
     char *ws; //The payload data served over HTTP(S)
     char *as; //Refers to a direct download from a web server

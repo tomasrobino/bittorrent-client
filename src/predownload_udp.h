@@ -22,13 +22,13 @@ typedef struct {
     char* host;
     char* port;
     Protocols protocol;
-    int ip_version;
+    int32_t ip_version;
 } address_t;
 
 typedef struct {
     address_t* split_addr;
     char* ip;
-    int sockfd;
+    int32_t sockfd;
     struct sockaddr* server_addr;
 } connection_data_t;
 
@@ -171,7 +171,7 @@ address_t* split_address(const char* address);
  * @param array The array to shuffle
  * @param length The length of the array
  */
-void shuffle_address_array(address_t* array[], int length);
+void shuffle_address_array(address_t* array[], int32_t length);
 /** Converts domain to IP. Supports UDP, HTTP, and HTTPS; IPv4 and IPv6
  * @param address The domain as a string
  * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
@@ -193,7 +193,7 @@ char* url_to_ip(address_t* address, LOG_CODE log_code);
  *                 LOG_FULL (detailed logging).
  * @returns A pointer to the socket file descriptor of the tracker whose connection was successful; or nullptr
  */
-int* try_request_udp(int amount, const int sockfd[], const void *req[], size_t req_size, const struct sockaddr *server_addr[], LOG_CODE log_code);
+int32_t *try_request_udp(int32_t amount, int32_t sockfd[], const void *req[], size_t req_size, const struct sockaddr *server_addr[], LOG_CODE log_code);
 
 /**
  * Sends a connection request to a list of trackers.
@@ -207,7 +207,7 @@ int* try_request_udp(int amount, const int sockfd[], const void *req[], size_t r
  *                 LOG_FULL (detailed logging).
  * @returns The connection id successfully returned from the tracker; or 0
  */
-uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int sockfd[], int amount, int* successful_index, LOG_CODE log_code);
+uint64_t connect_request_udp(const struct sockaddr *server_addr[], int32_t sockfd[], int32_t amount, int32_t *successful_index, LOG_CODE log_code);
 
 /**
  * Attempts to connect to a tracker. Takes either a list of lists or a single one
@@ -221,7 +221,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
  *                 LOG_FULL (detailed logging).
  * @return The connection id successfully returned from the tracker; or 0
  */
-uint64_t connect_udp(int amount, announce_list_ll* current, int* successful_index_pt, connection_data_t* connection_data, LOG_CODE log_code);
+uint64_t connect_udp(int32_t amount, announce_list_ll* current, int32_t *successful_index_pt, connection_data_t* connection_data, LOG_CODE log_code);
 
 /**
  * Sends an announce request to the tracker
@@ -243,7 +243,7 @@ uint64_t connect_udp(int amount, announce_list_ll* current, int* successful_inde
  */
 announce_response_t* announce_request_udp(
     const struct sockaddr *server_addr,
-    int sockfd,
+    int32_t sockfd,
     uint64_t connection_id,
     const unsigned char info_hash[],
     const unsigned char peer_id[],
@@ -268,6 +268,7 @@ announce_response_t* announce_request_udp(
  *                 LOG_FULL (detailed logging).
  * @return The data returned or nullptr if there's an error
  */
-scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, int sockfd, uint64_t connection_id, const char info_hash[], unsigned int torrent_amount, LOG_CODE log_code);
+scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, int32_t sockfd, uint64_t connection_id, const char info_hash[], uint32_t
+                                      torrent_amount, LOG_CODE log_code);
 
 #endif //CONNECTION

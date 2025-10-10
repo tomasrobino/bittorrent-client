@@ -55,7 +55,7 @@ address_t* split_address(const char* address) {
     return ret_address;
 }
 
-void shuffle_address_array(address_t* array[], const int length) {
+void shuffle_address_array(address_t* array[], int32_t length) {
     if (length > 1) {
         static unsigned int seed = 0;
         if (seed == 0) {
@@ -114,7 +114,7 @@ char* url_to_ip(address_t* address, const LOG_CODE log_code) {
     return ip;
 }
 
-int* try_request_udp(const int amount, const int sockfd[], const void *req[], const size_t req_size, const struct sockaddr *server_addr[], const LOG_CODE log_code) {
+int32_t *try_request_udp(int32_t amount, const int32_t sockfd[], const void *req[], const size_t req_size, const struct sockaddr *server_addr[], const LOG_CODE log_code) {
     struct pollfd pfd[amount];
     memset(pfd, 0, amount*sizeof(struct pollfd));
     for (int i = 0; i < amount; ++i) {
@@ -165,7 +165,7 @@ int* try_request_udp(const int amount, const int sockfd[], const void *req[], co
     return nullptr;
 }
 
-uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int sockfd[], const int amount, int* successful_index, const LOG_CODE log_code) {
+uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int32_t sockfd[], int32_t amount, int32_t *successful_index, const LOG_CODE log_code) {
     connect_request_t* req_array[amount];
     for (int i = 0; i < amount; ++i) {
         req_array[i] = malloc(sizeof(connect_request_t));
@@ -239,7 +239,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
     return id;
 }
 
-uint64_t connect_udp(const int amount, announce_list_ll* current, int* successful_index_pt, connection_data_t* connection_data, const LOG_CODE log_code) {
+uint64_t connect_udp(int32_t amount, announce_list_ll* current, int32_t *successful_index_pt, connection_data_t* connection_data, const LOG_CODE log_code) {
     const int successful_index = *successful_index_pt;
     // Creating outer list arrays
     address_t** split_addr_array[amount];
@@ -507,7 +507,8 @@ announce_response_t *announce_request_udp(const struct sockaddr *server_addr, co
     return res;
 }
 
-scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, const int sockfd, const uint64_t connection_id, const char info_hash[], const unsigned int torrent_amount, const LOG_CODE log_code) {
+scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, int32_t sockfd, const uint64_t connection_id, const char info_hash[], uint32_t
+                                      torrent_amount, const LOG_CODE log_code) {
     scrape_request_t req;
     req.connection_id = htobe64(connection_id);
     req.action = htobe32(2);
@@ -530,7 +531,7 @@ scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, const 
     memcpy(buffer, &req, SCRAPE_REQUEST_SIZE);
     memcpy(buffer+SCRAPE_REQUEST_SIZE, req.info_hash_list, torrent_amount*20);
     socklen_t socklen = sizeof(struct sockaddr);
-    int* scrape_res_socket = try_request_udp(1, &sockfd, (const void**)&buffer, SCRAPE_REQUEST_SIZE+20*torrent_amount, &server_addr, log_code);
+    int* scrape_res_socket = try_request_udp(1, &sockfd, (const void**)&buffer, SCRAPE_REQUEST_SIZE +20*torrent_amount, &server_addr, log_code);
     if (scrape_res_socket == nullptr) {
         if (log_code >= LOG_ERR) fprintf(stderr, "Error while receiving scrape response\n");
         free(scrape_res_socket);

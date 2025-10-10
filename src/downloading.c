@@ -16,7 +16,7 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
-int64_t calc_block_size(const unsigned int piece_size, const unsigned int byte_offset) {
+int64_t calc_block_size(const uint32_t piece_size, const uint32_t byte_offset) {
     int64_t asked_bytes;
     // Amount of blocks in the piece
     const int64_t block_amount = (piece_size + BLOCK_SIZE - 1) / BLOCK_SIZE;
@@ -29,11 +29,11 @@ int64_t calc_block_size(const unsigned int piece_size, const unsigned int byte_o
 
 char* get_path(const ll* filepath, const LOG_CODE log_code) {
     // Getting the amount of chars in the complete filepath
-    int filepath_size = 0;
+    int32_t filepath_size = 0;
     const ll* filepath_ptr = filepath;
     while (filepath_ptr != nullptr) {
         // The +1 is for slashes and null terminator
-        filepath_size += (int) strlen(filepath_ptr->val) + 1;
+        filepath_size += (int32_t) strlen(filepath_ptr->val) + 1;
         filepath_ptr = filepath_ptr->next;
     }
     char* return_charpath = malloc(filepath_size);
@@ -43,7 +43,7 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
     struct stat st;
     while (filepath_ptr != nullptr) {
         memcpy(return_charpath + filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
-        filepath_size += (int)strlen(filepath_ptr->val);
+        filepath_size += (int32_t)strlen(filepath_ptr->val);
         return_charpath[filepath_size] = '/';
 
         // Creating directories
@@ -72,7 +72,8 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
     return bytes_written;
 }
 
-int process_block(const unsigned char *buffer, const unsigned int piece_size, files_ll* files_metainfo, const LOG_CODE log_code) {
+int32_t process_block(const unsigned char *buffer, uint32_t piece_size, files_ll *files_metainfo,
+                      const LOG_CODE log_code) {
     const unsigned char* block = buffer+8;
     int32_t piece_index = 0;
     int32_t byte_offset = 0;
@@ -150,18 +151,18 @@ int process_block(const unsigned char *buffer, const unsigned int piece_size, fi
     return 0;
 }
 
-bool piece_complete(const unsigned char *block_tracker, const unsigned int piece_index, const unsigned int piece_size, const int64_t torrent_size) {
-    unsigned int this_piece_size = piece_size;
+bool piece_complete(const unsigned char *block_tracker, uint32_t piece_index, uint32_t piece_size, const int64_t torrent_size) {
+    uint32_t this_piece_size = piece_size;
     if ( ((int64_t)piece_index+1) * (int64_t)piece_size > torrent_size ) {
         this_piece_size = torrent_size - (int64_t)piece_index * (int64_t)piece_size;
     }
-    const unsigned int blocks_amount = ( (int64_t)this_piece_size+BLOCK_SIZE-1 ) / BLOCK_SIZE;
-    const unsigned int first_block_global = (int64_t)piece_index * (( (int64_t)piece_size+BLOCK_SIZE-1 ) / BLOCK_SIZE);
-    const unsigned int last_block_global = first_block_global + blocks_amount;
+    const uint32_t blocks_amount = ( (int64_t)this_piece_size+BLOCK_SIZE-1 ) / BLOCK_SIZE;
+    const uint32_t first_block_global = (int64_t)piece_index * (( (int64_t)piece_size+BLOCK_SIZE-1 ) / BLOCK_SIZE);
+    const uint32_t last_block_global = first_block_global + blocks_amount;
 
-    for (unsigned int block_global = first_block_global; block_global < last_block_global; block_global++) {
-        const unsigned int byte_index = block_global / 8;
-        const unsigned int bit_offset = 7 - (block_global % 8);
+    for (uint32_t block_global = first_block_global; block_global < last_block_global; block_global++) {
+        const uint32_t byte_index = block_global / 8;
+        const uint32_t bit_offset = 7 - (block_global % 8);
 
         if ((block_tracker[byte_index] & (1u << bit_offset)) == 0) {
             // This block is not downloaded yet, piece incomplete
@@ -171,11 +172,11 @@ bool piece_complete(const unsigned char *block_tracker, const unsigned int piece
     return true;
 }
 
-bool are_bits_set(const unsigned char *bitfield, const unsigned int start, const unsigned int end) {
-    const unsigned int start_byte = start / 8;
-    const unsigned int end_byte = end / 8;
-    const unsigned int start_bit = start % 8;
-    const unsigned int end_bit = end % 8;
+bool are_bits_set(const unsigned char *bitfield, uint32_t start, uint32_t end) {
+    const uint32_t start_byte = start / 8;
+    const uint32_t end_byte = end / 8;
+    const uint32_t start_bit = start % 8;
+    const uint32_t end_bit = end % 8;
 
     // Mask for first byte
     unsigned char first_mask = (unsigned char)(0xFFu >> start_bit);
@@ -190,7 +191,7 @@ bool are_bits_set(const unsigned char *bitfield, const unsigned int start, const
         return false;
 
     // Full middle bytes
-    for (unsigned int b = start_byte + 1; b < end_byte; b++) {
+    for (uint32_t b = start_byte + 1; b < end_byte; b++) {
         if (bitfield[b] != 0xFFu)
             return false;
     }
@@ -204,9 +205,10 @@ bool are_bits_set(const unsigned char *bitfield, const unsigned int start, const
     return true;
 }
 
-void closing_files(const files_ll* files, const unsigned char* bitfield, const unsigned int piece_index, const unsigned int piece_size, const unsigned int this_piece_size) {
-    const unsigned int byte_index = piece_index / 8;
-    const unsigned int bit_offset = 7 - piece_index % 8;
+void closing_files(const files_ll* files, const unsigned char* bitfield, uint32_t piece_index, uint32_t piece_size, uint32_t
+                   this_piece_size) {
+    const uint32_t byte_index = piece_index / 8;
+    const uint32_t bit_offset = 7 - piece_index % 8;
     // Checking whether the passed piece is actually downloaded
     if (( bitfield[byte_index] & (1u << bit_offset) ) == 0) {
         return;
@@ -226,8 +228,8 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, const u
         // If the file ends after the piece starts and if it starts before the piece ends
         if (current->byte_index+current->length > piece_offset && current->byte_index < piece_offset+this_piece_size) {
             // If it overlaps with following pieces
-            unsigned int right = 0;
-            unsigned int left = 0;
+            uint32_t right = 0;
+            uint32_t left = 0;
             if (!last) {
                 const int64_t overlap = piece_offset+this_piece_size - current->byte_index;
                 right = ceil((double)(current->length - overlap)/(double)piece_size);
@@ -248,11 +250,11 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, const u
 
 announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id, const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const LOG_CODE log_code) {
     // For storing socket that successfully connected
-    int successful_index = 0;
-    int* successful_index_pt = &successful_index;
+    int32_t successful_index = 0;
+    int32_t* successful_index_pt = &successful_index;
     // connection id from server response
     const announce_list_ll* current = metainfo.announce_list;
-    int counter = 0;
+    int32_t counter = 0;
     // Get annnounce_list size
     if (current != nullptr) {
         while (current != nullptr) {
@@ -308,7 +310,7 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
             return false;
         }
         if (bytes_received > 0) {
-            peer->reception_pointer += (int)bytes_received;
+            peer->reception_pointer += (int32_t)bytes_received;
         }
     }
     peer->last_msg = time(nullptr);
@@ -316,7 +318,7 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
     return true;
 }
 
-int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
+int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();
     announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key, log_code);
@@ -327,19 +329,19 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
     */
     peer_ll* current_peer = announce_response->peer_list;
     // Getting amount of peers
-    unsigned int peer_amount = 0;
+    uint32_t peer_amount = 0;
     while (current_peer != nullptr) {
         peer_amount++;
         current_peer = current_peer->next;
     }
     current_peer = announce_response->peer_list;
 
-    int* peer_socket_array = malloc(sizeof(int) * peer_amount);
+    int32_t* peer_socket_array = malloc(sizeof(int32_t) * peer_amount);
     struct sockaddr_in* peer_addr_array = malloc(sizeof(struct sockaddr_in) * peer_amount);
     memset(peer_addr_array, 0, sizeof(struct sockaddr_in) * peer_amount);
-    int counter2 = 0;
+    int32_t counter2 = 0;
     // Creating epoll for controlling sockets
-    const int epoll = epoll_create1(0);
+    const int32_t epoll = epoll_create1(0);
     while (current_peer != nullptr) {
         // Creating non-blocking socket
         peer_socket_array[counter2] = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
@@ -358,7 +360,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
             exit(1);
         }
         // Try connecting
-        int connect_result = connect(peer_socket_array[counter2], (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
+        int32_t connect_result = connect(peer_socket_array[counter2], (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
         if (connect_result < 0 && errno != EINPROGRESS) {
             if (log_code >= LOG_ERR) fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, peer_socket_array[counter2]);
             close(peer_socket_array[counter2]);
@@ -378,24 +380,24 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
     // Checking connections with epoll
     struct epoll_event epoll_events[MAX_EVENTS];
     // General bitfield. Each piece takes up 1 bit
-    const unsigned int bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
+    const uint32_t bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
     unsigned char* bitfield = malloc(bitfield_byte_size);
     memset(bitfield, 0, bitfield_byte_size);
     // Size in bytes of the block tracker
-    unsigned int block_tracker_bytesize = ceil(
+    uint32_t block_tracker_bytesize = ceil(
         ceil(
             metainfo.info->piece_number*metainfo.info->piece_length / (double)BLOCK_SIZE
         ) / 8.0
     );
     // Actual amount of blocks per piece (not bytes)
-    unsigned int blocks_per_piece = ceil(metainfo.info->piece_length / (double)BLOCK_SIZE);
+    uint32_t blocks_per_piece = ceil(metainfo.info->piece_length / (double)BLOCK_SIZE);
     // Downloaded index for each block in a piece
     unsigned char* block_tracker = malloc(block_tracker_bytesize);
     memset(block_tracker, 0, block_tracker_bytesize);
     // Peer struct
     peer_t* peer_array = malloc(sizeof(peer_t)*peer_amount);
     memset(peer_array, 0, sizeof(peer_t)*peer_amount);
-    for (int i = 0; i < peer_amount; ++i) {
+    for (int32_t i = 0; i < peer_amount; ++i) {
         peer_array[i].socket = peer_socket_array[i];
         // This could really be skipped. Here just in case
         memset(peer_array[i].reception_cache, 0, MAX_TRANS_SIZE);
@@ -415,7 +417,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
      *
     */
     while (left > 0) {
-        const int nfds = epoll_wait(epoll, epoll_events, MAX_EVENTS, EPOLL_TIMEOUT);
+        const int32_t nfds = epoll_wait(epoll, epoll_events, MAX_EVENTS, EPOLL_TIMEOUT);
         if (nfds == -1) {
             if (log_code >= LOG_ERR) fprintf(stderr, "Error in epoll_wait\n");
             continue;
@@ -426,14 +428,14 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
             continue;
         }
 
-        for (int i = 0; i < nfds; ++i) {
-            const int index = (int) epoll_events[i].data.u32;
-            const int fd = peer_socket_array[index];
+        for (int32_t i = 0; i < nfds; ++i) {
+            const int32_t index = (int32_t) epoll_events[i].data.u32;
+            const int32_t fd = peer_socket_array[index];
             peer_t* peer = &peer_array[index];
 
             // Fatal error in socket
             if (epoll_events[i].events == EPOLLERR) {
-                int err = 0;
+                int32_t err = 0;
                 socklen_t len = sizeof(err);
                 if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
                     if (log_code >= LOG_ERR) fprintf(stderr, "Getsockopt error %d in socket %d\n", errno, fd);
@@ -452,7 +454,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
             if (peer->status == PEER_NOTHING) {
                 peer->status = PEER_CONNECTION_FAILURE;
                 if (epoll_events[i].events & EPOLLOUT) {
-                    int err = 0;
+                    int32_t err = 0;
                     socklen_t len = sizeof(err);
                     // Check whether connect() was successful
                     if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
@@ -483,7 +485,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
 
             // Send handshake
             if (peer->status == PEER_CONNECTION_SUCCESS && epoll_events[i].events & EPOLLOUT) {
-                const int result = send_handshake(fd, metainfo.info->hash, peer_id, log_code);
+                const int32_t result = send_handshake(fd, metainfo.info->hash, peer_id, log_code);
                 peer->last_msg = time(nullptr);
                 if (result > 0) {
                     peer->status = PEER_HANDSHAKE_SENT;
@@ -536,7 +538,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                 bittorrent_message_t* message = (bittorrent_message_t*) peer->reception_cache;
                 if (message->length > 1) {
                     // message has payload
-                    peer->reception_target += (int) message->length - 1;
+                    peer->reception_target += (int32_t) message->length - 1;
                     peer->status = PEER_AWAITING_PAYLOAD;
                 } else {
                     // message without payload
@@ -555,8 +557,8 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                 bittorrent_message_t* message = (bittorrent_message_t*)peer->reception_cache;
                 if (log_code == LOG_FULL) fprintf(stdout, "Peer %d received payload\nPayload:\n%.*s\n", peer->socket, peer->reception_target-MESSAGE_LENGTH_AND_ID_SIZE, (char*)peer->reception_cache);
                 message->payload = peer->reception_cache+MESSAGE_LENGTH_AND_ID_SIZE;
-                unsigned int byte_index = 0;
-                unsigned int bit_offset = 0;
+                uint32_t byte_index = 0;
+                uint32_t bit_offset = 0;
 
                 switch (message->id) {
                     case CHOKE:
@@ -600,7 +602,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                             peer->bitfield = malloc(bitfield_byte_size);
                             memset(peer->bitfield, 0, bitfield_byte_size);
                             if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", fd);
-                            int j = 0;
+                            int32_t j = 0;
                             // Checking whether peer has any piece of interest
                             while (!peer->am_interested) {
                                 if ( (~bitfield[j] & peer->bitfield[j]) != 0) {
@@ -655,7 +657,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                         // If this client doesn't have the piece received
                         if ((bitfield[byte_index] & (1u << bit_offset)) == 0) {
                             // If this client doesn't have the block received
-                            unsigned int global_block_index = piece->index * blocks_per_piece + piece->begin;
+                            uint32_t global_block_index = piece->index * blocks_per_piece + piece->begin;
                             byte_index = global_block_index / 8;
                             bit_offset = 7 - global_block_index % 8;
                             if ( (block_tracker[byte_index] & (1u << bit_offset)) == 0) {
@@ -670,7 +672,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                                  * ACTUAL DOWNLOAD
                                  *
                                  */
-                                int block_result = process_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
+                                int32_t block_result = process_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
                                 // Successful block download
                                 if (block_result == 0) {
                                     int64_t this_block = calc_block_size(p_len, piece->begin);
@@ -685,7 +687,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
                                         closing_files(metainfo.info->files, bitfield, piece->index, metainfo.info->piece_length, p_len);
                                         // Sending have message to all peers
                                         char* buffer = malloc(9);
-                                        for (int j = 0; j < peer_amount; ++j) {
+                                        for (int32_t j = 0; j < peer_amount; ++j) {
                                             if (peer_array[j].status >= PEER_HANDSHAKE_SUCCESS) {
                                                 uint32_t l = htonl(MESSAGE_LENGTH_AND_ID_SIZE);
                                                 memcpy(buffer, &l, MESSAGE_LENGTH_SIZE);
@@ -738,7 +740,7 @@ int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_C
 
     // Closing sockets
     close(epoll);
-    for (int i = 0; i < peer_amount; ++i) {
+    for (int32_t i = 0; i < peer_amount; ++i) {
         close(peer_socket_array[i]);
     }
     // Freeing bitfield
