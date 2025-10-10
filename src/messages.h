@@ -37,6 +37,8 @@ typedef enum {
     CANCEL,
     PORT
 } MESSAGE_ID;
+
+typedef int8_t MESSAGE_ID_t;
 /**
  * Structure representing a BitTorrent protocol message
  * @param length Length of the message in bytes, excluding the length field itself
@@ -45,7 +47,7 @@ typedef enum {
  */
 typedef struct {
     uint32_t length;
-    MESSAGE_ID id;
+    MESSAGE_ID_t id;
     unsigned char *payload;
 } bittorrent_message_t;
 
