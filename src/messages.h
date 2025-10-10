@@ -52,14 +52,14 @@ typedef struct {
 } bittorrent_message_t;
 
 typedef struct {
-    unsigned int index;
-    unsigned int begin;
-    unsigned int length;
+    uint32_t index;
+    uint32_t begin;
+    uint32_t length;
 } request_t;
 
 typedef struct {
-    unsigned int index;
-    unsigned int begin;
+    uint32_t index;
+    uint32_t begin;
     unsigned char* block;
 } piece_t;
 /**
@@ -70,7 +70,7 @@ typedef struct {
  * @param hex_output Pointer to the output buffer where the resulting hexadecimal string should be stored.
  *                   The buffer must be large enough to hold 2 * byte_amount characters plus a null terminator.
  */
-void bitfield_to_hex(const unsigned char *bitfield, unsigned int byte_amount, char *hex_output);
+void bitfield_to_hex(const unsigned char *bitfield, uint32_t byte_amount, char *hex_output);
 
 /**
  * Attempts to establish a connection to a peer using the specified socket and address.
@@ -83,7 +83,7 @@ void bitfield_to_hex(const unsigned char *bitfield, unsigned int byte_amount, ch
  *         returns 0 and closes the socket if the connection fails with an error
  *         other than EINPROGRESS.
  */
-int try_connect(int sockfd, const struct sockaddr_in* peer_addr, LOG_CODE log_code);
+int32_t try_connect(int32_t sockfd, const struct sockaddr_in* peer_addr, LOG_CODE log_code);
 
 /**
  * Sends a BitTorrent handshake message through the specified socket.
@@ -98,7 +98,7 @@ int try_connect(int sockfd, const struct sockaddr_in* peer_addr, LOG_CODE log_co
  * @return Returns the number of bytes successfully sent (68 bytes for a complete handshake);
  *         returns a negative value if an error occurs while sending the handshake.
  */
-int send_handshake(int sockfd, const unsigned char *info_hash, const unsigned char *peer_id, LOG_CODE log_code);
+int32_t send_handshake(int32_t sockfd, const unsigned char *info_hash, const unsigned char *peer_id, LOG_CODE log_code);
 
 /**
  * Validates the handshake response from a peer to ensure it complies with the expected
@@ -123,7 +123,7 @@ bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer
  *         the bits from the foreign bitfield that are not set in the client bitfield.
  *         The caller is responsible for freeing the allocated memory.
  */
-unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, unsigned int size);
+unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, uint32_t size);
 
 bool read_message_length(const unsigned char buffer[], time_t* peer_timestamp);
 

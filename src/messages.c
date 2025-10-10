@@ -10,16 +10,17 @@
 #include <sys/socket.h>
 #include "util.h"
 
-void bitfield_to_hex(const unsigned char *bitfield, const unsigned int byte_amount, char *hex_output) {
+void bitfield_to_hex(const unsigned char *bitfield, const uint32_t byte_amount, char *hex_output) {
     if (hex_output == NULL) return;
-    for (int i = 0; i < byte_amount; i++) {
+    for (int32_t i = 0; i < byte_amount; i++) {
         sprintf(hex_output + i * 2, "%02x", bitfield[i]);
     }
     hex_output[byte_amount*2] = '\0';  // Null-terminate the string
 }
-int try_connect(const int sockfd, const struct sockaddr_in* peer_addr, const LOG_CODE log_code) {
+
+int32_t try_connect(const int32_t sockfd, const struct sockaddr_in* peer_addr, const LOG_CODE log_code) {
     errno = 0;
-    const int connect_result = connect(sockfd, (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
+    const int32_t connect_result = connect(sockfd, (struct sockaddr*) peer_addr, sizeof(struct sockaddr));
     if (connect_result < 0 && errno != EINPROGRESS) {
         if (log_code >= LOG_ERR) fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, sockfd);
         close(sockfd);
@@ -28,7 +29,7 @@ int try_connect(const int sockfd, const struct sockaddr_in* peer_addr, const LOG
     return 1;
 }
 
-int send_handshake(const int sockfd, const unsigned char *info_hash, const unsigned char *peer_id, const LOG_CODE log_code) {
+int32_t send_handshake(const int32_t sockfd, const unsigned char *info_hash, const unsigned char *peer_id, const LOG_CODE log_code) {
     char buffer[HANDSHAKE_LEN] = {0};
     buffer[0] = 19;
     memcpy(buffer+1, "BitTorrent protocol", 19);
@@ -44,7 +45,7 @@ int send_handshake(const int sockfd, const unsigned char *info_hash, const unsig
             if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake for socket: %d\n", sockfd);
         } else total_sent+=sent;
     }
-    return (int) total_sent;
+    return (int32_t) total_sent;
 }
 
 bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer) {
@@ -54,10 +55,10 @@ bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer
     return true;
 }
 
-unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, const unsigned int size) {
-    const unsigned int byte_size = ceil(size/8.0);
+unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, const uint32_t size) {
+    const uint32_t byte_size = ceil(size/8.0);
     unsigned char* pending_bits = malloc(byte_size);
-    for (int i = 0; i < byte_size; ++i) {
+    for (int32_t i = 0; i < byte_size; ++i) {
         pending_bits[i] = foreign_bitfield[i] & ~client_bitfield[i];
     }
     return pending_bits;
