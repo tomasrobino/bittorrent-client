@@ -1,5 +1,6 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
+#include <stdint.h>
 
 /**
  * Enumeration to represent different levels of logging.
@@ -39,7 +40,7 @@ typedef struct ll {
  */
 typedef struct {
     struct sockaddr *server_addr;
-    int sockfd;
+    int32_t sockfd;
     const char *info_hash;
     const char *peer_id;
 } handshake_args_t;
