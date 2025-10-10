@@ -62,21 +62,6 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
     return_charpath[filepath_size] = '\0';
     return return_charpath;
 }
-
-int32_t read_block_from_socket(const int sockfd, unsigned char* buffer, const int64_t amount) {
-    // Reading data from socket
-    int32_t total_received = 0;
-    while (total_received < amount) {
-        // this_file_ask can never be larger than BLOCK_SIZE, so narrowing conversion is fine
-        const int32_t bytes_received = (int32_t) recv(sockfd, buffer, amount, 0);
-        if (bytes_received < 1  && errno != EAGAIN && errno != EWOULDBLOCK) {
-            return -1;
-        }
-        total_received += bytes_received;
-    }
-    return total_received;
-}
-
 int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* file, const LOG_CODE log_code) {
     const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
     if (bytes_written != amount) {
@@ -87,10 +72,18 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
     return bytes_written;
 }
 
-int download_block(const int sockfd, const unsigned int piece_index, const unsigned int piece_size, const unsigned int byte_offset, files_ll* files_metainfo, const LOG_CODE log_code) {
+int process_block(const unsigned char *buffer, const unsigned int piece_size, files_ll* files_metainfo, const LOG_CODE log_code) {
+    const unsigned char* block = buffer+8;
+    int32_t piece_index = 0;
+    int32_t byte_offset = 0;
+    memcpy(&piece_index, buffer, 4);
+    memcpy(&byte_offset, buffer+4, 4);
+    piece_index = (int32_t) ntohl(piece_index);
+    byte_offset = (int32_t) ntohl(byte_offset);
+
     // Checking whether arguments are invalid
-    if (byte_offset >= piece_size) return 4;
-    if (piece_size == 0) return 4;
+    if (byte_offset >= piece_size) return 1;
+    if (piece_size == 0) return 1;
 
     int64_t byte_counter = (int64_t)piece_index*(int64_t)piece_size + (int64_t)byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
@@ -98,12 +91,7 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
      * Maybe I'll turn this into a parameter instead
      */
     int64_t asked_bytes = calc_block_size(piece_size, byte_offset);
-    // Buffer for recv()
-    unsigned char buffer[BLOCK_SIZE];
-    if (read_block_from_socket(sockfd, buffer, asked_bytes) < 0) {
-        return 5;
-    }
-    int64_t buffer_offset = 0;
+    int64_t block_offset = 0;
 
     // Finding out to which file the block belongs
     files_ll* current = files_metainfo;
@@ -127,9 +115,9 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
                     current->file_ptr = fopen(filepath_char, "wb+");
                 }
                 if (current->file_ptr == NULL) {
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in download_block() for socket %d\n", sockfd);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece_index, byte_offset);
                     free(filepath_char);
-                    return 1;
+                    return 2;
                 }
             }
 
@@ -144,13 +132,13 @@ int download_block(const int sockfd, const unsigned int piece_index, const unsig
             fseeko(current->file_ptr, current->length-local_bytes, SEEK_SET);
 
             // Writing to file
-            const int64_t bytes_written = write_block(buffer+buffer_offset, this_file_ask, current->file_ptr, log_code);
+            const int64_t bytes_written = write_block(block+block_offset, this_file_ask, current->file_ptr, log_code);
             if (bytes_written < 0) {
                 // Error when writing
                 free(filepath_char);
                 return 3;
             }
-            buffer_offset+=bytes_written;
+            block_offset+=bytes_written;
 
             asked_bytes -= this_file_ask;
             byte_counter += this_file_ask;
@@ -258,12 +246,12 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, const u
     }
 }
 
-announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const char* peer_id, const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const LOG_CODE log_code) {
+announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id, const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const LOG_CODE log_code) {
     // For storing socket that successfully connected
     int successful_index = 0;
     int* successful_index_pt = &successful_index;
     // connection id from server response
-    announce_list_ll* current = metainfo.announce_list;
+    const announce_list_ll* current = metainfo.announce_list;
     int counter = 0;
     // Get annnounce_list size
     if (current != nullptr) {
@@ -303,7 +291,32 @@ announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const cha
     return announce_response;
 }
 
-int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_code) {
+bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
+    errno = 0;
+    while (peer->reception_pointer < peer->reception_target && errno != EAGAIN && errno != EWOULDBLOCK ) {
+        const ssize_t bytes_received = recv(peer->socket, peer->reception_cache+peer->reception_pointer, peer->reception_target-peer->reception_pointer, 0);
+        if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+            if (log_code >= LOG_ERR) fprintf(stderr, "Error when reading message in socket: %d\n", peer->socket);
+            return false;
+        }
+        // Peer shutdown the connection. Shutting down my side too
+        if (bytes_received == 0) {
+            shutdown(peer->socket, SHUT_RDWR);
+            close(peer->socket);
+            peer->status = PEER_CLOSED;
+            errno = 0;
+            return false;
+        }
+        if (bytes_received > 0) {
+            peer->reception_pointer += (int)bytes_received;
+        }
+    }
+    peer->last_msg = time(nullptr);
+    errno = 0;
+    return true;
+}
+
+int torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
     uint32_t event = 0, key = arc4random();
     announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key, log_code);
@@ -384,10 +397,16 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
     memset(peer_array, 0, sizeof(peer_t)*peer_amount);
     for (int i = 0; i < peer_amount; ++i) {
         peer_array[i].socket = peer_socket_array[i];
+        // This could really be skipped. Here just in case
+        memset(peer_array[i].reception_cache, 0, MAX_TRANS_SIZE);
+        peer_array[i].reception_target = 0;
+        peer_array[i].reception_pointer = 0;
         peer_array[i].am_choking = true;
         peer_array[i].am_interested = false;
         peer_array[i].peer_choking = true;
         peer_array[i].peer_interested = false;
+        peer_array[i].bitfield = nullptr;
+        peer_array[i].status = PEER_NOTHING;
     }
 
     /*
@@ -458,6 +477,10 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 }
                 continue;
             }
+
+            // Reading from socket
+            read_from_socket(peer, log_code);
+
             // Send handshake
             if (peer->status == PEER_CONNECTION_SUCCESS && epoll_events[i].events & EPOLLOUT) {
                 const int result = send_handshake(fd, metainfo.info->hash, peer_id, log_code);
@@ -465,6 +488,8 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 if (result > 0) {
                     peer->status = PEER_HANDSHAKE_SENT;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake sent through socket %d\n", fd);
+                    peer->reception_pointer = 0;
+                    peer->reception_target = HANDSHAKE_LEN;
                 } else {
                     peer->status = PEER_CLOSED;
                     if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n", fd);
@@ -472,31 +497,61 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                 }
                 continue;
             }
-            // Receive handshake
-            if (peer->status == PEER_HANDSHAKE_SENT && epoll_events[i].events & EPOLLIN) {
-                const char* foreign_id = handshake_response(fd, metainfo.info->hash, log_code);
-                peer->last_msg = time(nullptr);
-                if (foreign_id != nullptr) {
+            // Check if handshake was received in full, and process it
+            if (peer->status == PEER_HANDSHAKE_SENT && peer->reception_target == peer->reception_pointer) {
+                const bool result = check_handshake(metainfo.info->hash, peer->reception_cache);
+                if (result) {
                     peer->status = PEER_HANDSHAKE_SUCCESS;
-                    peer->id = (char*)foreign_id;
+                    peer->id = malloc(20);
+                    memcpy(peer->id, peer->reception_cache+48, 20);
+                    peer->reception_pointer = 0;
+                    peer->reception_target = MESSAGE_LENGTH_SIZE;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
                 } else {
                     peer->status = PEER_CLOSED;
                 }
                 continue;
             }
-            // Process sending messages
-            if (peer->status >= PEER_HANDSHAKE_SUCCESS && epoll_events[i].events & EPOLLIN) {
-                unsigned int byte_index = 0;
-                unsigned int bit_offset = 0;
-                errno = 0;
-                const bittorrent_message_t* message = read_message(fd, &peer->last_msg, log_code);
-                if (message == nullptr) {
-                    if (errno == 11) {
-                        peer->status = PEER_CLOSED;
-                    }
+
+            /*
+             * Message reception
+             */
+
+            // Message length
+            if (peer->status >= PEER_HANDSHAKE_SUCCESS && peer->reception_target == peer->reception_pointer && peer->reception_target == MESSAGE_LENGTH_SIZE) {
+                if (read_message_length(peer->reception_cache, &peer->last_msg)) {
+                    peer->reception_target = MESSAGE_LENGTH_AND_ID_SIZE;
+                    peer->status = PEER_AWAITING_ID;
+                } else {
+                    // If message ended, be ready to receive or send the next message
+                    peer->reception_target = MESSAGE_LENGTH_SIZE;
+                    peer->reception_pointer = 0;
+                }
+                continue;
+            }
+
+            // Message id
+            if (peer->status >= PEER_AWAITING_ID && peer->reception_target == peer->reception_pointer && peer->reception_target == MESSAGE_LENGTH_AND_ID_SIZE) {
+                bittorrent_message_t* message = (bittorrent_message_t*) peer->reception_cache;
+                if (message->length > 1) {
+                    // message has payload
+                    peer->reception_target += (int) message->length - 1;
+                    peer->status = PEER_AWAITING_PAYLOAD;
+                } else {
+                    // message without payload
+                    // If message ended, be ready to receive or send the next message
+                    peer->reception_target = MESSAGE_LENGTH_SIZE;
+                    peer->reception_pointer = 0;
                     continue;
                 }
+            }
+
+            // Message payload (if exists)
+            if (peer->status >= PEER_AWAITING_PAYLOAD && peer->reception_target == peer->reception_pointer) {
+                bittorrent_message_t* message = (bittorrent_message_t*)peer->reception_cache;
+                unsigned int byte_index = 0;
+                unsigned int bit_offset = 0;
+
                 switch (message->id) {
                     case CHOKE:
                         peer->peer_choking = true;
@@ -604,8 +659,12 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                                     // Conversion is fine beacuse single pieces aren't that large
                                     p_len = metainfo.info->length - piece->index*metainfo.info->piece_length;
                                 } else p_len = metainfo.info->piece_length;
-                                // ACTUAL DOWNLOAD
-                                int block_result = download_block(fd, piece->index, metainfo.info->piece_length, piece->begin, metainfo.info->files, log_code);
+                                /*
+                                 *
+                                 * ACTUAL DOWNLOAD
+                                 *
+                                 */
+                                int block_result = process_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
                                 // Successful block download
                                 if (block_result == 0) {
                                     int64_t this_block = calc_block_size(p_len, piece->begin);
@@ -622,14 +681,14 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                                         char* buffer = malloc(9);
                                         for (int j = 0; j < peer_amount; ++j) {
                                             if (peer_array[j].status >= PEER_HANDSHAKE_SUCCESS) {
-                                                uint32_t l = htonl(MESSAGE_MIN_SIZE);
-                                                memcpy(buffer, &l, MESSAGE_MIN_SIZE-1);
-                                                buffer[MESSAGE_MIN_SIZE-1] = MESSAGE_MIN_SIZE-1;
+                                                uint32_t l = htonl(MESSAGE_LENGTH_AND_ID_SIZE);
+                                                memcpy(buffer, &l, MESSAGE_LENGTH_SIZE);
+                                                buffer[MESSAGE_LENGTH_SIZE] = MESSAGE_LENGTH_SIZE;
                                                 l = htonl(piece->index);
-                                                memcpy(buffer+MESSAGE_MIN_SIZE, &l, MESSAGE_MIN_SIZE-1);
+                                                memcpy(buffer+MESSAGE_LENGTH_AND_ID_SIZE, &l, MESSAGE_LENGTH_SIZE);
                                                 int32_t sent_bytes = 0;
-                                                while (sent_bytes < MESSAGE_MIN_SIZE+4) {
-                                                    int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, MESSAGE_MIN_SIZE+4-sent_bytes, 0);
+                                                while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE+4) {
+                                                    int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, MESSAGE_LENGTH_AND_ID_SIZE+4-sent_bytes, 0);
                                                     if (res == -1) {
                                                         if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending have in socket %d", peer_array[j].socket);
                                                     } else sent_bytes += res;
@@ -638,14 +697,12 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
                                         }
                                         free(buffer);
                                     }
-
                                     left -= this_block;
                                 }
                             } else if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
                         } else if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", fd);
                         break;
                     case CANCEL:
-                        break;
                     case PORT:
                         break;
                     default: ;
@@ -655,15 +712,15 @@ int torrent(const metainfo_t metainfo, const char* peer_id, const LOG_CODE log_c
 
             // Send bitfield
             if ( (peer->status == PEER_HANDSHAKE_SUCCESS || peer->status == PEER_BITFIELD_RECEIVED)  && epoll_events[i].events & EPOLLOUT) {
-                char* buffer = malloc(MESSAGE_MIN_SIZE+bitfield_byte_size);
+                char* buffer = malloc(MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size);
                 uint32_t length = 1 + bitfield_byte_size;
                 length = htonl(length);
-                memcpy(buffer, &length, MESSAGE_MIN_SIZE-1);
-                buffer[MESSAGE_MIN_SIZE-1] = BITFIELD;
-                memcpy(buffer+5, bitfield, MESSAGE_MIN_SIZE+bitfield_byte_size);
+                memcpy(buffer, &length, MESSAGE_LENGTH_SIZE);
+                buffer[MESSAGE_LENGTH_SIZE] = BITFIELD;
+                memcpy(buffer+5, bitfield, MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size);
                 int64_t sent_bytes = 0;
-                while (sent_bytes < MESSAGE_MIN_SIZE+bitfield_byte_size) {
-                    int64_t sent = send(fd, buffer+sent_bytes, MESSAGE_MIN_SIZE+bitfield_byte_size-sent_bytes, 0);
+                while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size) {
+                    int64_t sent = send(fd, buffer+sent_bytes, MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size-sent_bytes, 0);
                     if (sent > 0) sent_bytes+=sent;
                 }
 

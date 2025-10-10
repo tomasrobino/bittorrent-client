@@ -6,8 +6,10 @@
 
 // Handshake length
 #define HANDSHAKE_LEN 68
+// Bittorrent message length's size
+#define MESSAGE_LENGTH_SIZE 4
 // Bittorrent message size without payload (only length and id).
-#define MESSAGE_MIN_SIZE 5
+#define MESSAGE_LENGTH_AND_ID_SIZE 5
 /**
  * Enumeration of BitTorrent protocol message types.
  * Each value represents a specific message ID that can be sent between peers:
@@ -94,22 +96,19 @@ int try_connect(int sockfd, const struct sockaddr_in* peer_addr, LOG_CODE log_co
  * @return Returns the number of bytes successfully sent (68 bytes for a complete handshake);
  *         returns a negative value if an error occurs while sending the handshake.
  */
-int send_handshake(int sockfd, const char* info_hash, const char* peer_id, LOG_CODE log_code);
+int send_handshake(int sockfd, const unsigned char *info_hash, const unsigned char *peer_id, LOG_CODE log_code);
 
 /**
- * Processes the response during a handshake interaction by validating the
- * info hash and extracting the peer's ID.
- * @param sockfd The file descriptor of the socket from which the response is received.
- * @param info_hash A pointer to the 20-byte info hash that is expected to match the
- *                  handshake response.
- * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
- *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
- *                 LOG_FULL (detailed logging).
- * @return Returns a dynamically allocated 20-byte character array containing the
- *         peer's ID if the handshake is successful; returns nullptr if the validation
- *         fails or an error occurs.
+ * Validates the handshake response from a peer to ensure it complies with the expected
+ * BitTorrent protocol format and matches the provided info hash.
+ *
+ * @param info_hash A pointer to a 20-byte info hash that uniquely identifies the torrent.
+ * @param buffer A pointer to the handshake buffer received from the peer, which includes
+ * the protocol identifier, reserved bytes, and the info hash.
+ * @return True if the handshake is valid (protocol matches "BitTorrent protocol" and
+ * info hashes are identical), otherwise false.
  */
-char* handshake_response(int sockfd, const char* info_hash, LOG_CODE log_code);
+bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer);
 
 /**
  * Processes two bitfields to identify pending bits by performing a bitwise
@@ -124,23 +123,6 @@ char* handshake_response(int sockfd, const char* info_hash, LOG_CODE log_code);
  */
 unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, unsigned int size);
 
-/**
- * Reads a BitTorrent message from a socket descriptor.
- *
- * This function attempts to read a BitTorrent message from the given socket.
- * It reads the message length, type, and optional payload if the length indicates
- * the presence of one, and updates the peer's timestamp with the current time.
- * In case of an error while receiving the message, it may return a null pointer.
- *
- * @param sockfd The socket file descriptor from which the message will be read.
- * @param peer_timestamp Pointer to a timestamp that will be updated with the current time when a message is successfully read.
- * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
- *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
- *                 LOG_FULL (detailed logging).
- *
- * @return A pointer to a dynamically allocated `bittorrent_message_t` structure
- * containing the read message. Returns a null pointer if the read operation fails
- * or if an invalid message is received.
- */
-bittorrent_message_t* read_message(int sockfd, time_t* peer_timestamp, LOG_CODE log_code);
+bool read_message_length(const unsigned char buffer[], time_t* peer_timestamp);
+
 #endif //MESSAGES_H

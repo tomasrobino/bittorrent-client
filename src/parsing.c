@@ -36,7 +36,7 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
     return nullptr;
 }
 
-files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* index, const LOG_CODE log_code) {
+files_ll* read_info_files(const char* bencode, const bool multiple, unsigned long* index, const LOG_CODE log_code) {
     files_ll *head = malloc(sizeof(files_ll));
     head->path = nullptr;
     head->next = nullptr;

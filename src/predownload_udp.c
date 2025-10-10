@@ -85,7 +85,7 @@ char* url_to_ip(address_t* address, const LOG_CODE log_code) {
     }
 
     // Iterating over received IPs
-    for (struct addrinfo *rp = res; rp != nullptr; rp = rp->ai_next) {
+    for (const struct addrinfo *rp = res; rp != nullptr; rp = rp->ai_next) {
         void* addr_ptr;
 
         address->ip_version = rp->ai_family;
@@ -240,7 +240,7 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int soc
 }
 
 uint64_t connect_udp(const int amount, announce_list_ll* current, int* successful_index_pt, connection_data_t* connection_data, const LOG_CODE log_code) {
-    int successful_index = *successful_index_pt;
+    const int successful_index = *successful_index_pt;
     // Creating outer list arrays
     address_t** split_addr_array[amount];
     memset(split_addr_array, 0, amount*sizeof(address_t**));
@@ -314,7 +314,7 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
         }
 
         // Atempting connection of all trackers in current list
-        uint64_t connection_id = connect_request_udp((const struct sockaddr**)server_addr_array[counter], sockfd_array[counter], list_sizes[counter], successful_index_pt, log_code);
+        const uint64_t connection_id = connect_request_udp((const struct sockaddr**)server_addr_array[counter], sockfd_array[counter], list_sizes[counter], successful_index_pt, log_code);
         if (connection_id != 0) {
             // Successful connection, exit loop
 
@@ -350,14 +350,18 @@ uint64_t connect_udp(const int amount, announce_list_ll* current, int* successfu
     return 0;
 }
 
-announce_response_t* announce_request_udp(const struct sockaddr *server_addr, const int sockfd, uint64_t connection_id, const char info_hash[], const char peer_id[], const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const uint16_t port, const LOG_CODE log_code) {
+announce_response_t *announce_request_udp(const struct sockaddr *server_addr, const int sockfd,
+                                          const uint64_t connection_id, const unsigned char info_hash[],
+                                          const unsigned char peer_id[], const uint64_t downloaded, const uint64_t left,
+                                          const uint64_t uploaded, const uint32_t event, const uint32_t key,
+                                          const uint16_t port, const LOG_CODE log_code) {
     announce_request_t req = {0};
     // Convert to network endianness
     req.connection_id = htobe64(connection_id);
     req.action = htobe32(1);
     req.transaction_id = htobe32(arc4random());
-    strncpy(req.info_hash, info_hash, 20);
-    strncpy(req.peer_id, peer_id, 20);
+    memcpy(req.info_hash, info_hash, 20);
+    memcpy(req.peer_id, peer_id, 20);
     req.downloaded = htobe64(downloaded);
     req.left = htobe64(left);
     req.uploaded = htobe64(uploaded);
@@ -373,7 +377,7 @@ announce_response_t* announce_request_udp(const struct sockaddr *server_addr, co
     if (log_code >= LOG_SUMM) fprintf(stdout, "connection_id: %lu\n", req.connection_id);
     if (log_code >= LOG_SUMM) fprintf(stdout, "info_hash: ");
     char human_hash[41];
-    sha1_to_hex((unsigned char*)req.info_hash, human_hash);
+    sha1_to_hex(req.info_hash, human_hash);
     if (log_code >= LOG_SUMM) fprintf(stdout, "%s", human_hash);
     if (log_code >= LOG_SUMM) fprintf(stdout, "\n");
     if (log_code >= LOG_SUMM) fprintf(stdout, "peer_id: ");

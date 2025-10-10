@@ -68,8 +68,8 @@ typedef struct {
     uint64_t connection_id;
     uint32_t action;
     uint32_t transaction_id;
-    char info_hash[20];
-    char peer_id[20];
+    unsigned char info_hash[20];
+    unsigned char peer_id[20];
     uint64_t downloaded;
     uint64_t left;
     uint64_t uploaded;
@@ -245,8 +245,8 @@ announce_response_t* announce_request_udp(
     const struct sockaddr *server_addr,
     int sockfd,
     uint64_t connection_id,
-    const char info_hash[],
-    const char peer_id[],
+    const unsigned char info_hash[],
+    const unsigned char peer_id[],
     uint64_t downloaded,
     uint64_t left,
     uint64_t uploaded,

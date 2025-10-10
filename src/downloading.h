@@ -2,12 +2,15 @@
 #define DOWNLOADING_H
 #include "file.h"
 #include "predownload_udp.h"
+
 /// @brief Maximum events cached by epoll
 #define MAX_EVENTS 128
 /// @brief Maximum amount of time epoll will wait for sockets to be ready (in milliseconds)
 #define EPOLL_TIMEOUT 5000
 /// @brief Download block size in bytes (16KB)
 #define BLOCK_SIZE 16384
+/// @brief Maximum amount of bytes to be transmited in any request or response
+#define MAX_TRANS_SIZE (BLOCK_SIZE+9)
 // TODO Temporal solution, this should be changed to be adjusted dynamically
 
 /// @brief Amount of block requests to queue for each peer
@@ -20,13 +23,15 @@ typedef enum {
     PEER_CONNECTION_FAILURE, /**< Peer failed connection */
     PEER_HANDSHAKE_SENT, /**< Handshake sent to peer */
     PEER_HANDSHAKE_SUCCESS, /**< Handshake completed successfully */
+    PEER_AWAITING_ID, /**< Already received message length, so now waiting for id */
+    PEER_AWAITING_PAYLOAD, /**< Already received message length and id, so now waiting for the payload */
     PEER_BITFIELD_RECEIVED, /**< Received bitfield from peer */
 } PEER_STATUS;
 
 /// @brief Represents peer data and state in a BitTorrent connection
 typedef struct {
     unsigned char *bitfield; /**< Bit array representing the pieces this peer has */
-    char *id; /**< 20-byte string peer ID used during handshake */
+    unsigned char *id; /**< 20-byte string peer ID used during handshake */
     PEER_STATUS status; /**< Current status of the peer connection */
     bool am_choking; /**< Whether we are choking the peer */
     bool am_interested; /**< Whether we are interested in peer's pieces */
@@ -34,6 +39,11 @@ typedef struct {
     bool peer_interested; /**< Whether peer is interested in our pieces */
     int socket; /**< Socket file descriptor for this peer connection */
     time_t last_msg; /**< Timestamp of last message received from peer */
+    unsigned char reception_cache[MAX_TRANS_SIZE]; /**< Cache for storing read bytes before interpreting them
+                                                    * TODO Maybe make this dynamic, to save on RAM
+                                                    */
+    int reception_target; /**< The amount of bytes this peer is expecting to receive */
+    int reception_pointer; /**< How many bytes were already red into reception_cache for this reception_target */
 } peer_t;
 
 /**
@@ -62,19 +72,6 @@ int64_t calc_block_size(unsigned int piece_size, unsigned int byte_offset);
 char *get_path(const ll *filepath, LOG_CODE log_code);
 
 /**
- * @brief Reads a block of data from a specified socket and writes it into the provided buffer.
- *
- * This function continuously reads data from the given socket until the requested
- * amount of data is read or an error occurs.
- *
- * @param sockfd The socket file descriptor from which data is to be read.
- * @param buffer A pointer to the buffer where the read data will be stored.
- * @param amount The amount of data, in bytes, to read from the socket.
- * @return The total number of bytes successfully read from the socket. Returns -1 in case of an error.
- */
-int32_t read_block_from_socket(int sockfd, unsigned char *buffer, int64_t amount);
-
-/**
  * @brief Writes a specified number of bytes from a buffer to a given file.
  *
  * @param buffer Pointer to the buffer containing the data to be written.
@@ -86,23 +83,26 @@ int32_t read_block_from_socket(int sockfd, unsigned char *buffer, int64_t amount
  * @return The number of bytes successfully written, or -1 if an error occurred.
  */
 int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG_CODE log_code);
-
 /**
- * @brief Downloads a specific block of data from a peer and writes it to the corresponding file(s).
+ * Processes a block of data downloaded from a peer. The function determines the piece and offset
+ * from the provided buffer, validates the input parameters, and processes the data within the
+ * linked list of file metadata.
  *
- * @param sockfd The socket file descriptor used for communication with the peer.
- * @param piece_index The index of the piece to which the block belongs.
- * @param piece_size The size of the piece in bytes.
- * @param byte_offset The offset within the piece where the block begins.
- * @param files_metainfo A linked list containing metadata about the files managed by the torrent client,
- *                       including their lengths and paths. The files must be in order according to their index
- * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
- *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
- *                 LOG_FULL (detailed logging).
- * @return Returns 0 on successful downloading and writing of the block. An error code may otherwise be returned.
+ * @param buffer Pointer to the received buffer containing the block data as well as piece index
+ *               and byte offset in network byte order.
+ * @param piece_size The size of a single piece in bytes. This value is used to validate the offset.
+ * @param files_metainfo Pointer to the linked list of file metadata containing information
+ *                       about the files in the torrent and their respective byte ranges.
+ * @param log_code Logging level indicating the verbosity of the logging for debugging and error reporting.
+ *
+ * @return An integer status code:
+ *         - 0: Block processed successfully.
+ *         - 1: Invalid arguments (e.g., offset greater than piece size or piece size is 0).
+ *         - 2: Failed to open file.
+ *         - 3: Write error.
  */
-int download_block(int sockfd, unsigned int piece_index, unsigned int piece_size, unsigned int byte_offset,
-                   files_ll *files_metainfo, LOG_CODE log_code);
+int process_block(const unsigned char *buffer, unsigned int piece_size,
+                  files_ll *files_metainfo, LOG_CODE log_code);
 
 /**
  * Determines if a specific piece of a torrent has been fully downloaded.
@@ -166,7 +166,29 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, unsigne
  *                 LOG_FULL (detailed logging).
  * @return A pointer to an announce_response_t structure containing the tracker's response, or nullptr if the request fails.
  */
-announce_response_t* handle_predownload_udp(metainfo_t metainfo, const char* peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key, LOG_CODE log_code);
+announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned char *peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key, LOG_CODE log_code);
+
+
+/**
+ * Reads available data from a peer's socket into the reception cache.
+ *
+ * This method attempts to read data from the peer's socket until the
+ * specified `reception_target` is reached or until an error occurs
+ * (non-blocking errors excluded). In case the peer has closed the
+ * connection, the socket is shut down and closed, and the peer's
+ * status is updated accordingly.
+ *
+ * @param peer A pointer to the peer_t structure representing the peer
+ *             whose socket is to be read from. Contains state information
+ *             for the peer, including the reception cache and pointers.
+ * @param log_code Specifies the level of logging. Acceptable values are
+ *                 LOG_NO (no logging), LOG_ERR (log errors), LOG_SUMM (log summary),
+ *                 or LOG_FULL (full logging).
+ * @return true if data was successfully read or no errors occurred that
+ *         require terminating the connection. Returns false if an unrecoverable
+ *         error occurs or if the remote peer has closed the connection.
+ */
+bool read_from_socket(peer_t* peer, LOG_CODE log_code);
 
 /**
  * @brief Downloads & uploads torrent
@@ -178,5 +200,5 @@ announce_response_t* handle_predownload_udp(metainfo_t metainfo, const char* pee
  *                    LOG_SUMM (summary logging), or LOG_FULL (detailed logging).
  * @return 0 for success, !0 for failure
  */
-int torrent(metainfo_t metainfo, const char *peer_id, LOG_CODE log_code);
+int torrent(metainfo_t metainfo, const unsigned char *peer_id, LOG_CODE log_code);
 #endif //DOWNLOADING_H
