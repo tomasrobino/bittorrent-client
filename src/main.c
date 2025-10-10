@@ -13,7 +13,7 @@
 #include "downloading.h"
 #include "magnet.h"
 
-int main(const int argc, char* argv[]) {
+int32_t main(const int32_t argc, char* argv[]) {
     // Generating peer id
     unsigned char peer_id[21] = CLIENT_ID;
     peer_id[20] = '\0';
@@ -29,7 +29,7 @@ int main(const int argc, char* argv[]) {
         return 1;
     }
     // Logging
-    int log_code = LOG_SUMM;
+    int32_t log_code = LOG_SUMM;
     if (argc > 3) {
         if (strcmp("error", argv[3]) == 0) {
             log_code = LOG_ERR;
@@ -58,7 +58,7 @@ int main(const int argc, char* argv[]) {
         }
     } else if (strcmp(command, "file") == 0) {
         char* buffer = nullptr;
-        unsigned long length = 0;
+        uint64_t length = 0;
         FILE* f = fopen(argv[2], "r");
         if (f) {
             fseek (f, 0, SEEK_END);
@@ -73,7 +73,7 @@ int main(const int argc, char* argv[]) {
 
         if (buffer && length != 0) {
             errno = 0;
-            const int mk_res = mkdir("download-folder", 0755);
+            const int32_t mk_res = mkdir("download-folder", 0755);
             if (mk_res == -1 && errno != 0 && errno != 17) {
                 if (log_code >= LOG_ERR) fprintf(stderr, "Error when creating torrent directory. Errno: %d", errno);
                 return 2;
