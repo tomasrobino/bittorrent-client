@@ -56,7 +56,7 @@ typedef struct {
  * @return The size of the block in bytes to be downloaded. If the block is the last one in the piece,
  *         its size will be smaller than or equal to BLOCK_SIZE. Otherwise, it will always return BLOCK_SIZE.
  */
-int64_t calc_block_size(unsigned int piece_size, unsigned int byte_offset);
+int64_t calc_block_size(uint32_t piece_size, uint32_t byte_offset);
 /**
  * @brief Constructs a full file path as a string from a linked list of directory segments
  * and creates the necessary directory structure if it does not exist.
@@ -101,8 +101,8 @@ int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG
  *         - 2: Failed to open file.
  *         - 3: Write error.
  */
-int process_block(const unsigned char *buffer, unsigned int piece_size,
-                  files_ll *files_metainfo, LOG_CODE log_code);
+int32_t process_block(const unsigned char *buffer, uint32_t piece_size,
+                      files_ll *files_metainfo, LOG_CODE log_code);
 
 /**
  * Determines if a specific piece of a torrent has been fully downloaded.
@@ -120,7 +120,7 @@ int process_block(const unsigned char *buffer, unsigned int piece_size,
  * @return Returns `true` if the piece at the given index is fully downloaded,
  *         otherwise returns `false`.
  */
-bool piece_complete(const unsigned char *block_tracker, unsigned int piece_index, unsigned int piece_size, int64_t torrent_size);
+bool piece_complete(const unsigned char *block_tracker, uint32_t piece_index, uint32_t piece_size, int64_t torrent_size);
 
 /**
  * Checks if all bits in the specified range are set within a given bitfield.
@@ -134,7 +134,7 @@ bool piece_complete(const unsigned char *block_tracker, unsigned int piece_index
  * @param end The ending bit index of the range to check (inclusive).
  * @return Returns true if all bits in the range are set to 1, otherwise returns false.
  */
-bool are_bits_set(const unsigned char *bitfield, unsigned int start, unsigned int end);
+bool are_bits_set(const unsigned char *bitfield, uint32_t start, uint32_t end);
 
 /**
  * Closes files in a linked list if all pieces overlapping with the file are downloaded.
@@ -149,7 +149,8 @@ bool are_bits_set(const unsigned char *bitfield, unsigned int start, unsigned in
  * @param piece_size The size of a piece in bytes.
  * @param this_piece_size The size of the current piece being evaluated (useful for the last piece which can be smaller).
  */
-void closing_files(const files_ll* files, const unsigned char* bitfield, unsigned int piece_index, unsigned int piece_size, unsigned int this_piece_size);
+void closing_files(const files_ll* files, const unsigned char* bitfield, uint32_t piece_index, uint32_t piece_size, uint32_t
+                   this_piece_size);
 
 /**
  * Handles the pre-download procedure over UDP by connecting to a tracker and sending an announce request.
@@ -200,5 +201,5 @@ bool read_from_socket(peer_t* peer, LOG_CODE log_code);
  *                    LOG_SUMM (summary logging), or LOG_FULL (detailed logging).
  * @return 0 for success, !0 for failure
  */
-int torrent(metainfo_t metainfo, const unsigned char *peer_id, LOG_CODE log_code);
+int32_t torrent(metainfo_t metainfo, const unsigned char *peer_id, LOG_CODE log_code);
 #endif //DOWNLOADING_H

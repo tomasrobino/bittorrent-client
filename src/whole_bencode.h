@@ -15,7 +15,7 @@
  * @return A pointer to the head of the linked list containing the decoded elements,
  *         or null if the input cannot be parsed as a valid bencoded list.
  */
-ll* decode_bencode_list(const char* bencoded_list, unsigned int* length, LOG_CODE log_code);
+ll* decode_bencode_list(const char* bencoded_list, uint32_t *length, LOG_CODE log_code);
 
 /**
  * Frees all memory associated with a linked list of bencode elements.
@@ -52,7 +52,7 @@ char* decode_bencode_string(const char* bencoded_value, LOG_CODE log_code);
  *                 LOG_FULL (detailed logging).
  * @return The decoded integer as an unsigned long. Returns 0 if the value is not a valid integer.
  */
-unsigned long decode_bencode_int(const char *bencoded_value, char **endptr, LOG_CODE log_code);
+uint64_t decode_bencode_int(const char *bencoded_value, char **endptr, LOG_CODE log_code);
 
 /**
  * Decodes a bencoded "announce-list" into a linked list structure.
@@ -64,7 +64,7 @@ unsigned long decode_bencode_int(const char *bencoded_value, char **endptr, LOG_
  *                 LOG_FULL (detailed logging).
  * @return A pointer to the head node of a linked list representing the decoded "announce-list", or nullptr if decoding fails.
  */
-announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index, LOG_CODE log_code);
+announce_list_ll* decode_announce_list(const char* announce_list, uint64_t *index, LOG_CODE log_code);
 
 /**
  * Parses a bencoded string and constructs a linked list of file information structures.
@@ -79,5 +79,5 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
  * @return A pointer to the head of a linked list of files containing their parsed information,
  *         or nullptr if parsing fails.
  */
-files_ll* read_info_files(const char* bencode, bool multiple, unsigned long* index, LOG_CODE log_code);
+files_ll* read_info_files(const char* bencode, bool multiple, uint64_t *index, LOG_CODE log_code);
 #endif //WHOLE_BENCODE_H

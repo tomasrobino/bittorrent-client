@@ -6,13 +6,13 @@
 #include <string.h>
 
 // Cannot handle lists of lists
-ll* decode_bencode_list(const char* bencoded_list, unsigned int* length, const LOG_CODE log_code) {
+ll* decode_bencode_list(const char* bencoded_list, uint32_t *length, const LOG_CODE log_code) {
     // Checking if the beginning is valid
     if (bencoded_list[0] == 'l') {
-        unsigned long start = 1;
+        uint64_t start = 1;
         ll* head;
         ll* current;
-        unsigned int element_num = 0;
+        uint32_t element_num = 0;
 
         // If the list isn't empty
         if (bencoded_list[1] != 'e') {
@@ -24,7 +24,7 @@ ll* decode_bencode_list(const char* bencoded_list, unsigned int* length, const L
 
         while (bencoded_list[start] != 'e') {
             char *endptr = (char*) bencoded_list+start;
-            const int element_length = (int)decode_bencode_int(bencoded_list+start, &endptr, log_code);
+            const int32_t element_length = (int32_t)decode_bencode_int(bencoded_list+start, &endptr, log_code);
             // endptr points to ":", start is moved to the character after it, which is where the data begins
             start = endptr-bencoded_list+1;
             // Copying data
@@ -35,7 +35,7 @@ ll* decode_bencode_list(const char* bencoded_list, unsigned int* length, const L
                 current = current->next;
                 current->next = nullptr;
             }
-            current->val = malloc(sizeof(char) * (element_length + 1));
+            current->val = malloc(element_length + 1);
             strncpy(current->val, bencoded_list+start, element_length);
             current->val[element_length] = '\0';
             element_num++;
@@ -62,7 +62,7 @@ char* decode_bencode_string(const char* bencoded_value, const LOG_CODE log_code)
     // Byte strings
     if (is_digit(bencoded_value[0])) {
         char *endptr;
-        const int length = (int)strtol(bencoded_value, &endptr, 10);
+        const int32_t length = (int32_t)strtol(bencoded_value, &endptr, 10);
         if (endptr == bencoded_value) {
             if (log_code >= LOG_ERR) fprintf(stderr, "No valid number found\n");
             exit(1);
@@ -70,7 +70,7 @@ char* decode_bencode_string(const char* bencoded_value, const LOG_CODE log_code)
         const char* colon_index = strchr(bencoded_value, ':');
         if (colon_index != NULL) {
             const char* start = colon_index + 1;
-            char* decoded_str = malloc(sizeof(char)*length + 3);
+            char* decoded_str = malloc(length + 3);
             decoded_str[0] = '"';
             strncpy(decoded_str+1, start, length);
             decoded_str[length+1] = '"';
@@ -84,9 +84,9 @@ char* decode_bencode_string(const char* bencoded_value, const LOG_CODE log_code)
     exit(1);
 }
 
-unsigned long decode_bencode_int(const char *bencoded_value, char **endptr, const LOG_CODE log_code) {
+uint64_t decode_bencode_int(const char *bencoded_value, char **endptr, const LOG_CODE log_code) {
     if (is_digit(bencoded_value[0])) {
-        const unsigned long num = strtol(bencoded_value, endptr, 10);
+        const uint64_t num = strtol(bencoded_value, endptr, 10);
         if (endptr != nullptr && *endptr == bencoded_value) {
             if (log_code >= LOG_ERR) fprintf(stderr, "Invalid number\n");
             return 0;
