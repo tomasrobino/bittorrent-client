@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-announce_list_ll* decode_announce_list(const char* announce_list, unsigned long* index, const LOG_CODE log_code) {
+announce_list_ll* decode_announce_list(const char* announce_list, uint64_t *index, const LOG_CODE log_code) {
     if (announce_list[0] == 'l') {
         announce_list_ll* head;
         announce_list_ll* current;
@@ -16,16 +16,16 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
             current = head;
         } else return nullptr;
 
-        unsigned int element_num = 0;
-        unsigned long start = 1;
+        uint32_t element_num = 0;
+        uint64_t start = 1;
         while (announce_list[start] != 'e') {
             if (element_num > 0) {
                 current->next = malloc(sizeof(announce_list_ll));
                 current = current->next;
                 current->next = nullptr;
             }
-            unsigned int length = 0;
-            unsigned int* length_ptr = &length;
+            uint32_t length = 0;
+            uint32_t* length_ptr = &length;
             current->list = decode_bencode_list(announce_list+start, length_ptr, log_code);
             start+=length+1;
             element_num++;
@@ -36,15 +36,15 @@ announce_list_ll* decode_announce_list(const char* announce_list, unsigned long*
     return nullptr;
 }
 
-files_ll* read_info_files(const char* bencode, const bool multiple, unsigned long* index, const LOG_CODE log_code) {
+files_ll* read_info_files(const char* bencode, const bool multiple, uint64_t *index, const LOG_CODE log_code) {
     files_ll *head = malloc(sizeof(files_ll));
     head->path = nullptr;
     head->next = nullptr;
     head->file_ptr = nullptr;
     files_ll *current = head;
-    unsigned int start = 1;
-    unsigned int* start_ptr = &start;
-    unsigned int element_num = 0;
+    uint32_t start = 1;
+    uint32_t* start_ptr = &start;
+    uint32_t element_num = 0;
     int64_t acc = 0;
 
     while (bencode[start] != 'e') {
@@ -77,7 +77,7 @@ files_ll* read_info_files(const char* bencode, const bool multiple, unsigned lon
             if ( (parse_index = strstr(bencode+start, "name")) != nullptr) {
                 start = parse_index-bencode + 4;
                 char *endptr = nullptr;
-                const int amount = (int) decode_bencode_int(bencode+start, &endptr, log_code);
+                const int32_t amount = (int32_t) decode_bencode_int(bencode+start, &endptr, log_code);
                 current->path = malloc(sizeof(ll));
                 current->path->next = nullptr;
                 current->path->val = malloc(sizeof(char)*(amount+1));
