@@ -518,7 +518,24 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 } else {
                     peer->status = PEER_CLOSED;
                 }
-                continue;
+            }
+
+            // Send bitfield
+            if ( (peer->status == PEER_HANDSHAKE_SUCCESS || peer->status == PEER_BITFIELD_RECEIVED)  && epoll_events[i].events & EPOLLOUT) {
+                char *buffer = malloc(MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size);
+                uint32_t length = 1 + bitfield_byte_size;
+                length = htonl(length);
+                memcpy(buffer, &length, MESSAGE_LENGTH_SIZE);
+                buffer[MESSAGE_LENGTH_SIZE] = BITFIELD;
+                memcpy(buffer + 5, bitfield, MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size);
+                int64_t sent_bytes = 0;
+                while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size) {
+                    int64_t sent = send(peer->socket, buffer + sent_bytes,
+                                        MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size - sent_bytes, 0);
+                    if (sent > 0) sent_bytes += sent;
+                }
+
+                free(buffer);
             }
 
             /*
@@ -536,7 +553,6 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     peer->reception_pointer = 0;
                 }
                 if (log_code == LOG_FULL) fprintf(stdout, "Peer %d received length\n", peer->socket);
-                continue;
             }
 
             // Message id
@@ -551,7 +567,6 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     // If message ended, be ready to receive or send the next message
                     peer->reception_target = MESSAGE_LENGTH_SIZE;
                     peer->reception_pointer = 0;
-                    continue;
                 }
                 if (log_code == LOG_FULL) fprintf(stdout, "Peer %d received id of %d with length of %d\n", peer->socket,
                                                   message->id, message->length);
@@ -600,25 +615,6 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         break;
                     default: ;
                 }
-                continue;
-            }
-
-            // Send bitfield
-            if ( (peer->status == PEER_HANDSHAKE_SUCCESS || peer->status == PEER_BITFIELD_RECEIVED)  && epoll_events[i].events & EPOLLOUT) {
-                char *buffer = malloc(MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size);
-                uint32_t length = 1 + bitfield_byte_size;
-                length = htonl(length);
-                memcpy(buffer, &length, MESSAGE_LENGTH_SIZE);
-                buffer[MESSAGE_LENGTH_SIZE] = BITFIELD;
-                memcpy(buffer + 5, bitfield, MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size);
-                int64_t sent_bytes = 0;
-                while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size) {
-                    int64_t sent = send(peer->socket, buffer + sent_bytes,
-                                        MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size - sent_bytes, 0);
-                    if (sent > 0) sent_bytes += sent;
-                }
-
-                free(buffer);
             }
         }
     }
