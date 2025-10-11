@@ -136,10 +136,10 @@ void handle_bitfield(peer_t *peer, const unsigned char *payload, const unsigned 
 
 void handle_request(const peer_t* peer, unsigned char* payload, LOG_CODE log_code);
 
-void broadcast_have(const peer_t* peers, uint32_t peer_count, uint32_t piece_index, LOG_CODE log_code);
+void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piece_index, LOG_CODE log_code);
 
 void handle_piece(const peer_t *peer, unsigned char *payload, metainfo_t metainfo, unsigned char *client_bitfield,
-                  unsigned char *block_tracker, uint32_t blocks_per_piece, const peer_t *peers, uint32_t peer_count,
+                  unsigned char *block_tracker, uint32_t blocks_per_piece, const peer_t *peer_array, uint32_t peer_count,
                   uint64_t *left_ptr, LOG_CODE log_code);
 
 #endif //MESSAGES_H

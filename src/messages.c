@@ -160,12 +160,12 @@ void handle_request(const peer_t* peer, unsigned char* payload, const LOG_CODE l
     }
 }
 
-void broadcast_have(const peer_t* peers, const uint32_t peer_count, const uint32_t piece_index, const LOG_CODE log_code) {
+void broadcast_have(const peer_t* peer_array, const uint32_t peer_count, const uint32_t piece_index, const LOG_CODE log_code) {
     char* buffer = malloc(9);
     if (!buffer) return;
 
     for (int32_t j = 0; j < peer_count; ++j) {
-        if (peers[j].status >= PEER_HANDSHAKE_SUCCESS) {
+        if (peer_array[j].status >= PEER_HANDSHAKE_SUCCESS) {
             // The five is the size of the id + index
             uint32_t l = htonl(5);
             memcpy(buffer, &l, MESSAGE_LENGTH_SIZE);
@@ -175,12 +175,12 @@ void broadcast_have(const peer_t* peers, const uint32_t peer_count, const uint32
 
             int32_t sent_bytes = 0;
             while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE + 4) {
-                const int32_t res = (int32_t)send(peers[j].socket,
+                const int32_t res = (int32_t)send(peer_array[j].socket,
                                                   buffer + sent_bytes,
                                                   MESSAGE_LENGTH_AND_ID_SIZE + 4 - sent_bytes,
                                                   0);
                 if (res == -1) {
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending have in socket %d", peers[j].socket);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending have in socket %d", peer_array[j].socket);
                     break;
                 }
                 sent_bytes += res;
@@ -191,7 +191,7 @@ void broadcast_have(const peer_t* peers, const uint32_t peer_count, const uint32
 }
 
 void handle_piece(const peer_t *peer, unsigned char *payload, const metainfo_t metainfo, unsigned char *client_bitfield,
-                  unsigned char *block_tracker, const uint32_t blocks_per_piece, const peer_t *peers,
+                  unsigned char *block_tracker, const uint32_t blocks_per_piece, const peer_t *peer_array,
                   const uint32_t peer_count, uint64_t *left_ptr, const LOG_CODE log_code) {
     piece_t* piece = (piece_t*) payload;
     // Endianness
@@ -231,14 +231,14 @@ void handle_piece(const peer_t *peer, unsigned char *payload, const metainfo_t m
     // Update block tracker
     block_tracker[byte_index] |= (1u << bit_offset);
     // If all the blocks in a piece are downloaded, mark it in the bitfield and prepare
-    // to send "have" message to all peers
+    // to send "have" message to all peer_array
     if (piece_complete(block_tracker, piece->index, metainfo.info->piece_length, metainfo.info->length)) {
         const uint32_t p_byte_index = piece->index / 8;
         const uint32_t p_bit_offset = 7 - (piece->index % 8);
         client_bitfield[p_byte_index] |= (1u << p_bit_offset);
 
         closing_files(metainfo.info->files, client_bitfield, piece->index, metainfo.info->piece_length, (uint32_t)p_len);
-        broadcast_have(peers, peer_count, piece->index, log_code);
+        broadcast_have(peer_array, peer_count, piece->index, log_code);
     }
 
     if (left_ptr) *left_ptr -= this_block;
