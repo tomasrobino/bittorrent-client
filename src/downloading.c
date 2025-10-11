@@ -689,7 +689,8 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                                         char* buffer = malloc(9);
                                         for (int32_t j = 0; j < peer_amount; ++j) {
                                             if (peer_array[j].status >= PEER_HANDSHAKE_SUCCESS) {
-                                                uint32_t l = htonl(MESSAGE_LENGTH_AND_ID_SIZE);
+                                                // The five is the size of the id + index
+                                                uint32_t l = htonl(5);
                                                 memcpy(buffer, &l, MESSAGE_LENGTH_SIZE);
                                                 buffer[MESSAGE_LENGTH_SIZE] = MESSAGE_LENGTH_SIZE;
                                                 l = htonl(piece->index);
