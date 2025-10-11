@@ -73,7 +73,7 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
     return bytes_written;
 }
 
-int32_t process_block(const unsigned char *buffer, uint32_t piece_size, files_ll *files_metainfo,
+int32_t process_block(const unsigned char *buffer, const uint32_t piece_size, files_ll *files_metainfo,
                       const LOG_CODE log_code) {
     const unsigned char* block = buffer+8;
     int32_t piece_index = 0;
@@ -152,7 +152,7 @@ int32_t process_block(const unsigned char *buffer, uint32_t piece_size, files_ll
     return 0;
 }
 
-bool piece_complete(const unsigned char *block_tracker, uint32_t piece_index, uint32_t piece_size, const int64_t torrent_size) {
+bool piece_complete(const unsigned char *block_tracker, uint32_t piece_index, const uint32_t piece_size, const int64_t torrent_size) {
     uint32_t this_piece_size = piece_size;
     if ( ((int64_t)piece_index+1) * (int64_t)piece_size > torrent_size ) {
         this_piece_size = torrent_size - (int64_t)piece_index * (int64_t)piece_size;
@@ -173,7 +173,7 @@ bool piece_complete(const unsigned char *block_tracker, uint32_t piece_index, ui
     return true;
 }
 
-bool are_bits_set(const unsigned char *bitfield, uint32_t start, uint32_t end) {
+bool are_bits_set(const unsigned char *bitfield, const uint32_t start, const uint32_t end) {
     const uint32_t start_byte = start / 8;
     const uint32_t end_byte = end / 8;
     const uint32_t start_bit = start % 8;
@@ -206,8 +206,8 @@ bool are_bits_set(const unsigned char *bitfield, uint32_t start, uint32_t end) {
     return true;
 }
 
-void closing_files(const files_ll *files, const unsigned char *bitfield, uint32_t piece_index, uint32_t piece_size,
-                   const uint32_t this_piece_size) {
+void closing_files(const files_ll *files, const unsigned char *bitfield, const uint32_t piece_index,
+                   const uint32_t piece_size, const uint32_t this_piece_size) {
     const uint32_t byte_index = piece_index / 8;
     const uint32_t bit_offset = 7 - piece_index % 8;
     // Checking whether the passed piece is actually downloaded
@@ -249,7 +249,9 @@ void closing_files(const files_ll *files, const unsigned char *bitfield, uint32_
     }
 }
 
-announce_response_t* handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id, const uint64_t downloaded, const uint64_t left, const uint64_t uploaded, const uint32_t event, const uint32_t key, const LOG_CODE log_code) {
+announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id,
+                                            const uint64_t downloaded, const uint64_t left, const uint64_t uploaded,
+                                            const uint32_t event, const uint32_t key, const LOG_CODE log_code) {
     // For storing socket that successfully connected
     int32_t successful_index = 0;
     int32_t* successful_index_pt = &successful_index;
@@ -320,7 +322,7 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
 }
 
 void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char *client_bitfield,
-                 uint32_t bitfield_byte_size, LOG_CODE log_code) {
+                 const uint32_t bitfield_byte_size, const LOG_CODE log_code) {
     // If the peer sends a HAVE without previously having sent a BITFIELD, create it
     if (peer->bitfield == nullptr) {
         peer->bitfield = malloc(bitfield_byte_size);
@@ -341,7 +343,8 @@ void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char
     }
 }
 
-void handle_bitfield(peer_t* peer, const unsigned char* payload, const unsigned char* client_bitfield, uint32_t bitfield_byte_size, LOG_CODE log_code) {
+void handle_bitfield(peer_t *peer, const unsigned char *payload, const unsigned char *client_bitfield,
+                     const uint32_t bitfield_byte_size, const LOG_CODE log_code) {
     peer->status = PEER_BITFIELD_RECEIVED;
     peer->bitfield = malloc(bitfield_byte_size);
     if (payload != nullptr) {
@@ -361,7 +364,7 @@ void handle_bitfield(peer_t* peer, const unsigned char* payload, const unsigned 
     }
 }
 
-void handle_request(const peer_t* peer, unsigned char* payload, LOG_CODE log_code) {
+void handle_request(const peer_t* peer, unsigned char* payload, const LOG_CODE log_code) {
     if (peer->am_choking) return;
 
     request_t* request = (request_t*) payload;
