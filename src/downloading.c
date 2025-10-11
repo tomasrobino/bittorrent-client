@@ -319,7 +319,7 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
 }
 
 void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char *client_bitfield,
-                 uint32_t bitfield_byte_size, int fd, LOG_CODE log_code) {
+                 uint32_t bitfield_byte_size, LOG_CODE log_code) {
     // If the peer sends a HAVE without previously having sent a BITFIELD, create it
     if (peer->bitfield == nullptr) {
         peer->bitfield = malloc(bitfield_byte_size);
@@ -329,7 +329,7 @@ void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char
     uint32_t p_num = 0;
     memcpy(&p_num, payload, 4);
     p_num = ntohl(p_num);
-    if (log_code == LOG_FULL) fprintf(stdout, "Received HAVE for piece %u in socket %d\n", p_num, fd);
+    if (log_code == LOG_FULL) fprintf(stdout, "Received HAVE for piece %u in socket %d\n", p_num, peer->socket);
     // Adding the new piece to the peer's bitfield
     const uint32_t byte_index = p_num / 8;
     const uint32_t bit_offset = 7 - (p_num % 8);
@@ -340,15 +340,15 @@ void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char
     }
 }
 
-void handle_bitfield(peer_t* peer, const unsigned char* payload, const unsigned char* client_bitfield, uint32_t bitfield_byte_size, int fd, LOG_CODE log_code) {
+void handle_bitfield(peer_t* peer, const unsigned char* payload, const unsigned char* client_bitfield, uint32_t bitfield_byte_size, LOG_CODE log_code) {
     peer->status = PEER_BITFIELD_RECEIVED;
     peer->bitfield = malloc(bitfield_byte_size);
     if (payload != nullptr) {
         memcpy(peer->bitfield, payload, bitfield_byte_size);
-        if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", fd);
+        if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", peer->socket);
     } else {
         memset(peer->bitfield, 0, bitfield_byte_size);
-        if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", fd);
+        if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", peer->socket);
         int32_t j = 0;
         // Checking whether peer has any piece of interest
         while (!peer->am_interested && j < (int32_t)bitfield_byte_size) {
@@ -438,7 +438,6 @@ void handle_piece(const peer_t* peer,
                                 const uint32_t blocks_per_piece,
                                 const peer_t* peers, const uint32_t peer_count,
                                 uint64_t* left_ptr,
-                                const int fd,
                                 const LOG_CODE log_code) {
     piece_t* piece = (piece_t*) payload;
     // Endianness
@@ -449,7 +448,7 @@ void handle_piece(const peer_t* peer,
     uint32_t bit_offset = 7 - (piece->index % 8);
     // If this client doesn't have the piece received
     if ((client_bitfield[byte_index] & (1u << bit_offset)) != 0) {
-        if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", fd);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", peer->socket);
         return;
     }
     // If this client doesn't have the block received
@@ -457,7 +456,7 @@ void handle_piece(const peer_t* peer,
     byte_index = global_block_index / 8;
     bit_offset = 7 - (global_block_index % 8);
     if ((block_tracker[byte_index] & (1u << bit_offset)) != 0) {
-        if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", peer->socket, piece->index);
         return;
     }
     // If last piece, it's smaller
@@ -753,19 +752,17 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         peer->peer_interested = false;
                         break;
                     case HAVE:
-                        handle_have(peer, message->payload, bitfield, bitfield_byte_size, peer->socket, log_code);
+                        handle_have(peer, message->payload, bitfield, bitfield_byte_size, log_code);
                         break;
                     case BITFIELD:
-                        handle_bitfield(peer, message->payload, bitfield, bitfield_byte_size, peer->socket, log_code);
+                        handle_bitfield(peer, message->payload, bitfield, bitfield_byte_size, log_code);
                         break;
                     case REQUEST:
                         handle_request(peer, message->payload, log_code);
                         break;
                     case PIECE:
-                        handle_piece(peer, message->payload,
-                                     metainfo, bitfield, block_tracker,
-                                     blocks_per_piece, peer_array, peer_amount,
-                                     &left, peer->socket, log_code);
+                        handle_piece(peer, message->payload, metainfo, bitfield, block_tracker, blocks_per_piece,
+                                     peer_array, peer_amount, &left, log_code);
                         break;
                     case CANCEL:
                     case PORT:
