@@ -114,7 +114,7 @@ char* url_to_ip(address_t* address, const LOG_CODE log_code) {
     return ip;
 }
 
-int32_t *try_request_udp(int32_t amount, const int32_t sockfd[], const void *req[], const size_t req_size, const struct sockaddr *server_addr[], const LOG_CODE log_code) {
+int32_t *try_request_udp(const int32_t amount, int32_t sockfd[], const void *req[], const size_t req_size, const struct sockaddr *server_addr[], const LOG_CODE log_code) {
     struct pollfd pfd[amount];
     memset(pfd, 0, amount*sizeof(struct pollfd));
     for (int i = 0; i < amount; ++i) {
@@ -165,7 +165,7 @@ int32_t *try_request_udp(int32_t amount, const int32_t sockfd[], const void *req
     return nullptr;
 }
 
-uint64_t connect_request_udp(const struct sockaddr *server_addr[], const int32_t sockfd[], int32_t amount, int32_t *successful_index, const LOG_CODE log_code) {
+uint64_t connect_request_udp(const struct sockaddr *server_addr[], int32_t sockfd[], const int32_t amount, int32_t *successful_index, const LOG_CODE log_code) {
     connect_request_t* req_array[amount];
     for (int i = 0; i < amount; ++i) {
         req_array[i] = malloc(sizeof(connect_request_t));
@@ -350,7 +350,7 @@ uint64_t connect_udp(int32_t amount, announce_list_ll* current, int32_t *success
     return 0;
 }
 
-announce_response_t *announce_request_udp(const struct sockaddr *server_addr, const int sockfd,
+announce_response_t *announce_request_udp(const struct sockaddr *server_addr, int32_t sockfd,
                                           const uint64_t connection_id, const unsigned char info_hash[],
                                           const unsigned char peer_id[], const uint64_t downloaded, const uint64_t left,
                                           const uint64_t uploaded, const uint32_t event, const uint32_t key,
