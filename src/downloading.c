@@ -152,7 +152,7 @@ int32_t process_block(const unsigned char *buffer, const uint32_t piece_size, fi
     return 0;
 }
 
-bool piece_complete(const unsigned char *block_tracker, uint32_t piece_index, const uint32_t piece_size, const int64_t torrent_size) {
+bool piece_complete(const unsigned char *block_tracker, const uint32_t piece_index, const uint32_t piece_size, const int64_t torrent_size) {
     uint32_t this_piece_size = piece_size;
     if ( ((int64_t)piece_index+1) * (int64_t)piece_size > torrent_size ) {
         this_piece_size = torrent_size - (int64_t)piece_index * (int64_t)piece_size;
