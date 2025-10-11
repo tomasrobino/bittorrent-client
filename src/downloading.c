@@ -599,11 +599,11 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         break;
                     case BITFIELD:
                         peer->status = PEER_BITFIELD_RECEIVED;
-                        peer->bitfield = message->payload;
+                        peer->bitfield = malloc(bitfield_byte_size);
                         if (message->payload != nullptr) {
+                            memcpy(peer->bitfield, message->payload, bitfield_byte_size);
                             if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", fd);
                         } else {
-                            peer->bitfield = malloc(bitfield_byte_size);
                             memset(peer->bitfield, 0, bitfield_byte_size);
                             if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", fd);
                             int32_t j = 0;
