@@ -62,6 +62,7 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
     return_charpath[filepath_size] = '\0';
     return return_charpath;
 }
+
 int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* file, const LOG_CODE log_code) {
     const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
     if (bytes_written != amount) {
@@ -205,8 +206,8 @@ bool are_bits_set(const unsigned char *bitfield, uint32_t start, uint32_t end) {
     return true;
 }
 
-void closing_files(const files_ll* files, const unsigned char* bitfield, uint32_t piece_index, uint32_t piece_size, uint32_t
-                   this_piece_size) {
+void closing_files(const files_ll *files, const unsigned char *bitfield, uint32_t piece_index, uint32_t piece_size,
+                   const uint32_t this_piece_size) {
     const uint32_t byte_index = piece_index / 8;
     const uint32_t bit_offset = 7 - piece_index % 8;
     // Checking whether the passed piece is actually downloaded
@@ -430,15 +431,9 @@ void broadcast_have(const peer_t* peers, const uint32_t peer_count, const uint32
     free(buffer);
 }
 
-void handle_piece(const peer_t* peer,
-                                unsigned char* payload,
-                                const metainfo_t metainfo,
-                                unsigned char* client_bitfield,
-                                unsigned char* block_tracker,
-                                const uint32_t blocks_per_piece,
-                                const peer_t* peers, const uint32_t peer_count,
-                                uint64_t* left_ptr,
-                                const LOG_CODE log_code) {
+void handle_piece(const peer_t *peer, unsigned char *payload, const metainfo_t metainfo, unsigned char *client_bitfield,
+                  unsigned char *block_tracker, const uint32_t blocks_per_piece, const peer_t *peers,
+                  const uint32_t peer_count, uint64_t *left_ptr, const LOG_CODE log_code) {
     piece_t* piece = (piece_t*) payload;
     // Endianness
     piece->begin = ntohl(piece->begin);
