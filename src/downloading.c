@@ -632,7 +632,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                                 char* buffer = malloc(buffer_size);
                                 uint32_t l = ntohl(9+request->length);
                                 memcpy(buffer, &l, 4);
-                                buffer[4] = 7;
+                                buffer[4] = 7; // PIECE id
                                 l = ntohl(request->index);
                                 memcpy(buffer+5, &l, 4);
                                 l = ntohl(request->begin);
@@ -644,7 +644,9 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                                     int32_t sent = (int32_t)send(peer->socket, buffer+sent_bytes, buffer_size-sent_bytes, 0);
                                     if (sent < 0) {
                                         if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending piece in socket %d", peer->socket);
-                                    } else sent_bytes += sent;
+                                        break;
+                                    }
+                                    sent_bytes += sent;
                                 }
 
                                 free(buffer);
