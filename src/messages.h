@@ -126,18 +126,107 @@ bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer
  */
 unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, uint32_t size);
 
+/**
+ * @brief Reads the length of a bittorrent message from the given buffer and updates the peer's last activity timestamp.
+ *
+ * This function reads the `length` field from the provided buffer and interprets it in network byte order. It updates
+ * the `peer_timestamp` to the current system time. If the message length is `0`, which signifies a keep-alive message,
+ * the function cleans up allocated memory for the message and returns `false`. For other messages, the function
+ * returns `true`, indicating further processing is required.
+ *
+ * Preconditions:
+ * - The `buffer` must point to a valid memory location containing at least the `length` of a bittorrent message.
+ * - The `peer_timestamp` pointer must not be null.
+ *
+ * Parameters:
+ * @param buffer           A pointer to an array of `unsigned char` storing the raw message data.
+ * @param peer_timestamp   A pointer to a `time_t` variable to record the peer's last activity timestamp.
+ *
+ * Return:
+ * @return `true` if a non keep-alive message was read successfully, or `false` if a keep-alive message was detected.
+ */
 bool read_message_length(const unsigned char buffer[], time_t* peer_timestamp);
 
+/**
+ * @brief Handles the "HAVE" message from a peer in the BitTorrent protocol.
+ *
+ * The HAVE message indicates that the peer has successfully downloaded a specific piece.
+ * This function updates the peer's bitfield to reflect the announced piece and checks
+ * whether the client is interested in this piece. If the client has not yet downloaded
+ * the piece, the `am_interested` flag for the peer is set to true.
+ *
+ * If the peer sends a HAVE message without first sending a BITFIELD message, a bitfield
+ * will be allocated and initialized to track the peer's pieces.
+ *
+ * @param peer Pointer to the peer_t structure representing the connected peer.
+ * @param payload Pointer to the message's payload, which contains the piece index.
+ *        The piece index is represented as a 4-byte integer in network byte order.
+ * @param client_bitfield Pointer to the client's bitfield, which represents the pieces
+ *        the client has already downloaded.
+ * @param bitfield_byte_size The size of the bitfield in bytes, used to correctly allocate
+ *        memory for the peer's bitfield if necessary.
+ * @param log_code Logging level used to determine whether to output verbose log messages.
+ *        The log levels are defined as LOG_NO, LOG_ERR, LOG_SUMM, and LOG_FULL.
+ */
 void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char *client_bitfield,
                  uint32_t bitfield_byte_size, LOG_CODE log_code);
 
+/**
+ * @brief Processes the BITFIELD message received from a peer.
+ *
+ * This function handles the BITFIELD message containing information about
+ * which pieces the peer has. It updates the peer's bitfield and status
+ * accordingly. If the payload is null, it initializes the peer's bitfield
+ * to zero. Additionally, it checks if the peer has any pieces that
+ * the client is missing, setting the status `am_interested` if necessary.
+ * Logging is done based on the provided log code.
+ *
+ * @param peer A pointer to the peer_t structure representing the peer that sent the BITFIELD.
+ * @param payload A pointer to the received BITFIELD payload from the peer.
+ *                 This contains the pieces the peer currently has.
+ * @param client_bitfield The bitfield of the client, representing the pieces it already has.
+ * @param bitfield_byte_size The size of the bitfield in bytes.
+ * @param log_code The log code enum (LOG_CODE) indicating the level of logging to perform.
+ */
 void handle_bitfield(peer_t *peer, const unsigned char *payload, const unsigned char *client_bitfield,
                      uint32_t bitfield_byte_size, LOG_CODE log_code);
 
+/**
+ * Handles an incoming request message from a peer. The request asks for a specific block of data
+ * and, if the requested block is available, this function sends it back to the requesting peer.
+ *
+ * @param peer The peer sending the request, represented by its connection and status information.
+ * @param payload The payload of the request message, containing details of the piece index, offset, and length.
+ * @param log_code The logging level to determine the verbosity of log messages.
+ */
 void handle_request(const peer_t* peer, unsigned char* payload, LOG_CODE log_code);
 
+/**
+ * Broadcasts a "HAVE" message to all connected peers to indicate possession of a specific piece.
+ *
+ * @param peer_array An array of peers representing the current peer connections.
+ * @param peer_count The total number of peers in the peer array.
+ * @param piece_index The index of the piece that has been acquired.
+ * @param log_code The level of logging to perform during the broadcast operation.
+ */
 void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piece_index, LOG_CODE log_code);
 
+/**
+ * Processes a received 'piece' message from a peer, updates internal state
+ * such as the bitfield and block tracker, and manages the overall progress
+ * of file downloading.
+ *
+ * @param peer The peer from which the 'piece' message was received.
+ * @param payload The raw payload of the received 'piece' message to be processed.
+ * @param metainfo The torrent metadata including piece and file details.
+ * @param client_bitfield The bitfield indicating which pieces are already downloaded by the client.
+ * @param block_tracker Tracker indicating the state of downloaded blocks for all pieces.
+ * @param blocks_per_piece The number of blocks in a single piece.
+ * @param peer_array Array of peer structures representing all connected peers.
+ * @param peer_count The count of currently connected peers.
+ * @param left_ptr Pointer to the remaining byte count to be downloaded. Modified when a block is fully processed.
+ * @param log_code Indicates the logging level for messages and errors.
+ */
 void handle_piece(const peer_t *peer, unsigned char *payload, metainfo_t metainfo, unsigned char *client_bitfield,
                   unsigned char *block_tracker, uint32_t blocks_per_piece, const peer_t *peer_array, uint32_t peer_count,
                   uint64_t *left_ptr, LOG_CODE log_code);
