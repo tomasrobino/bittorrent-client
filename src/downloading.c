@@ -500,7 +500,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     /*
         This only supports IPv4 for now
     */
-    peer_ll* current_peer = announce_response->peer_list;
+    peer_ll *current_peer = announce_response->peer_list;
     // Getting amount of peers
     uint32_t peer_amount = 0;
     while (current_peer != nullptr) {
@@ -509,8 +509,8 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     }
     current_peer = announce_response->peer_list;
 
-    int32_t* peer_socket_array = malloc(sizeof(int32_t) * peer_amount);
-    struct sockaddr_in* peer_addr_array = malloc(sizeof(struct sockaddr_in) * peer_amount);
+    int32_t *peer_socket_array = malloc(sizeof(int32_t) * peer_amount);
+    struct sockaddr_in *peer_addr_array = malloc(sizeof(struct sockaddr_in) * peer_amount);
     memset(peer_addr_array, 0, sizeof(struct sockaddr_in) * peer_amount);
     int32_t counter2 = 0;
     // Creating epoll for controlling sockets
@@ -522,7 +522,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
             if (log_code >= LOG_ERR) fprintf(stderr, "TCP socket creation failed");
             exit(1);
         }
-        struct sockaddr_in* peer_addr = &peer_addr_array[counter2];
+        struct sockaddr_in *peer_addr = &peer_addr_array[counter2];
         peer_addr->sin_family = AF_INET;
         peer_addr->sin_port = htons(current_peer->port);
 
@@ -553,26 +553,26 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     // Checking connections with epoll
     struct epoll_event epoll_events[MAX_EVENTS];
     // General bitfield. Each piece takes up 1 bit
-    const uint32_t bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
-    unsigned char* bitfield = malloc(bitfield_byte_size);
+    const uint32_t bitfield_byte_size = ceil(metainfo.info->piece_number / 8.0);
+    unsigned char *bitfield = malloc(bitfield_byte_size);
     if (!bitfield) return -1;
     memset(bitfield, 0, bitfield_byte_size);
     // Size in bytes of the block tracker
     uint32_t block_tracker_bytesize = ceil(
         ceil(
-            metainfo.info->piece_number*metainfo.info->piece_length / (double)BLOCK_SIZE
+            metainfo.info->piece_number * metainfo.info->piece_length / (double) BLOCK_SIZE
         ) / 8.0
     );
     // Actual amount of blocks per piece (not bytes)
-    uint32_t blocks_per_piece = ceil(metainfo.info->piece_length / (double)BLOCK_SIZE);
+    uint32_t blocks_per_piece = ceil(metainfo.info->piece_length / (double) BLOCK_SIZE);
     // Downloaded index for each block in a piece
-    unsigned char* block_tracker = malloc(block_tracker_bytesize);
+    unsigned char *block_tracker = malloc(block_tracker_bytesize);
     if (!block_tracker) return -1;
     memset(block_tracker, 0, block_tracker_bytesize);
     // Peer struct
-    peer_t* peer_array = malloc(sizeof(peer_t)*peer_amount);
+    peer_t *peer_array = malloc(sizeof(peer_t) * peer_amount);
     if (!peer_array) return -1;
-    memset(peer_array, 0, sizeof(peer_t)*peer_amount);
+    memset(peer_array, 0, sizeof(peer_t) * peer_amount);
     for (int32_t i = 0; i < peer_amount; ++i) {
         peer_array[i].socket = peer_socket_array[i];
         // This could really be skipped. Here just in case
@@ -606,21 +606,20 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
 
         for (int32_t i = 0; i < nfds; ++i) {
             const int32_t index = (int32_t) epoll_events[i].data.u32;
-            const int32_t fd = peer_socket_array[index];
-            peer_t* peer = &peer_array[index];
+            peer_t *peer = &peer_array[index];
 
             // Fatal error in socket
             if (epoll_events[i].events == EPOLLERR) {
                 int32_t err = 0;
                 socklen_t len = sizeof(err);
-                if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Getsockopt error %d in socket %d\n", errno, fd);
+                if (getsockopt(peer->socket, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Getsockopt error %d in socket %d\n", errno, peer->socket);
                 } else if (err != 0) {
                     errno = err;
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Socket error %d in socket %d\n", errno, fd);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Socket error %d in socket %d\n", errno, peer->socket);
                 }
                 peer->status = PEER_CLOSED;
-                close(fd);
+                close(peer->socket);
                 continue;
             }
 
@@ -633,25 +632,25 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     int32_t err = 0;
                     socklen_t len = sizeof(err);
                     // Check whether connect() was successful
-                    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
-                        if (log_code >= LOG_ERR) fprintf(stderr, "Error in getspckopt() in socket %d\n", fd);
+                    if (getsockopt(peer->socket, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
+                        if (log_code >= LOG_ERR) fprintf(stderr, "Error in getspckopt() in socket %d\n", peer->socket);
                     } else if (err != 0) {
-                        if (log_code >= LOG_ERR) fprintf(stderr, "Connection failed in socket %d\n", fd);
+                        if (log_code >= LOG_ERR) fprintf(stderr, "Connection failed in socket %d\n", peer->socket);
                     } else {
-                        if (log_code == LOG_FULL) fprintf(stdout, "Connection successful in socket %d\n", fd);
+                        if (log_code == LOG_FULL) fprintf(stdout, "Connection successful in socket %d\n", peer->socket);
                         peer->status = PEER_CONNECTION_SUCCESS;
                     }
                 } else {
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n", fd);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Connection in socket %d failed, EPOLLERR or EPOLLHUP\n",
+                                                     peer->socket);
                 }
             }
             // Retry connection if connect() failed
             if (peer->status == PEER_CONNECTION_FAILURE) {
-                if (try_connect(fd, &peer_addr_array[index], log_code)) {
+                if (try_connect(peer->socket, &peer_addr_array[index], log_code)) {
                     if (errno != EINPROGRESS) {
                         peer->status = PEER_CLOSED;
                     } else peer->status = PEER_NOTHING;
-
                 }
                 continue;
             }
@@ -661,17 +660,18 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
 
             // Send handshake
             if (peer->status == PEER_CONNECTION_SUCCESS && epoll_events[i].events & EPOLLOUT) {
-                const int32_t result = send_handshake(fd, metainfo.info->hash, peer_id, log_code);
+                const int32_t result = send_handshake(peer->socket, metainfo.info->hash, peer_id, log_code);
                 peer->last_msg = time(nullptr);
                 if (result > 0) {
                     peer->status = PEER_HANDSHAKE_SENT;
-                    if (log_code == LOG_FULL) fprintf(stdout, "Handshake sent through socket %d\n", fd);
+                    if (log_code == LOG_FULL) fprintf(stdout, "Handshake sent through socket %d\n", peer->socket);
                     peer->reception_pointer = 0;
                     peer->reception_target = HANDSHAKE_LEN;
                 } else {
                     peer->status = PEER_CLOSED;
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n", fd);
-                    close(fd);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n",
+                                                     peer->socket);
+                    close(peer->socket);
                 }
                 continue;
             }
@@ -681,10 +681,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 if (result) {
                     peer->status = PEER_HANDSHAKE_SUCCESS;
                     peer->id = malloc(20);
-                    memcpy(peer->id, peer->reception_cache+48, 20);
+                    memcpy(peer->id, peer->reception_cache + 48, 20);
                     peer->reception_pointer = 0;
                     peer->reception_target = MESSAGE_LENGTH_SIZE;
-                    if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", fd);
+                    if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", peer->socket);
                 } else {
                     peer->status = PEER_CLOSED;
                 }
@@ -711,7 +711,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
 
             // Message id
             if (peer->status >= PEER_AWAITING_ID && peer->reception_target == peer->reception_pointer && peer->reception_target == MESSAGE_LENGTH_AND_ID_SIZE) {
-                bittorrent_message_t* message = (bittorrent_message_t*) peer->reception_cache;
+                bittorrent_message_t *message = (bittorrent_message_t *) peer->reception_cache;
                 if (message->length > 1) {
                     // message has payload
                     peer->reception_target += (int32_t) message->length - 1;
@@ -723,19 +723,20 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     peer->reception_pointer = 0;
                     continue;
                 }
-                if (log_code == LOG_FULL) fprintf(stdout, "Peer %d received id of %d with length of %d\n", peer->socket, message->id, message->length);
+                if (log_code == LOG_FULL) fprintf(stdout, "Peer %d received id of %d with length of %d\n", peer->socket,
+                                                  message->id, message->length);
             }
 
             // Message payload (if exists)
             if (peer->status >= PEER_AWAITING_PAYLOAD && peer->reception_target == peer->reception_pointer) {
                 peer->reception_target = 0;
                 peer->reception_pointer = 0;
-                bittorrent_message_t* message = (bittorrent_message_t*)peer->reception_cache;
-                message->payload = peer->reception_cache+5;
+                bittorrent_message_t *message = (bittorrent_message_t *) peer->reception_cache;
+                message->payload = peer->reception_cache + 5;
                 if (log_code == LOG_FULL) fprintf(stdout, "Peer %d received payload:\n", peer->socket);
-                message->payload = peer->reception_cache+MESSAGE_LENGTH_AND_ID_SIZE;
-                for (int k = 0; k < message->length-1; ++k) {
-                    fprintf(stdout, "%d|",message->payload[k]);
+                message->payload = peer->reception_cache + MESSAGE_LENGTH_AND_ID_SIZE;
+                for (int k = 0; k < message->length - 1; ++k) {
+                    fprintf(stdout, "%d|", message->payload[k]);
                 }
 
                 switch (message->id) {
@@ -752,10 +753,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         peer->peer_interested = false;
                         break;
                     case HAVE:
-                        handle_have(peer, message->payload, bitfield, bitfield_byte_size, fd, log_code);
+                        handle_have(peer, message->payload, bitfield, bitfield_byte_size, peer->socket, log_code);
                         break;
                     case BITFIELD:
-                        handle_bitfield(peer, message->payload, bitfield, bitfield_byte_size, fd, log_code);
+                        handle_bitfield(peer, message->payload, bitfield, bitfield_byte_size, peer->socket, log_code);
                         break;
                     case REQUEST:
                         handle_request(peer, message->payload, log_code);
@@ -764,7 +765,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         handle_piece(peer, message->payload,
                                      metainfo, bitfield, block_tracker,
                                      blocks_per_piece, peer_array, peer_amount,
-                                     &left, fd, log_code);
+                                     &left, peer->socket, log_code);
                         break;
                     case CANCEL:
                     case PORT:
@@ -776,21 +777,21 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
 
             // Send bitfield
             if ( (peer->status == PEER_HANDSHAKE_SUCCESS || peer->status == PEER_BITFIELD_RECEIVED)  && epoll_events[i].events & EPOLLOUT) {
-                char* buffer = malloc(MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size);
+                char *buffer = malloc(MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size);
                 uint32_t length = 1 + bitfield_byte_size;
                 length = htonl(length);
                 memcpy(buffer, &length, MESSAGE_LENGTH_SIZE);
                 buffer[MESSAGE_LENGTH_SIZE] = BITFIELD;
-                memcpy(buffer+5, bitfield, MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size);
+                memcpy(buffer + 5, bitfield, MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size);
                 int64_t sent_bytes = 0;
-                while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size) {
-                    int64_t sent = send(fd, buffer+sent_bytes, MESSAGE_LENGTH_AND_ID_SIZE+bitfield_byte_size-sent_bytes, 0);
-                    if (sent > 0) sent_bytes+=sent;
+                while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size) {
+                    int64_t sent = send(peer->socket, buffer + sent_bytes,
+                                        MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size - sent_bytes, 0);
+                    if (sent > 0) sent_bytes += sent;
                 }
 
                 free(buffer);
             }
-
         }
     }
 
@@ -808,7 +809,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     free(peer_addr_array);
     // Freeing announce response
     while (announce_response->peer_list != nullptr) {
-        peer_ll* aux = announce_response->peer_list->next;
+        peer_ll *aux = announce_response->peer_list->next;
         free(announce_response->peer_list->ip);
         free(announce_response->peer_list);
         announce_response->peer_list = aux;
