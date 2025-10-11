@@ -317,7 +317,6 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
     errno = 0;
     return true;
 }
-// Add helpers for message-case handling
 
 void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char *client_bitfield,
                  uint32_t bitfield_byte_size, int fd, LOG_CODE log_code) {
@@ -341,7 +340,7 @@ void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char
     }
 }
 
-void handle_bitfield(peer_t* peer, unsigned char* payload, const unsigned char* client_bitfield, uint32_t bitfield_byte_size, int fd, LOG_CODE log_code) {
+void handle_bitfield(peer_t* peer, const unsigned char* payload, const unsigned char* client_bitfield, uint32_t bitfield_byte_size, int fd, LOG_CODE log_code) {
     peer->status = PEER_BITFIELD_RECEIVED;
     peer->bitfield = malloc(bitfield_byte_size);
     if (payload != nullptr) {
@@ -361,7 +360,7 @@ void handle_bitfield(peer_t* peer, unsigned char* payload, const unsigned char* 
     }
 }
 
-void handle_request(peer_t* peer, unsigned char* payload, LOG_CODE log_code) {
+void handle_request(const peer_t* peer, unsigned char* payload, LOG_CODE log_code) {
     if (peer->am_choking) return;
 
     request_t* request = (request_t*) payload;
@@ -401,7 +400,7 @@ void handle_request(peer_t* peer, unsigned char* payload, LOG_CODE log_code) {
     }
 }
 
-void broadcast_have(peer_t* peers, int32_t peer_count, uint32_t piece_index, LOG_CODE log_code) {
+void broadcast_have(const peer_t* peers, const uint32_t peer_count, const uint32_t piece_index, const LOG_CODE log_code) {
     char* buffer = malloc(9);
     if (!buffer) return;
 
@@ -431,16 +430,16 @@ void broadcast_have(peer_t* peers, int32_t peer_count, uint32_t piece_index, LOG
     free(buffer);
 }
 
-void handle_piece(peer_t* peer,
+void handle_piece(const peer_t* peer,
                                 unsigned char* payload,
                                 const metainfo_t metainfo,
                                 unsigned char* client_bitfield,
                                 unsigned char* block_tracker,
-                                uint32_t blocks_per_piece,
-                                peer_t* peers, int32_t peer_count,
+                                const uint32_t blocks_per_piece,
+                                const peer_t* peers, const uint32_t peer_count,
                                 uint64_t* left_ptr,
-                                int fd,
-                                LOG_CODE log_code) {
+                                const int fd,
+                                const LOG_CODE log_code) {
     piece_t* piece = (piece_t*) payload;
     // Endianness
     piece->begin = ntohl(piece->begin);
@@ -556,6 +555,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     // General bitfield. Each piece takes up 1 bit
     const uint32_t bitfield_byte_size = ceil(metainfo.info->piece_number/8.0);
     unsigned char* bitfield = malloc(bitfield_byte_size);
+    if (!bitfield) return -1;
     memset(bitfield, 0, bitfield_byte_size);
     // Size in bytes of the block tracker
     uint32_t block_tracker_bytesize = ceil(
@@ -567,9 +567,11 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     uint32_t blocks_per_piece = ceil(metainfo.info->piece_length / (double)BLOCK_SIZE);
     // Downloaded index for each block in a piece
     unsigned char* block_tracker = malloc(block_tracker_bytesize);
+    if (!block_tracker) return -1;
     memset(block_tracker, 0, block_tracker_bytesize);
     // Peer struct
     peer_t* peer_array = malloc(sizeof(peer_t)*peer_amount);
+    if (!peer_array) return -1;
     memset(peer_array, 0, sizeof(peer_t)*peer_amount);
     for (int32_t i = 0; i < peer_amount; ++i) {
         peer_array[i].socket = peer_socket_array[i];
@@ -735,8 +737,6 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 for (int k = 0; k < message->length-1; ++k) {
                     fprintf(stdout, "%d|",message->payload[k]);
                 }
-                uint32_t byte_index = 0;
-                uint32_t bit_offset = 0;
 
                 switch (message->id) {
                     case CHOKE:
@@ -752,144 +752,19 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         peer->peer_interested = false;
                         break;
                     case HAVE:
-                        // If the peer sends a HAVE without previously having sent a BITFIELD
-                        if (peer->bitfield == nullptr) {
-                            peer->bitfield = malloc(bitfield_byte_size);
-                            memset(peer->bitfield, 0, bitfield_byte_size);
-                        }
-                        // Endianness
-                        uint32_t p_num;
-                        memcpy(&p_num, message->payload, 4);
-                        p_num = ntohl(p_num);
-                        if (log_code == LOG_FULL) fprintf(stdout, "Received HAVE for piece %d in socket %d\n", p_num, fd);
-                        // Adding the new piece to the peer's bitfield
-                        byte_index = p_num / 8;
-                        bit_offset = 7 - p_num % 8;
-                        peer->bitfield[byte_index] |= (1u << bit_offset);
-                        // Checking my interest for peer's newly-downloaded piece
-                        if ( (~bitfield[byte_index] & peer->bitfield[byte_index]) != 0 ) {
-                            peer->am_interested = true;
-                        }
+                        handle_have(peer, message->payload, bitfield, bitfield_byte_size, fd, log_code);
                         break;
                     case BITFIELD:
-                        peer->status = PEER_BITFIELD_RECEIVED;
-                        peer->bitfield = malloc(bitfield_byte_size);
-                        if (message->payload != nullptr) {
-                            memcpy(peer->bitfield, message->payload, bitfield_byte_size);
-                            if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", fd);
-                        } else {
-                            memset(peer->bitfield, 0, bitfield_byte_size);
-                            if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", fd);
-                            int32_t j = 0;
-                            // Checking whether peer has any piece of interest
-                            while (!peer->am_interested) {
-                                if ( (~bitfield[j] & peer->bitfield[j]) != 0) {
-                                    peer->am_interested = true;
-                                }
-                                j++;
-                            }
-                        }
+                        handle_bitfield(peer, message->payload, bitfield, bitfield_byte_size, fd, log_code);
                         break;
                     case REQUEST:
-                        if (peer->am_choking == false) {
-                            request_t* request = (request_t*) message->payload;
-                            // Endianness
-                            request->index = ntohl(request->index);
-                            request->begin = ntohl(request->begin);
-                            request->length = ntohl(request->length);
-                            byte_index = request->index / 8;
-                            bit_offset = 7 - request->index % 8;
-                            // If this client has the requested piece
-                            if (( peer->bitfield[byte_index] & (1u << bit_offset) ) != 0) {
-                                // Constructing message buffer
-                                uint32_t buffer_size = 5 + 8 + request->length;
-                                char* buffer = malloc(buffer_size);
-                                uint32_t l = ntohl(9+request->length);
-                                memcpy(buffer, &l, 4);
-                                buffer[4] = 7; // PIECE id
-                                l = ntohl(request->index);
-                                memcpy(buffer+5, &l, 4);
-                                l = ntohl(request->begin);
-                                memcpy(buffer+9, &l, 4);
-
-                                // Sending block
-                                int32_t sent_bytes = 0;
-                                while (sent_bytes < buffer_size) {
-                                    int32_t sent = (int32_t)send(peer->socket, buffer+sent_bytes, buffer_size-sent_bytes, 0);
-                                    if (sent < 0) {
-                                        if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending piece in socket %d", peer->socket);
-                                        break;
-                                    }
-                                    sent_bytes += sent;
-                                }
-
-                                free(buffer);
-                            }
-                        }
+                        handle_request(peer, message->payload, log_code);
                         break;
                     case PIECE:
-                        piece_t* piece = (piece_t*) message->payload;
-                        // Endianness
-                        piece->begin = ntohl(piece->begin);
-                        piece->index = ntohl(piece->index);
-                        byte_index = piece->index / 8;
-                        bit_offset = 7 - piece->index % 8;
-                        // If this client doesn't have the piece received
-                        if ((bitfield[byte_index] & (1u << bit_offset)) == 0) {
-                            // If this client doesn't have the block received
-                            uint32_t global_block_index = piece->index * blocks_per_piece + piece->begin;
-                            byte_index = global_block_index / 8;
-                            bit_offset = 7 - global_block_index % 8;
-                            if ( (block_tracker[byte_index] & (1u << bit_offset)) == 0) {
-                                // If last piece, it's smaller
-                                int64_t p_len;
-                                if (piece->index == metainfo.info->piece_number-1) {
-                                    // Conversion is fine beacuse single pieces aren't that large
-                                    p_len = metainfo.info->length - piece->index*metainfo.info->piece_length;
-                                } else p_len = metainfo.info->piece_length;
-                                /*
-                                 *
-                                 * ACTUAL DOWNLOAD
-                                 *
-                                 */
-                                int32_t block_result = process_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
-                                // Successful block download
-                                if (block_result == 0) {
-                                    int64_t this_block = calc_block_size(p_len, piece->begin);
-                                    // Update block tracker
-                                    block_tracker[byte_index] |= (1u << bit_offset);
-                                    // If all the blocks in a piece are downloaded, mark it in the bitfield and prepare
-                                    // to send "have" message to all peers
-                                    if (piece_complete(block_tracker, piece->index, metainfo.info->piece_length, metainfo.info->length)) {
-                                        byte_index = piece->index / 8;
-                                        bit_offset = 7 - piece->index % 8;
-                                        bitfield[byte_index] |= (1u << bit_offset);
-                                        closing_files(metainfo.info->files, bitfield, piece->index, metainfo.info->piece_length, p_len);
-                                        // Sending have message to all peers
-                                        char* buffer = malloc(9);
-                                        for (int32_t j = 0; j < peer_amount; ++j) {
-                                            if (peer_array[j].status >= PEER_HANDSHAKE_SUCCESS) {
-                                                // The five is the size of the id + index
-                                                uint32_t l = htonl(5);
-                                                memcpy(buffer, &l, MESSAGE_LENGTH_SIZE);
-                                                buffer[MESSAGE_LENGTH_SIZE] = MESSAGE_LENGTH_SIZE;
-                                                l = htonl(piece->index);
-                                                memcpy(buffer+MESSAGE_LENGTH_AND_ID_SIZE, &l, MESSAGE_LENGTH_SIZE);
-                                                int32_t sent_bytes = 0;
-                                                while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE+4) {
-                                                    int32_t res = (int32_t)send(peer_array[j].socket, buffer+sent_bytes, MESSAGE_LENGTH_AND_ID_SIZE+4-sent_bytes, 0);
-                                                    if (res == -1) {
-                                                        if (log_code >= LOG_ERR) fprintf(stderr, "Error while sending have in socket %d", peer_array[j].socket);
-                                                    } else sent_bytes += res;
-                                                }
-                                            }
-                                        }
-                                        free(buffer);
-                                    }
-                                    left -= this_block;
-                                }
-                            } else if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", fd, piece->index);
-                        } else if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", fd);
+                        handle_piece(peer, message->payload,
+                                     metainfo, bitfield, block_tracker,
+                                     blocks_per_piece, peer_array, peer_amount,
+                                     &left, fd, log_code);
                         break;
                     case CANCEL:
                     case PORT:
