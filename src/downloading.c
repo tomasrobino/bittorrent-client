@@ -557,10 +557,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 bittorrent_message_t* message = (bittorrent_message_t*)peer->reception_cache;
                 message->payload = peer->reception_cache+5;
                 if (log_code == LOG_FULL) fprintf(stdout, "Peer %d received payload:\n", peer->socket);
-                for (int k = 0; k < peer->reception_target-MESSAGE_LENGTH_AND_ID_SIZE; ++k) {
-                    fprintf(stdout, "%c",message->payload[k]);
-                }
                 message->payload = peer->reception_cache+MESSAGE_LENGTH_AND_ID_SIZE;
+                for (int k = 0; k < message->length-1; ++k) {
+                    fprintf(stdout, "%d|",message->payload[k]);
+                }
                 uint32_t byte_index = 0;
                 uint32_t bit_offset = 0;
 
