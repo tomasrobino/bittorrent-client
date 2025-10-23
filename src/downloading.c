@@ -574,12 +574,12 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
 
             // Message payload (if exists)
             if (peer->status >= PEER_AWAITING_PAYLOAD && peer->reception_target == peer->reception_pointer) {
-                peer->reception_target = 0;
-                peer->reception_pointer = 0;
                 bittorrent_message_t *message = (bittorrent_message_t *) peer->reception_cache;
                 message->payload = peer->reception_cache + 5;
                 message->payload = peer->reception_cache + MESSAGE_LENGTH_AND_ID_SIZE;
                 if (log_code == LOG_FULL) {
+                    fprintf(stdout, "length: %d ", message->length);
+                    fprintf(stdout, "id: %d ", message->id);
                     for (int k = 0; k < message->length - 1; ++k) {
                         fprintf(stdout, "%d|", message->payload[k]);
                     }
@@ -617,6 +617,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         break;
                     default: ;
                 }
+
+                peer->reception_target = 0;
+                peer->reception_pointer = 0;
+                memset(peer->reception_cache, 0, bitfield_byte_size);
             }
         }
     }
