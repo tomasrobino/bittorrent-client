@@ -102,24 +102,27 @@ void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char
 void handle_bitfield(peer_t *peer, const unsigned char *payload, const unsigned char *client_bitfield,
                      const uint32_t bitfield_byte_size, const LOG_CODE log_code) {
     peer->status = PEER_BITFIELD_RECEIVED;
+
     if (peer->bitfield == nullptr) {
         peer->bitfield = malloc(bitfield_byte_size);
     }
 
     if (payload != nullptr) {
-        memcpy(peer->bitfield, payload, bitfield_byte_size);
+        if (memcmp(peer->bitfield, client_bitfield, bitfield_byte_size) != 0) {
+            memcpy(peer->bitfield, payload, bitfield_byte_size);
+            int32_t j = 0;
+            // Checking whether peer has any piece of interest
+            while (!peer->am_interested && j < (int32_t)bitfield_byte_size) {
+                if ((~client_bitfield[j] & peer->bitfield[j]) != 0) {
+                    peer->am_interested = true;
+                }
+                j++;
+            }
+        }
         if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", peer->socket);
     } else {
         memset(peer->bitfield, 0, bitfield_byte_size);
         if (log_code == LOG_FULL) fprintf(stdout, "Error receiving BITFIELD for socket %d\n", peer->socket);
-        int32_t j = 0;
-        // Checking whether peer has any piece of interest
-        while (!peer->am_interested && j < (int32_t)bitfield_byte_size) {
-            if ((~client_bitfield[j] & peer->bitfield[j]) != 0) {
-                peer->am_interested = true;
-            }
-            j++;
-        }
     }
 }
 
