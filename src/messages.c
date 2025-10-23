@@ -102,7 +102,10 @@ void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char
 void handle_bitfield(peer_t *peer, const unsigned char *payload, const unsigned char *client_bitfield,
                      const uint32_t bitfield_byte_size, const LOG_CODE log_code) {
     peer->status = PEER_BITFIELD_RECEIVED;
-    peer->bitfield = malloc(bitfield_byte_size);
+    if (peer->bitfield == nullptr) {
+        peer->bitfield = malloc(bitfield_byte_size);
+    }
+
     if (payload != nullptr) {
         memcpy(peer->bitfield, payload, bitfield_byte_size);
         if (log_code == LOG_FULL) fprintf(stdout, "BITFIELD received successfully for socket %d\n", peer->socket);

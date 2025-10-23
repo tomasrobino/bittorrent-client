@@ -421,7 +421,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
      *
      *  MAIN PEER INTERACTION LOOP
      *
-    */
+     */
     while (left > 0) {
         const int32_t nfds = epoll_wait(epoll, epoll_events, MAX_EVENTS, EPOLL_TIMEOUT);
         if (nfds == -1) {
