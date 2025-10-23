@@ -69,7 +69,7 @@ int32_t main(const int32_t argc, char* argv[]) {
                 fread (buffer, 1, length, f);
             }
             fclose (f);
-        } else if (log_code >= LOG_ERR) fprintf(stderr, "Torrent file not found");
+        } else if (log_code >= LOG_ERR) fprintf(stderr, "Torrent file not found\n");
 
         if (buffer && length != 0) {
             errno = 0;
