@@ -22,7 +22,8 @@ int32_t main(const int32_t argc, char* argv[]) {
     // Disable output buffering
     setbuf(stdout, nullptr);
     setbuf(stderr, nullptr);
-    // Buffer variables for logging options
+    // Redirecting console output to output.log
+    freopen("output.log", "w+", stdout);
 
     if (argc < 3) {
         fprintf(stderr, "Usage: bittorrent-client.sh <command> <args>\n");
