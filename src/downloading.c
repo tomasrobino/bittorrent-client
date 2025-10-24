@@ -581,13 +581,13 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 if (log_code == LOG_FULL) {
                     fprintf(stdout, "length: %d ", message->length);
                     fprintf(stdout, "id: %d ", message->id);
+                    fprintf(stdout, "Peer %d received payload\n", peer->socket);
                     if (message->id == BITFIELD) {
                         for (int k = 0; k < message->length - 1; ++k) {
                             fprintf(stdout, "%d|", message->payload[k]);
                         }
                         fprintf(stdout, "\n");
                     }
-                    fprintf(stdout, "Peer %d received payload:\n", peer->socket);
                 }
 
                 switch (message->id) {
