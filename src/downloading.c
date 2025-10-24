@@ -518,6 +518,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 } else {
                     peer->status = PEER_CLOSED;
                 }
+                memset(peer->reception_cache, 0, MAX_TRANS_SIZE);
             }
 
             // Send bitfield
