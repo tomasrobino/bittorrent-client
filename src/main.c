@@ -23,7 +23,7 @@ int32_t main(const int32_t argc, char* argv[]) {
     setbuf(stdout, nullptr);
     setbuf(stderr, nullptr);
     // Redirecting console output to output.log
-    freopen("output.log", "w+", stdout);
+    //freopen("output.log", "w", stdout);
 
     if (argc < 3) {
         fprintf(stderr, "Usage: bittorrent-client.sh <command> <args>\n");

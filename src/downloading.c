@@ -580,12 +580,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 message->payload = peer->reception_cache + MESSAGE_LENGTH_AND_ID_SIZE;
                 if (log_code == LOG_FULL) {
                     fprintf(stdout, "Peer %d received payload\n", peer->socket);
-                    if (message->id == BITFIELD) {
-                        for (int k = 0; k < message->length - 1; ++k) {
-                            fprintf(stdout, "%d|", message->payload[k]);
-                        }
-                        fprintf(stdout, "\n");
+                    for (int k = 0; k < message->length - 1; ++k) {
+                        fprintf(stdout, "%d|", message->payload[k]);
                     }
+                    fprintf(stdout, "\n");
                 }
 
                 switch (message->id) {
@@ -620,9 +618,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     default: ;
                 }
 
-                peer->reception_target = 0;
+                peer->reception_target = 4;
                 peer->reception_pointer = 0;
                 memset(peer->reception_cache, 0, bitfield_byte_size);
+                peer->status = PEER_HANDSHAKE_SUCCESS;
             }
         }
     }
