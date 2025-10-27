@@ -618,7 +618,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     default: ;
                 }
 
-                peer->reception_target = 4;
+                peer->reception_target = MESSAGE_LENGTH_SIZE;
                 peer->reception_pointer = 0;
                 memset(peer->reception_cache, 0, bitfield_byte_size);
                 peer->status = PEER_HANDSHAKE_SUCCESS;
