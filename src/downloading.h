@@ -198,14 +198,14 @@ bool read_from_socket(peer_t* peer, LOG_CODE log_code);
  * socket, and initiate a connection. If a peer's connection is in progress, its socket is added to the
  * epoll instance for monitoring future events.
  *
- * @param peer_list Pointer to an array of peer_t pointers representing the list of peers to reconnect.
+ * @param peer_list Pointer to an array of peers to reconnect.
  * @param peer_amount The total number of peers in the peer list.
  * @param last_peer The current count of handled peers, used to assign unique identifiers to new connections.
  * @param log_code Controls the verbosity of error logging. Supported values are determined by the LOG_CODE enum.
  *                 For example, LOG_ERR will log errors during the connection process.
  * @return The updated value of last_peer, incremented for each successfully reset peer.
  */
-uint32_t reconnect(peer_t** peer_list, uint32_t peer_amount, uint32_t last_peer, LOG_CODE log_code);
+uint32_t reconnect(peer_t* peer_list, uint32_t peer_amount, uint32_t last_peer, LOG_CODE log_code);
 
 /**
  * @brief Downloads & uploads torrent

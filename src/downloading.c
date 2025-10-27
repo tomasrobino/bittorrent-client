@@ -323,9 +323,9 @@ bool read_from_socket(peer_t* peer,  const LOG_CODE log_code) {
     return true;
 }
 
-uint32_t reconnect(peer_t** peer_list, const uint32_t peer_amount, uint32_t last_peer,  const LOG_CODE log_code) {
+uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_peer,  const LOG_CODE log_code) {
     for (int i = 0; i < peer_amount; ++i) {
-        peer_t* peer = peer_list[i];
+        peer_t* peer = &peer_list[i];
         if (peer->status == PEER_CLOSED) {
             last_peer++;
             // Resetting peer
@@ -673,6 +673,14 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 peer->reception_pointer = 0;
                 memset(peer->reception_cache, 0, bitfield_byte_size);
                 peer->status = PEER_HANDSHAKE_SUCCESS;
+            }
+        }
+
+
+        for (int i = 0; i < peer_amount; ++i) {
+            if (peer_array[i].status == PEER_CLOSED && difftime(time(nullptr), peer_array[i].last_msg) >= 10) {
+                fprintf(stdout, "Attempting to reconnect socket #%d\n", peer_array[i].socket);
+                reconnect(peer_array, peer_amount, counter2, log_code);
             }
         }
     }
