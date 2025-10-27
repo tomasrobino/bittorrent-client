@@ -212,17 +212,23 @@ void handle_request(const peer_t* peer, unsigned char* payload, LOG_CODE log_cod
 void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piece_index, LOG_CODE log_code);
 
 /**
- * Processes a received 'piece' message from a peer, updates internal state
- * such as the bitfield and block tracker, and manages the overall progress
- * of file downloading.
+ * @brief Processes a received piece message from a peer and updates the client's download state.
  *
- * @param peer The peer from which the 'piece' message was received.
- * @param piece The raw payload of the received 'piece' message to be processed.
- * @param metainfo The torrent metadata including piece and file details.
- * @param client_bitfield The bitfield indicating which pieces are already downloaded by the client.
- * @param block_tracker Tracker indicating the state of downloaded blocks for all pieces.
- * @param blocks_per_piece The number of blocks in a single piece.
- * @param log_code Indicates the logging level for messages and errors.
+ * This function handles an incoming PIECE message by:
+ * - Validating the received piece data
+ * - Updating the block tracker to mark the received block
+ * - Checking if the entire piece is complete
+ * - Updating the client's bitfield when a piece is fully received
+ *
+ * @param peer Pointer to the peer_t structure representing the sending peer
+ * @param piece Pointer to the piece_t structure containing the piece data and metadata
+ * @param metainfo The metainfo_t structure containing torrent file information
+ * @param client_bitfield Pointer to the client's bitfield tracking downloaded pieces
+ * @param block_tracker Pointer to the array tracking received blocks within pieces
+ * @param blocks_per_piece Number of blocks in each piece
+ * @param log_code Controls the verbosity of logging output
+ *
+ * @return The number of bytes successfully processed from the piece message
  */
 uint64_t handle_piece(const peer_t* peer, const piece_t* piece, metainfo_t metainfo, unsigned char* client_bitfield,
                       unsigned char* block_tracker, uint32_t blocks_per_piece,

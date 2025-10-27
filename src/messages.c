@@ -221,11 +221,9 @@ uint64_t handle_piece(const peer_t* peer, const piece_t* piece, const metainfo_t
         // Conversion is fine beacuse single pieces aren't that large
         p_len = metainfo.info->length - (int64_t)piece->index * (int64_t)metainfo.info->piece_length;
     } else p_len = metainfo.info->piece_length;
-    /*
-     *
-     * ACTUAL DOWNLOAD
-     *
-     */
+
+
+    // DOWNLOAD
     const int32_t block_result = process_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
     if (block_result != 0) return 0;
 
