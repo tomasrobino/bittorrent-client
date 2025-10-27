@@ -231,7 +231,6 @@ void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piec
  * @return The number of bytes successfully processed from the piece message
  */
 uint64_t handle_piece(const peer_t* peer, const piece_t* piece, metainfo_t metainfo, unsigned char* client_bitfield,
-                      unsigned char* block_tracker, uint32_t blocks_per_piece,
-                      LOG_CODE log_code);
+                      unsigned char* block_tracker, uint32_t blocks_per_piece, LOG_CODE log_code);
 
 #endif //MESSAGES_H
