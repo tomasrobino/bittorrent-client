@@ -217,7 +217,7 @@ void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piec
  * of file downloading.
  *
  * @param peer The peer from which the 'piece' message was received.
- * @param payload The raw payload of the received 'piece' message to be processed.
+ * @param piece The raw payload of the received 'piece' message to be processed.
  * @param metainfo The torrent metadata including piece and file details.
  * @param client_bitfield The bitfield indicating which pieces are already downloaded by the client.
  * @param block_tracker Tracker indicating the state of downloaded blocks for all pieces.
@@ -226,9 +226,8 @@ void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piec
  * @param peer_count The count of currently connected peers.
  * @param log_code Indicates the logging level for messages and errors.
  */
-uint64_t handle_piece(const peer_t* peer, unsigned char* payload, metainfo_t metainfo, unsigned char* client_bitfield,
+uint64_t handle_piece(const peer_t* peer, piece_t* piece, metainfo_t metainfo, unsigned char* client_bitfield,
                       unsigned char* block_tracker, uint32_t blocks_per_piece, const peer_t* peer_array,
-                      uint32_t peer_count,
-                      LOG_CODE log_code);
+                      uint32_t peer_count, LOG_CODE log_code);
 
 #endif //MESSAGES_H

@@ -609,7 +609,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         break;
                     case PIECE:
                         const uint64_t download_size = handle_piece(peer, message->payload, metainfo, bitfield, block_tracker, blocks_per_piece,
-                                     peer_array, peer_amount, log_code);
+                                                                    peer_array, peer_amount, log_code);
                         downloaded += download_size;
                         left -= download_size;
                         break;

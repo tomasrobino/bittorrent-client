@@ -196,11 +196,10 @@ void broadcast_have(const peer_t* peer_array, const uint32_t peer_count, const u
     free(buffer);
 }
 
-uint64_t handle_piece(const peer_t* peer, unsigned char* payload, const metainfo_t metainfo,
+uint64_t handle_piece(const peer_t* peer, piece_t* piece, const metainfo_t metainfo,
                       unsigned char* client_bitfield,
                       unsigned char* block_tracker, const uint32_t blocks_per_piece, const peer_t* peer_array,
                       const uint32_t peer_count, const LOG_CODE log_code) {
-    piece_t* piece = (piece_t*) payload;
     // Endianness
     piece->begin = ntohl(piece->begin);
     piece->index = ntohl(piece->index);
