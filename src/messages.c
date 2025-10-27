@@ -196,9 +196,10 @@ void broadcast_have(const peer_t* peer_array, const uint32_t peer_count, const u
     free(buffer);
 }
 
-void handle_piece(const peer_t *peer, unsigned char *payload, const metainfo_t metainfo, unsigned char *client_bitfield,
-                  unsigned char *block_tracker, const uint32_t blocks_per_piece, const peer_t *peer_array,
-                  const uint32_t peer_count, uint64_t *left_ptr, const LOG_CODE log_code) {
+uint64_t handle_piece(const peer_t* peer, unsigned char* payload, const metainfo_t metainfo,
+                      unsigned char* client_bitfield,
+                      unsigned char* block_tracker, const uint32_t blocks_per_piece, const peer_t* peer_array,
+                      const uint32_t peer_count, const LOG_CODE log_code) {
     piece_t* piece = (piece_t*) payload;
     // Endianness
     piece->begin = ntohl(piece->begin);
@@ -209,7 +210,7 @@ void handle_piece(const peer_t *peer, unsigned char *payload, const metainfo_t m
     // If this client doesn't have the piece received
     if ((client_bitfield[byte_index] & (1u << bit_offset)) != 0) {
         if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", peer->socket);
-        return;
+        return 0;
     }
     // If this client doesn't have the block received
     const uint32_t global_block_index = piece->index * blocks_per_piece + piece->begin;
@@ -217,7 +218,7 @@ void handle_piece(const peer_t *peer, unsigned char *payload, const metainfo_t m
     bit_offset = 7 - (global_block_index % 8);
     if ((block_tracker[byte_index] & (1u << bit_offset)) != 0) {
         if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", peer->socket, piece->index);
-        return;
+        return 0;
     }
     // If last piece, it's smaller
     int64_t p_len;
@@ -231,7 +232,7 @@ void handle_piece(const peer_t *peer, unsigned char *payload, const metainfo_t m
      *
      */
     const int32_t block_result = process_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
-    if (block_result != 0) return;
+    if (block_result != 0) return 0;
 
     const uint64_t this_block = calc_block_size(p_len, piece->begin);
     // Update block tracker
@@ -247,5 +248,5 @@ void handle_piece(const peer_t *peer, unsigned char *payload, const metainfo_t m
         broadcast_have(peer_array, peer_count, piece->index, log_code);
     }
 
-    if (left_ptr) *left_ptr -= this_block;
+    return this_block;
 }
