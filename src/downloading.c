@@ -39,6 +39,7 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
         filepath_ptr = filepath_ptr->next;
     }
     char* return_charpath = malloc(filepath_size);
+    memset(return_charpath, 0, filepath_size);
     filepath_size = 0;
     filepath_ptr = filepath;
     // Copying full path as string into *return_charpath
@@ -389,7 +390,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     while (current_peer != nullptr) {
         // Creating non-blocking socket
         peer_socket_array[counter2] = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-        if (peer_socket_array[counter2] == 0) {
+        if (peer_socket_array[counter2] <= 0) {
             if (log_code >= LOG_ERR) fprintf(stderr, "TCP socket creation failed");
             exit(1);
         }
@@ -571,7 +572,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 length = htonl(length);
                 memcpy(buffer, &length, MESSAGE_LENGTH_SIZE);
                 buffer[MESSAGE_LENGTH_SIZE] = BITFIELD;
-                memcpy(buffer + 5, bitfield, MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size);
+                memcpy(buffer + 5, bitfield, bitfield_byte_size);
                 int64_t sent_bytes = 0;
                 while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size) {
                     int64_t sent = send(peer->socket, buffer + sent_bytes,
