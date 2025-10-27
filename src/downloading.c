@@ -16,6 +16,8 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
+int32_t epoll;
+
 int64_t calc_block_size(const uint32_t piece_size, const uint32_t byte_offset) {
     int64_t asked_bytes;
     // Amount of blocks in the piece
@@ -296,7 +298,7 @@ announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const uns
     return announce_response;
 }
 
-bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
+bool read_from_socket(peer_t* peer,  const LOG_CODE log_code) {
     errno = 0;
     while (peer->reception_pointer < peer->reception_target && errno != EAGAIN && errno != EWOULDBLOCK ) {
         const ssize_t bytes_received = recv(peer->socket, peer->reception_cache+peer->reception_pointer, peer->reception_target-peer->reception_pointer, 0);
@@ -306,6 +308,7 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
         // Peer shutdown the connection. Shutting down my side too
         if (bytes_received == 0 || errno == ECONNRESET) {
             shutdown(peer->socket, SHUT_RDWR);
+            epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
             close(peer->socket);
             peer->status = PEER_CLOSED;
             errno = 0;
@@ -318,6 +321,45 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
     peer->last_msg = time(nullptr);
     errno = 0;
     return true;
+}
+
+uint32_t reconnect(peer_t** peer_list, const uint32_t peer_amount, uint32_t last_peer,  const LOG_CODE log_code) {
+    for (int i = 0; i < peer_amount; ++i) {
+        peer_t* peer = peer_list[i];
+        if (peer->status == PEER_CLOSED) {
+            last_peer++;
+            // Resetting peer
+            peer->socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+            // This could really be skipped. Here just in case
+            memset(peer->reception_cache, 0, MAX_TRANS_SIZE);
+            peer->reception_target = 0;
+            peer->reception_pointer = 0;
+            peer->am_choking = true;
+            peer->am_interested = false;
+            peer->peer_choking = true;
+            peer->peer_interested = false;
+            peer->bitfield = nullptr;
+            peer->status = PEER_NOTHING;
+
+
+
+            // Try connecting
+            const int32_t connect_result = connect(peer->socket, (struct sockaddr*) peer->address, sizeof(struct sockaddr));
+            if (connect_result < 0 && errno != EINPROGRESS) {
+                if (log_code >= LOG_ERR) fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, peer->socket);
+                epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
+                close(peer->socket);
+            } else if (errno == EINPROGRESS) {
+                // If connection is in progress, add socket to epoll
+                struct epoll_event ev;
+                // EPOLLOUT means the connection attempt has finished, for good or ill
+                ev.events = EPOLLIN | EPOLLOUT;
+                ev.data.u32 = last_peer;
+                epoll_ctl(epoll, EPOLL_CTL_ADD, peer->socket, &ev);
+            }
+        }
+    }
+    return last_peer;
 }
 
 int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
@@ -343,7 +385,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     memset(peer_addr_array, 0, sizeof(struct sockaddr_in) * peer_amount);
     int32_t counter2 = 0;
     // Creating epoll for controlling sockets
-    const int32_t epoll = epoll_create1(0);
+    epoll = epoll_create1(0);
     while (current_peer != nullptr) {
         // Creating non-blocking socket
         peer_socket_array[counter2] = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
@@ -448,6 +490,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     if (log_code >= LOG_ERR) fprintf(stderr, "Socket error %d in socket %d\n", errno, peer->socket);
                 }
                 peer->status = PEER_CLOSED;
+                epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
                 close(peer->socket);
                 continue;
             }
@@ -500,6 +543,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     peer->status = PEER_CLOSED;
                     if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n",
                                                      peer->socket);
+                    epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
                     close(peer->socket);
                 }
                 continue;

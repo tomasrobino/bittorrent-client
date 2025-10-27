@@ -30,20 +30,21 @@ typedef enum {
 
 /// @brief Represents peer data and state in a BitTorrent connection
 typedef struct {
-    unsigned char *bitfield; /**< Bit array representing the pieces this peer has */
-    unsigned char *id; /**< 20-byte string peer ID used during handshake */
-    PEER_STATUS status; /**< Current status of the peer connection */
+    int socket; /**< Socket file descriptor for this peer connection */
+    int reception_target; /**< The amount of bytes this peer is expecting to receive */
+    int reception_pointer; /**< How many bytes were already red into reception_cache for this reception_target */
     bool am_choking; /**< Whether we are choking the peer */
     bool am_interested; /**< Whether we are interested in peer's pieces */
     bool peer_choking; /**< Whether we are choked the peer */
     bool peer_interested; /**< Whether peer is interested in our pieces */
-    int socket; /**< Socket file descriptor for this peer connection */
-    time_t last_msg; /**< Timestamp of last message received from peer */
+    unsigned char *bitfield; /**< Bit array representing the pieces this peer has */
+    unsigned char *id; /**< 20-byte string peer ID used during handshake */
     unsigned char reception_cache[MAX_TRANS_SIZE]; /**< Cache for storing read bytes before interpreting them
                                                     * TODO Maybe make this dynamic, to save on RAM
                                                     */
-    int reception_target; /**< The amount of bytes this peer is expecting to receive */
-    int reception_pointer; /**< How many bytes were already red into reception_cache for this reception_target */
+    PEER_STATUS status; /**< Current status of the peer connection */
+    time_t last_msg; /**< Timestamp of last message received from peer */
+    struct sockaddr_in* address;
 } peer_t;
 
 /**
@@ -190,6 +191,21 @@ announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned 
  *         error occurs or if the remote peer has closed the connection.
  */
 bool read_from_socket(peer_t* peer, LOG_CODE log_code);
+
+/**
+ * Attempts to reconnect to peers in the provided peer list that are marked with a status of PEER_CLOSED.
+ * For each peer marked as PEER_CLOSED, the function attempts to reset its state, create a new non-blocking
+ * socket, and initiate a connection. If a peer's connection is in progress, its socket is added to the
+ * epoll instance for monitoring future events.
+ *
+ * @param peer_list Pointer to an array of peer_t pointers representing the list of peers to reconnect.
+ * @param peer_amount The total number of peers in the peer list.
+ * @param last_peer The current count of handled peers, used to assign unique identifiers to new connections.
+ * @param log_code Controls the verbosity of error logging. Supported values are determined by the LOG_CODE enum.
+ *                 For example, LOG_ERR will log errors during the connection process.
+ * @return The updated value of last_peer, incremented for each successfully reset peer.
+ */
+uint32_t reconnect(peer_t** peer_list, uint32_t peer_amount, uint32_t last_peer, LOG_CODE log_code);
 
 /**
  * @brief Downloads & uploads torrent
