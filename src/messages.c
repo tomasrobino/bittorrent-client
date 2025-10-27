@@ -196,13 +196,9 @@ void broadcast_have(const peer_t* peer_array, const uint32_t peer_count, const u
     free(buffer);
 }
 
-uint64_t handle_piece(const peer_t* peer, piece_t* piece, const metainfo_t metainfo,
-                      unsigned char* client_bitfield,
-                      unsigned char* block_tracker, const uint32_t blocks_per_piece, const peer_t* peer_array,
-                      const uint32_t peer_count, const LOG_CODE log_code) {
-    // Endianness
-    piece->begin = ntohl(piece->begin);
-    piece->index = ntohl(piece->index);
+uint64_t handle_piece(const peer_t* peer, const piece_t* piece, const metainfo_t metainfo,
+                      unsigned char* client_bitfield, unsigned char* block_tracker, const uint32_t blocks_per_piece,
+                      const LOG_CODE log_code) {
 
     uint32_t byte_index = piece->index / 8;
     uint32_t bit_offset = 7 - (piece->index % 8);
@@ -244,7 +240,6 @@ uint64_t handle_piece(const peer_t* peer, piece_t* piece, const metainfo_t metai
         client_bitfield[p_byte_index] |= (1u << p_bit_offset);
 
         closing_files(metainfo.info->files, client_bitfield, piece->index, metainfo.info->piece_length, (uint32_t)p_len);
-        broadcast_have(peer_array, peer_count, piece->index, log_code);
     }
 
     return this_block;

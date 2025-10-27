@@ -222,12 +222,10 @@ void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piec
  * @param client_bitfield The bitfield indicating which pieces are already downloaded by the client.
  * @param block_tracker Tracker indicating the state of downloaded blocks for all pieces.
  * @param blocks_per_piece The number of blocks in a single piece.
- * @param peer_array Array of peer structures representing all connected peers.
- * @param peer_count The count of currently connected peers.
  * @param log_code Indicates the logging level for messages and errors.
  */
-uint64_t handle_piece(const peer_t* peer, piece_t* piece, metainfo_t metainfo, unsigned char* client_bitfield,
-                      unsigned char* block_tracker, uint32_t blocks_per_piece, const peer_t* peer_array,
-                      uint32_t peer_count, LOG_CODE log_code);
+uint64_t handle_piece(const peer_t* peer, const piece_t* piece, metainfo_t metainfo, unsigned char* client_bitfield,
+                      unsigned char* block_tracker, uint32_t blocks_per_piece,
+                      LOG_CODE log_code);
 
 #endif //MESSAGES_H

@@ -608,10 +608,16 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         handle_request(peer, message->payload, log_code);
                         break;
                     case PIECE:
-                        const uint64_t download_size = handle_piece(peer, message->payload, metainfo, bitfield, block_tracker, blocks_per_piece,
-                                                                    peer_array, peer_amount, log_code);
+                        piece_t* piece = (piece_t*) message->payload;
+                        // Endianness
+                        piece->begin = ntohl(piece->begin);
+                        piece->index = ntohl(piece->index);
+
+                        const uint64_t download_size = handle_piece(peer, piece, metainfo, bitfield, block_tracker,
+                                                                    blocks_per_piece, log_code);
                         downloaded += download_size;
                         left -= download_size;
+                        broadcast_have(peer_array, peer_amount, piece->index, log_code);
                         break;
                     case CANCEL:
                     case PORT:
