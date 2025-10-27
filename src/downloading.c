@@ -302,10 +302,9 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
         const ssize_t bytes_received = recv(peer->socket, peer->reception_cache+peer->reception_pointer, peer->reception_target-peer->reception_pointer, 0);
         if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
             if (log_code >= LOG_ERR) fprintf(stderr, "Error when reading message in socket: %d\n", peer->socket);
-            return false;
         }
         // Peer shutdown the connection. Shutting down my side too
-        if (bytes_received == 0) {
+        if (bytes_received == 0 || errno == ECONNRESET) {
             shutdown(peer->socket, SHUT_RDWR);
             close(peer->socket);
             peer->status = PEER_CLOSED;
