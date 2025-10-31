@@ -190,7 +190,7 @@ announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned 
  *         require terminating the connection. Returns false if an unrecoverable
  *         error occurs or if the remote peer has closed the connection.
  */
-bool read_from_socket(peer_t* peer, LOG_CODE log_code);
+bool read_from_socket(peer_t* peer, int32_t epoll, LOG_CODE log_code);
 
 /**
  * Attempts to reconnect to peers in the provided peer list that are marked with a status of PEER_CLOSED.
@@ -205,7 +205,7 @@ bool read_from_socket(peer_t* peer, LOG_CODE log_code);
  *                 For example, LOG_ERR will log errors during the connection process.
  * @return The updated value of last_peer, incremented for each successfully reset peer.
  */
-uint32_t reconnect(peer_t* peer_list, uint32_t peer_amount, uint32_t last_peer, LOG_CODE log_code);
+uint32_t reconnect(peer_t* peer_list, uint32_t peer_amount, uint32_t last_peer, int32_t epoll, LOG_CODE log_code);
 
 /**
  * @brief Downloads & uploads torrent

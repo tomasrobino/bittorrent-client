@@ -16,8 +16,6 @@
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
-int32_t epoll;
-
 int64_t calc_block_size(const uint32_t piece_size, const uint32_t byte_offset) {
     int64_t asked_bytes;
     // Amount of blocks in the piece
@@ -299,9 +297,10 @@ announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const uns
     return announce_response;
 }
 
-bool read_from_socket(peer_t* peer,  const LOG_CODE log_code) {
+bool read_from_socket(peer_t* peer, const int32_t epoll, const LOG_CODE log_code) {
     errno = 0;
     while (peer->reception_pointer < peer->reception_target && errno != EAGAIN && errno != EWOULDBLOCK ) {
+        errno = 0;
         const ssize_t bytes_received = recv(peer->socket, peer->reception_cache+peer->reception_pointer, peer->reception_target-peer->reception_pointer, 0);
         if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
             if (log_code >= LOG_ERR) fprintf(stderr, "Error when reading message in socket: %d\n", peer->socket);
@@ -324,7 +323,7 @@ bool read_from_socket(peer_t* peer,  const LOG_CODE log_code) {
     return true;
 }
 
-uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_peer,  const LOG_CODE log_code) {
+uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_peer, const int32_t epoll, const LOG_CODE log_code) {
     for (int i = 0; i < peer_amount; ++i) {
         peer_t* peer = &peer_list[i];
         if (peer->status == PEER_CLOSED) {
@@ -386,7 +385,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     memset(peer_addr_array, 0, sizeof(struct sockaddr_in) * peer_amount);
     int32_t counter2 = 0;
     // Creating epoll for controlling sockets
-    epoll = epoll_create1(0);
+    const int32_t epoll = epoll_create1(0);
     while (current_peer != nullptr) {
         // Creating non-blocking socket
         peer_socket_array[counter2] = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
@@ -529,7 +528,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
             }
 
             // Reading from socket
-            read_from_socket(peer, log_code);
+            read_from_socket(peer, epoll, log_code);
 
             // Send handshake
             if (peer->status == PEER_CONNECTION_SUCCESS && epoll_events[i].events & EPOLLOUT) {
@@ -681,7 +680,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
         for (int i = 0; i < peer_amount; ++i) {
             if (peer_array[i].status == PEER_CLOSED && difftime(time(nullptr), peer_array[i].last_msg) >= 10) {
                 fprintf(stdout, "Attempting to reconnect socket #%d\n", peer_array[i].socket);
-                reconnect(peer_array, peer_amount, counter2, log_code);
+                reconnect(peer_array, peer_amount, counter2, epoll, log_code);
             }
         }
     }
