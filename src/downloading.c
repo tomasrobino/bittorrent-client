@@ -110,6 +110,7 @@ int32_t process_block(const unsigned char *payload, const uint32_t piece_size, f
                 current = current->next;
                 continue;
             }
+            // TODO allow me to revert partial piece writes
             char* filepath_char = get_path(current->path, log_code);
             // If file not open yet
             if (current->file_ptr == nullptr) {
