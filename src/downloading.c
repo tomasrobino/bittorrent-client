@@ -74,15 +74,15 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
     return bytes_written;
 }
 
-int32_t process_block(const unsigned char *buffer, const uint32_t piece_size, files_ll *files_metainfo,
+int32_t process_block(const unsigned char *payload, const uint32_t piece_size, files_ll *files_metainfo,
                       const LOG_CODE log_code) {
-    const unsigned char* block = buffer+8;
     int32_t piece_index = 0;
     int32_t byte_offset = 0;
-    memcpy(&piece_index, buffer, 4);
-    memcpy(&byte_offset, buffer+4, 4);
+    memcpy(&piece_index, payload, 4);
+    memcpy(&byte_offset, payload+4, 4);
     piece_index = (int32_t) ntohl(piece_index);
     byte_offset = (int32_t) ntohl(byte_offset);
+    const unsigned char* block = payload+8;
 
     // Checking whether arguments are invalid
     if (byte_offset >= piece_size) return 1;
@@ -105,6 +105,7 @@ int32_t process_block(const unsigned char *buffer, const uint32_t piece_size, fi
             // To know how many bytes remain in this file
             const int64_t local_bytes = current->length - (byte_counter-current->byte_index);
             // If files_ll is malformed
+            // TODO solve bug
             if (local_bytes <= 0) {
                 current = current->next;
                 continue;

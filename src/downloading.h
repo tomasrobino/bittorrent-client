@@ -89,7 +89,7 @@ int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG
  * from the provided buffer, validates the input parameters, and processes the data within the
  * linked list of file metadata.
  *
- * @param buffer Pointer to the received buffer containing the block data as well as piece index
+ * @param payload Pointer to the received buffer containing the block data as well as piece index
  *               and byte offset in network byte order.
  * @param piece_size The size of a single piece in bytes. This value is used to validate the offset.
  * @param files_metainfo Pointer to the linked list of file metadata containing information
@@ -102,7 +102,7 @@ int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG
  *         - 2: Failed to open file.
  *         - 3: Write error.
  */
-int32_t process_block(const unsigned char *buffer, uint32_t piece_size,
+int32_t process_block(const unsigned char *payload, uint32_t piece_size,
                       files_ll *files_metainfo, LOG_CODE log_code);
 
 /**
