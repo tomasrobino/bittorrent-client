@@ -311,6 +311,7 @@ bool read_from_socket(peer_t* peer, const int32_t epoll, const LOG_CODE log_code
             epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
             close(peer->socket);
             peer->status = PEER_CLOSED;
+            peer->socket = -1;
             errno = 0;
             return false;
         }
@@ -489,9 +490,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     errno = err;
                     if (log_code >= LOG_ERR) fprintf(stderr, "Socket error %d in socket %d\n", errno, peer->socket);
                 }
-                peer->status = PEER_CLOSED;
                 epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
                 close(peer->socket);
+                peer->status = PEER_CLOSED;
+                peer->socket = -1;
                 continue;
             }
 
@@ -521,7 +523,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
             if (peer->status == PEER_CONNECTION_FAILURE) {
                 if (try_connect(peer->socket, &peer_addr_array[index], log_code)) {
                     if (errno != EINPROGRESS) {
+                        epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
+                        close(peer->socket);
                         peer->status = PEER_CLOSED;
+                        peer->socket = -1;
                     } else peer->status = PEER_NOTHING;
                 }
                 continue;
@@ -540,11 +545,12 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     peer->reception_pointer = 0;
                     peer->reception_target = HANDSHAKE_LEN;
                 } else {
-                    peer->status = PEER_CLOSED;
                     if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n",
                                                      peer->socket);
                     epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
                     close(peer->socket);
+                    peer->status = PEER_CLOSED;
+                    peer->socket = -1;
                 }
                 continue;
             }
@@ -559,7 +565,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     peer->reception_target = MESSAGE_LENGTH_SIZE;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", peer->socket);
                 } else {
+                    epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
+                    close(peer->socket);
                     peer->status = PEER_CLOSED;
+                    peer->socket = -1;
                 }
                 memset(peer->reception_cache, 0, MAX_TRANS_SIZE);
             }
