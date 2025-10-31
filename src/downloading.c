@@ -114,10 +114,10 @@ int32_t process_block(const unsigned char *buffer, const uint32_t piece_size, fi
             if (current->file_ptr == nullptr) {
                 current->file_ptr = fopen(filepath_char, "rb+");
                 // If the file doesn't exist, create it
-                if (current->file_ptr == NULL) {
+                if (current->file_ptr == nullptr) {
                     current->file_ptr = fopen(filepath_char, "wb+");
                 }
-                if (current->file_ptr == NULL) {
+                if (current->file_ptr == nullptr) {
                     if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece_index, byte_offset);
                     free(filepath_char);
                     return 2;
