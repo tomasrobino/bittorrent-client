@@ -37,6 +37,7 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
         filepath_ptr = filepath_ptr->next;
     }
     char* return_charpath = malloc(filepath_size);
+    memset(return_charpath, 0, filepath_size);
     filepath_size = 0;
     filepath_ptr = filepath;
     // Copying full path as string into *return_charpath
@@ -113,10 +114,10 @@ int32_t process_block(const unsigned char *buffer, const uint32_t piece_size, fi
             if (current->file_ptr == nullptr) {
                 current->file_ptr = fopen(filepath_char, "rb+");
                 // If the file doesn't exist, create it
-                if (current->file_ptr == NULL) {
+                if (current->file_ptr == nullptr) {
                     current->file_ptr = fopen(filepath_char, "wb+");
                 }
-                if (current->file_ptr == NULL) {
+                if (current->file_ptr == nullptr) {
                     if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece_index, byte_offset);
                     free(filepath_char);
                     return 2;
@@ -296,9 +297,10 @@ announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const uns
     return announce_response;
 }
 
-bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
+bool read_from_socket(peer_t* peer, const int32_t epoll, const LOG_CODE log_code) {
     errno = 0;
     while (peer->reception_pointer < peer->reception_target && errno != EAGAIN && errno != EWOULDBLOCK ) {
+        errno = 0;
         const ssize_t bytes_received = recv(peer->socket, peer->reception_cache+peer->reception_pointer, peer->reception_target-peer->reception_pointer, 0);
         if (bytes_received < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
             if (log_code >= LOG_ERR) fprintf(stderr, "Error when reading message in socket: %d\n", peer->socket);
@@ -306,8 +308,10 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
         // Peer shutdown the connection. Shutting down my side too
         if (bytes_received == 0 || errno == ECONNRESET) {
             shutdown(peer->socket, SHUT_RDWR);
+            epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
             close(peer->socket);
             peer->status = PEER_CLOSED;
+            peer->socket = -1;
             errno = 0;
             return false;
         }
@@ -318,6 +322,45 @@ bool read_from_socket(peer_t* peer, const LOG_CODE log_code) {
     peer->last_msg = time(nullptr);
     errno = 0;
     return true;
+}
+
+uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_peer, const int32_t epoll, const LOG_CODE log_code) {
+    for (int i = 0; i < peer_amount; ++i) {
+        peer_t* peer = &peer_list[i];
+        if (peer->status == PEER_CLOSED) {
+            last_peer++;
+            // Resetting peer
+            peer->socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+            // This could really be skipped. Here just in case
+            memset(peer->reception_cache, 0, MAX_TRANS_SIZE);
+            peer->reception_target = 0;
+            peer->reception_pointer = 0;
+            peer->am_choking = true;
+            peer->am_interested = false;
+            peer->peer_choking = true;
+            peer->peer_interested = false;
+            peer->bitfield = nullptr;
+            peer->status = PEER_NOTHING;
+
+
+
+            // Try connecting
+            const int32_t connect_result = connect(peer->socket, (struct sockaddr*) peer->address, sizeof(struct sockaddr));
+            if (connect_result < 0 && errno != EINPROGRESS) {
+                if (log_code >= LOG_ERR) fprintf(stderr, "Error #%d in connect for socket: %d\n", errno, peer->socket);
+                epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
+                close(peer->socket);
+            } else if (errno == EINPROGRESS) {
+                // If connection is in progress, add socket to epoll
+                struct epoll_event ev;
+                // EPOLLOUT means the connection attempt has finished, for good or ill
+                ev.events = EPOLLIN | EPOLLOUT;
+                ev.data.u32 = last_peer;
+                epoll_ctl(epoll, EPOLL_CTL_ADD, peer->socket, &ev);
+            }
+        }
+    }
+    return last_peer;
 }
 
 int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
@@ -347,7 +390,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     while (current_peer != nullptr) {
         // Creating non-blocking socket
         peer_socket_array[counter2] = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-        if (peer_socket_array[counter2] == 0) {
+        if (peer_socket_array[counter2] <= 0) {
             if (log_code >= LOG_ERR) fprintf(stderr, "TCP socket creation failed");
             exit(1);
         }
@@ -447,8 +490,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     errno = err;
                     if (log_code >= LOG_ERR) fprintf(stderr, "Socket error %d in socket %d\n", errno, peer->socket);
                 }
-                peer->status = PEER_CLOSED;
+                epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
                 close(peer->socket);
+                peer->status = PEER_CLOSED;
+                peer->socket = -1;
                 continue;
             }
 
@@ -478,14 +523,17 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
             if (peer->status == PEER_CONNECTION_FAILURE) {
                 if (try_connect(peer->socket, &peer_addr_array[index], log_code)) {
                     if (errno != EINPROGRESS) {
+                        epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
+                        close(peer->socket);
                         peer->status = PEER_CLOSED;
+                        peer->socket = -1;
                     } else peer->status = PEER_NOTHING;
                 }
                 continue;
             }
 
             // Reading from socket
-            read_from_socket(peer, log_code);
+            read_from_socket(peer, epoll, log_code);
 
             // Send handshake
             if (peer->status == PEER_CONNECTION_SUCCESS && epoll_events[i].events & EPOLLOUT) {
@@ -497,10 +545,12 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     peer->reception_pointer = 0;
                     peer->reception_target = HANDSHAKE_LEN;
                 } else {
-                    peer->status = PEER_CLOSED;
                     if (log_code >= LOG_ERR) fprintf(stderr, "Error when sending handshake sent through socket %d\n",
                                                      peer->socket);
+                    epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
                     close(peer->socket);
+                    peer->status = PEER_CLOSED;
+                    peer->socket = -1;
                 }
                 continue;
             }
@@ -515,7 +565,10 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     peer->reception_target = MESSAGE_LENGTH_SIZE;
                     if (log_code == LOG_FULL) fprintf(stdout, "Handshake successful in socket %d\n", peer->socket);
                 } else {
+                    epoll_ctl(epoll, EPOLL_CTL_DEL, peer->socket, nullptr);
+                    close(peer->socket);
                     peer->status = PEER_CLOSED;
+                    peer->socket = -1;
                 }
                 memset(peer->reception_cache, 0, MAX_TRANS_SIZE);
             }
@@ -527,7 +580,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 length = htonl(length);
                 memcpy(buffer, &length, MESSAGE_LENGTH_SIZE);
                 buffer[MESSAGE_LENGTH_SIZE] = BITFIELD;
-                memcpy(buffer + 5, bitfield, MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size);
+                memcpy(buffer + 5, bitfield, bitfield_byte_size);
                 int64_t sent_bytes = 0;
                 while (sent_bytes < MESSAGE_LENGTH_AND_ID_SIZE + bitfield_byte_size) {
                     int64_t sent = send(peer->socket, buffer + sent_bytes,
@@ -629,6 +682,14 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                 peer->reception_pointer = 0;
                 memset(peer->reception_cache, 0, bitfield_byte_size);
                 peer->status = PEER_HANDSHAKE_SUCCESS;
+            }
+        }
+
+
+        for (int i = 0; i < peer_amount; ++i) {
+            if (peer_array[i].status == PEER_CLOSED && difftime(time(nullptr), peer_array[i].last_msg) >= 10) {
+                fprintf(stdout, "Attempting to reconnect socket #%d\n", peer_array[i].socket);
+                reconnect(peer_array, peer_amount, counter2, epoll, log_code);
             }
         }
     }
