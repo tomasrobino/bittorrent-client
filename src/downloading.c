@@ -88,6 +88,7 @@ int32_t process_block(const unsigned char *payload, const uint32_t piece_size, f
     if (byte_offset >= piece_size) return 1;
     if (piece_size == 0) return 1;
 
+    // The absolute index of the present byte in the whole torrent
     int64_t byte_counter = (int64_t)piece_index*(int64_t)piece_size + (int64_t)byte_offset;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     /*
