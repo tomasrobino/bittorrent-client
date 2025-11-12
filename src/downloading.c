@@ -77,6 +77,7 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
 
 int32_t process_block(const unsigned char *payload, const uint32_t piece_size, files_ll *files_metainfo,
                       const LOG_CODE log_code) {
+    // Initializing variables and extracting values from payload
     int32_t piece_index = 0;
     int32_t byte_offset = 0;
     memcpy(&piece_index, payload, 4);
