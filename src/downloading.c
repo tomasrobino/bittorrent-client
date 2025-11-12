@@ -14,6 +14,7 @@
 #include "downloading.h"
 #include "predownload_udp.h"
 #include "whole_bencode.h"
+#include "messages.h"
 
 int64_t calc_block_size(const uint32_t piece_size, const uint32_t byte_offset) {
     // TODO WRONG FOR LAST PIECE
