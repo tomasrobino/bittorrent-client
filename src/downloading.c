@@ -12,7 +12,6 @@
 #include <time.h>
 
 #include "downloading.h"
-#include "messages.h"
 #include "predownload_udp.h"
 #include "whole_bencode.h"
 
@@ -657,16 +656,12 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         handle_request(peer, message->payload, log_code);
                         break;
                     case PIECE:
-                        piece_t* piece = (piece_t*) message->payload;
-                        // Endianness
-                        //piece->begin = ntohl(piece->begin);
-                        //piece->index = ntohl(piece->index);
-
                         const uint64_t download_size = handle_piece(peer, metainfo, bitfield, block_tracker, blocks_per_piece,
                                                                     log_code);
                         downloaded += download_size;
                         left -= download_size;
-                        broadcast_have(peer_array, peer_amount, piece->index, log_code);
+                        const uint32_t piece_index = ntohl(( (piece_t*)message->payload )->index);
+                        broadcast_have(peer_array, peer_amount, piece_index, log_code);
                         break;
                     case CANCEL:
                     case PORT:

@@ -8,6 +8,8 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/socket.h>
+
+#include "downloading.h"
 #include "util.h"
 
 void bitfield_to_hex(const unsigned char *bitfield, const uint32_t byte_amount, char *hex_output) {
@@ -204,11 +206,10 @@ uint64_t handle_piece(const peer_t* peer, const metainfo_t metainfo,
     uint32_t p_begin = 0;
     uint32_t p_index = 0;
     {
+        // "piece" is nested so that it's members aren't used in the function (since they are in network byte order)
         const piece_t* piece = (piece_t*) peer->reception_cache;
-        memcpy(&p_begin, &piece->begin, 4);
-        memcpy(&p_index, &piece->index, 4);
-        p_begin = ntohl(p_begin);
-        p_index = ntohl(p_index);
+        p_begin = ntohl(piece->begin);
+        p_index = ntohl(piece->index);
     }
     
     uint32_t byte_index = p_index / 8;
@@ -235,7 +236,7 @@ uint64_t handle_piece(const peer_t* peer, const metainfo_t metainfo,
 
 
     // DOWNLOAD
-    const int32_t block_result = process_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
+    const int32_t block_result = process_block((const piece_t*)peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
     if (block_result != 0) return 0;
 
     const uint64_t this_block = calc_block_size(p_len, p_begin);
