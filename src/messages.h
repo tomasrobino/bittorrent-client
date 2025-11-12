@@ -221,7 +221,6 @@ void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piec
  * - Updating the client's bitfield when a piece is fully received
  *
  * @param peer Pointer to the peer_t structure representing the sending peer
- * @param piece Pointer to the piece_t structure containing the piece data and metadata
  * @param metainfo The metainfo_t structure containing torrent file information
  * @param client_bitfield Pointer to the client's bitfield tracking downloaded pieces
  * @param block_tracker Pointer to the array tracking received blocks within pieces
@@ -230,7 +229,7 @@ void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piec
  *
  * @return The number of bytes successfully processed from the piece message
  */
-uint64_t handle_piece(const peer_t* peer, const piece_t* piece, metainfo_t metainfo, unsigned char* client_bitfield,
+uint64_t handle_piece(const peer_t* peer, metainfo_t metainfo, unsigned char* client_bitfield,
                       unsigned char* block_tracker, uint32_t blocks_per_piece, LOG_CODE log_code);
 
 #endif //MESSAGES_H

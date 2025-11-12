@@ -196,30 +196,41 @@ void broadcast_have(const peer_t* peer_array, const uint32_t peer_count, const u
     free(buffer);
 }
 
-uint64_t handle_piece(const peer_t* peer, const piece_t* piece, const metainfo_t metainfo,
+uint64_t handle_piece(const peer_t* peer, const metainfo_t metainfo,
                       unsigned char* client_bitfield, unsigned char* block_tracker, const uint32_t blocks_per_piece,
                       const LOG_CODE log_code) {
 
-    uint32_t byte_index = piece->index / 8;
-    uint32_t bit_offset = 7 - (piece->index % 8);
-    // If this client doesn't have the piece received
+    // Initializing variables and extracting values from piece
+    uint32_t p_begin = 0;
+    uint32_t p_index = 0;
+    {
+        const piece_t* piece = (piece_t*) peer->reception_cache;
+        memcpy(&p_begin, &piece->begin, 4);
+        memcpy(&p_index, &piece->index, 4);
+        p_begin = ntohl(p_begin);
+        p_index = ntohl(p_index);
+    }
+    
+    uint32_t byte_index = p_index / 8;
+    uint32_t bit_offset = 7 - (p_index % 8);
+    // If this client already has the piece received
     if ((client_bitfield[byte_index] & (1u << bit_offset)) != 0) {
         if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", peer->socket);
         return 0;
     }
-    // If this client doesn't have the block received
-    const uint32_t global_block_index = piece->index * blocks_per_piece + piece->begin;
+    // If this client already has the block received
+    const uint32_t global_block_index = p_index * blocks_per_piece + p_begin;
     byte_index = global_block_index / 8;
     bit_offset = 7 - (global_block_index % 8);
     if ((block_tracker[byte_index] & (1u << bit_offset)) != 0) {
-        if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", peer->socket, piece->index);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", peer->socket, p_index);
         return 0;
     }
     // If last piece, it's smaller
     int64_t p_len;
-    if (piece->index == metainfo.info->piece_number - 1) {
+    if (p_index == metainfo.info->piece_number - 1) {
         // Conversion is fine beacuse single pieces aren't that large
-        p_len = metainfo.info->length - (int64_t)piece->index * (int64_t)metainfo.info->piece_length;
+        p_len = metainfo.info->length - (int64_t)p_index * (int64_t)metainfo.info->piece_length;
     } else p_len = metainfo.info->piece_length;
 
 
@@ -227,17 +238,17 @@ uint64_t handle_piece(const peer_t* peer, const piece_t* piece, const metainfo_t
     const int32_t block_result = process_block(peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
     if (block_result != 0) return 0;
 
-    const uint64_t this_block = calc_block_size(p_len, piece->begin);
+    const uint64_t this_block = calc_block_size(p_len, p_begin);
     // Update block tracker
     block_tracker[byte_index] |= (1u << bit_offset);
     // If all the blocks in a piece are downloaded, mark it in the bitfield and prepare
     // to send "have" message to all peer_array
-    if (piece_complete(block_tracker, piece->index, metainfo.info->piece_length, metainfo.info->length)) {
-        const uint32_t p_byte_index = piece->index / 8;
-        const uint32_t p_bit_offset = 7 - (piece->index % 8);
+    if (piece_complete(block_tracker, p_index, metainfo.info->piece_length, metainfo.info->length)) {
+        const uint32_t p_byte_index = p_index / 8;
+        const uint32_t p_bit_offset = 7 - (p_index % 8);
         client_bitfield[p_byte_index] |= (1u << p_bit_offset);
 
-        closing_files(metainfo.info->files, client_bitfield, piece->index, metainfo.info->piece_length, (uint32_t)p_len);
+        closing_files(metainfo.info->files, client_bitfield, p_index, metainfo.info->piece_length, (uint32_t)p_len);
     }
 
     return this_block;
