@@ -75,28 +75,19 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
     return bytes_written;
 }
 
-int32_t process_block(const unsigned char *payload, const uint32_t piece_size, files_ll *files_metainfo,
+int32_t process_block(const piece_t *piece, const uint32_t piece_size, files_ll *files_metainfo,
                       const LOG_CODE log_code) {
-    // Initializing variables and extracting values from payload
-    int32_t piece_index = 0;
-    int32_t byte_offset = 0;
-    memcpy(&piece_index, payload, 4);
-    memcpy(&byte_offset, payload+4, 4);
-    piece_index = (int32_t) ntohl(piece_index);
-    byte_offset = (int32_t) ntohl(byte_offset);
-    const unsigned char* block = payload+8;
-
     // Checking whether arguments are invalid
-    if (byte_offset >= piece_size) return 1;
+    if (piece->begin >= piece_size) return 1;
     if (piece_size == 0) return 1;
 
     // The absolute index of the present byte in the whole torrent
-    int64_t byte_counter = (int64_t)piece_index*(int64_t)piece_size + (int64_t)byte_offset;
+    int64_t byte_counter = (int64_t)piece->index*(int64_t)piece_size + (int64_t)piece->begin;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     /*
      * Maybe I'll turn this into a parameter instead
      */
-    int64_t asked_bytes = calc_block_size(piece_size, byte_offset);
+    int64_t asked_bytes = calc_block_size(piece_size, piece->begin);
     int64_t block_offset = 0;
 
     // Finding out to which file the block belongs
@@ -123,7 +114,7 @@ int32_t process_block(const unsigned char *payload, const uint32_t piece_size, f
                     current->file_ptr = fopen(filepath_char, "wb+");
                 }
                 if (current->file_ptr == nullptr) {
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece_index, byte_offset);
+                    if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece->index, piece->begin);
                     free(filepath_char);
                     return 2;
                 }
@@ -140,7 +131,7 @@ int32_t process_block(const unsigned char *payload, const uint32_t piece_size, f
             fseeko(current->file_ptr, current->length-local_bytes, SEEK_SET);
 
             // Writing to file
-            const int64_t bytes_written = write_block(block+block_offset, this_file_ask, current->file_ptr, log_code);
+            const int64_t bytes_written = write_block(piece->block+block_offset, this_file_ask, current->file_ptr, log_code);
             if (bytes_written < 0) {
                 // Error when writing
                 free(filepath_char);
