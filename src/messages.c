@@ -217,9 +217,6 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     // The absolute index of the present byte in the whole torrent
     int64_t byte_counter = (int64_t)piece->index*(int64_t)standard_piece_size + (int64_t)piece->begin;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
-    /*
-     * Maybe I'll turn this into a parameter instead
-     */
     int64_t asked_bytes = calc_block_size(this_piece_size, piece->begin);
     int64_t block_offset = 0;
 
