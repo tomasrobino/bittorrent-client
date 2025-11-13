@@ -228,7 +228,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     bool done = false;
     while (current != nullptr && !done) {
         // If the file starts before or at the block
-        if (current->byte_index <= byte_counter && byte_counter < current->byte_index+current->length) {
+        if (byte_counter < current->byte_index+current->length) {
             // To know how many bytes remain in this file
             const int64_t local_bytes = current->length - (byte_counter-current->byte_index);
             // If files_ll is malformed
@@ -237,7 +237,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
                 current = current->next;
                 continue;
             }
-            // TODO allow me to revert partial piece writes
+            // TODO allow me to revert partial block writes
             char* filepath_char = get_path(current->path, log_code);
             // If file not open yet
             if (current->file_ptr == nullptr) {
