@@ -208,19 +208,19 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
     return bytes_written;
 }
 
-int32_t process_block(const piece_t *piece, const uint32_t piece_size, files_ll *files_metainfo,
-                      const LOG_CODE log_code) {
+int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, const uint32_t this_piece_size,
+                      files_ll *files_metainfo, const LOG_CODE log_code) {
     // Checking whether arguments are invalid
-    if (piece->begin >= piece_size) return 1;
-    if (piece_size == 0) return 1;
+    if (piece->begin >= standard_piece_size) return 1;
+    if (standard_piece_size == 0) return 1;
 
     // The absolute index of the present byte in the whole torrent
-    int64_t byte_counter = (int64_t)piece->index*(int64_t)piece_size + (int64_t)piece->begin;
+    int64_t byte_counter = (int64_t)piece->index*(int64_t)standard_piece_size + (int64_t)piece->begin;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     /*
      * Maybe I'll turn this into a parameter instead
      */
-    int64_t asked_bytes = calc_block_size(piece_size, piece->begin);
+    int64_t asked_bytes = calc_block_size(this_piece_size, piece->begin);
     int64_t block_offset = 0;
 
     // Finding out to which file the block belongs
@@ -313,7 +313,7 @@ uint64_t handle_piece(const piece_t* piece, const uint32_t socket, const metainf
 
 
     // DOWNLOAD
-    const int32_t block_result = process_block(piece, metainfo.info->piece_length, metainfo.info->files, log_code);
+    const int32_t block_result = process_block(piece, metainfo.info->piece_length, this_piece_length, metainfo.info->files, log_code);
     if (block_result != 0) return 0;
 
     const uint64_t this_block = calc_block_size(this_piece_length, p_begin);

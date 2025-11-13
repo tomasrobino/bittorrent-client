@@ -17,7 +17,6 @@
 #include "messages.h"
 
 int64_t calc_block_size(const uint32_t piece_size, const uint32_t byte_offset) {
-    // TODO WRONG FOR LAST PIECE
     int64_t asked_bytes;
     // Amount of blocks in the piece
     const int64_t block_amount = (piece_size + BLOCK_SIZE - 1) / BLOCK_SIZE;

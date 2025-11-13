@@ -173,7 +173,8 @@ int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG
  *
  * @param piece Pointer to the received buffer containing the block data as well as piece index
  *               and byte offset in network byte order.
- * @param piece_size The size of a single piece in bytes. This value is used to validate the offset.
+ * @param standard_piece_size The size of a single piece in bytes. This value is used to validate the offset.
+ * @param this_piece_size
  * @param files_metainfo Pointer to the linked list of file metadata containing information
  *                       about the files in the torrent and their respective byte ranges.
  * @param log_code Logging level indicating the verbosity of the logging for debugging and error reporting.
@@ -184,8 +185,8 @@ int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG
  *         - 2: Failed to open file.
  *         - 3: Write error.
  */
-int32_t process_block(const piece_t *piece, uint32_t piece_size,
-                      files_ll *files_metainfo, LOG_CODE log_code);
+int32_t process_block(const piece_t *piece, uint32_t standard_piece_size,
+                      uint32_t this_piece_size, files_ll *files_metainfo, LOG_CODE log_code);
 
 /**
  * @brief Processes a received piece message from a peer and updates the client's download state.
