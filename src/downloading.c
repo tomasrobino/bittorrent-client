@@ -540,7 +540,6 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
             // Message payload (if exists)
             if (peer->status >= PEER_AWAITING_PAYLOAD && peer->reception_target == peer->reception_pointer) {
                 bittorrent_message_t *message = (bittorrent_message_t *) peer->reception_cache;
-                message->payload = peer->reception_cache + 5;
                 message->payload = peer->reception_cache + MESSAGE_LENGTH_AND_ID_SIZE;
                 if (log_code == LOG_FULL) {
                     fprintf(stdout, "Peer %d received payload\n", peer->socket);
@@ -573,8 +572,8 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                         handle_request(peer, message->payload, log_code);
                         break;
                     case PIECE:
-                        const uint64_t download_size = handle_piece(peer, metainfo, bitfield, block_tracker, blocks_per_piece,
-                                                                    log_code);
+                        const uint64_t download_size = handle_piece((piece_t*)message->payload, peer->socket, metainfo, bitfield, block_tracker,
+                                                                    blocks_per_piece, log_code);
                         downloaded += download_size;
                         left -= download_size;
                         const uint32_t piece_index = ntohl(( (piece_t*)message->payload )->index);

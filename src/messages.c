@@ -282,25 +282,18 @@ int32_t process_block(const piece_t *piece, const uint32_t piece_size, files_ll 
     return 0;
 }
 
-uint64_t handle_piece(const peer_t* peer, const metainfo_t metainfo,
+uint64_t handle_piece(const piece_t* piece, const uint32_t socket, const metainfo_t metainfo,
                       unsigned char* client_bitfield, unsigned char* block_tracker, const uint32_t blocks_per_piece,
                       const LOG_CODE log_code) {
-
     // Initializing variables and extracting values from piece
-    uint32_t p_begin = 0;
-    uint32_t p_index = 0;
-    {
-        // "piece" is nested so that it's members aren't used in the function (since they are in network byte order)
-        const piece_t* piece = (piece_t*) peer->reception_cache;
-        p_begin = ntohl(piece->begin);
-        p_index = ntohl(piece->index);
-    }
+    const uint32_t p_begin = ntohl(piece->begin);
+    const uint32_t p_index = ntohl(piece->index);
     
     uint32_t byte_index = p_index / 8;
     uint32_t bit_offset = 7 - (p_index % 8);
     // If this client already has the piece received
     if ((client_bitfield[byte_index] & (1u << bit_offset)) != 0) {
-        if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", peer->socket);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Piece received in socket %d already extant", socket);
         return 0;
     }
     // If this client already has the block received
@@ -308,9 +301,10 @@ uint64_t handle_piece(const peer_t* peer, const metainfo_t metainfo,
     byte_index = global_block_index / 8;
     bit_offset = 7 - (global_block_index % 8);
     if ((block_tracker[byte_index] & (1u << bit_offset)) != 0) {
-        if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", peer->socket, p_index);
+        if (log_code >= LOG_ERR) fprintf(stderr, "Block received in socket %d belonging to piece %d already extant", socket, p_index);
         return 0;
     }
+
     // If last piece, it's smaller
     int64_t p_len;
     if (p_index == metainfo.info->piece_number - 1) {
@@ -320,7 +314,7 @@ uint64_t handle_piece(const peer_t* peer, const metainfo_t metainfo,
 
 
     // DOWNLOAD
-    const int32_t block_result = process_block((const piece_t*)peer->reception_cache, metainfo.info->piece_length, metainfo.info->files, log_code);
+    const int32_t block_result = process_block(piece, metainfo.info->piece_length, metainfo.info->files, log_code);
     if (block_result != 0) return 0;
 
     const uint64_t this_block = calc_block_size(p_len, p_begin);

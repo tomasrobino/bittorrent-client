@@ -196,7 +196,6 @@ int32_t process_block(const piece_t *piece, uint32_t piece_size,
  * - Checking if the entire piece is complete
  * - Updating the client's bitfield when a piece is fully received
  *
- * @param peer Pointer to the peer_t structure representing the sending peer
  * @param metainfo The metainfo_t structure containing torrent file information
  * @param client_bitfield Pointer to the client's bitfield tracking downloaded pieces
  * @param block_tracker Pointer to the array tracking received blocks within pieces
@@ -205,7 +204,7 @@ int32_t process_block(const piece_t *piece, uint32_t piece_size,
  *
  * @return The number of bytes successfully processed from the piece message
  */
-uint64_t handle_piece(const peer_t* peer, metainfo_t metainfo, unsigned char* client_bitfield,
+uint64_t handle_piece(const piece_t* piece, uint32_t socket, metainfo_t metainfo, unsigned char* client_bitfield,
                       unsigned char* block_tracker, uint32_t blocks_per_piece, LOG_CODE log_code);
 
 #endif //MESSAGES_H
