@@ -285,7 +285,7 @@ int32_t process_block(const piece_t *piece, const uint32_t piece_size, files_ll 
 uint64_t handle_piece(const piece_t* piece, const uint32_t socket, const metainfo_t metainfo,
                       unsigned char* client_bitfield, unsigned char* block_tracker, const uint32_t blocks_per_piece,
                       const LOG_CODE log_code) {
-    // Initializing variables and extracting values from piece
+    // Initializing variables and converting endianness
     const uint32_t p_begin = ntohl(piece->begin);
     const uint32_t p_index = ntohl(piece->index);
     
@@ -308,7 +308,6 @@ uint64_t handle_piece(const piece_t* piece, const uint32_t socket, const metainf
     // If last piece, it's smaller
     int64_t this_piece_length;
     if (p_index == metainfo.info->piece_number - 1) {
-        // Conversion is fine beacuse single pieces aren't that large
         this_piece_length = metainfo.info->length - (int64_t)p_index * (int64_t)metainfo.info->piece_length;
     } else this_piece_length = metainfo.info->piece_length;
 
