@@ -306,18 +306,18 @@ uint64_t handle_piece(const piece_t* piece, const uint32_t socket, const metainf
     }
 
     // If last piece, it's smaller
-    int64_t p_len;
+    int64_t this_piece_length;
     if (p_index == metainfo.info->piece_number - 1) {
         // Conversion is fine beacuse single pieces aren't that large
-        p_len = metainfo.info->length - (int64_t)p_index * (int64_t)metainfo.info->piece_length;
-    } else p_len = metainfo.info->piece_length;
+        this_piece_length = metainfo.info->length - (int64_t)p_index * (int64_t)metainfo.info->piece_length;
+    } else this_piece_length = metainfo.info->piece_length;
 
 
     // DOWNLOAD
     const int32_t block_result = process_block(piece, metainfo.info->piece_length, metainfo.info->files, log_code);
     if (block_result != 0) return 0;
 
-    const uint64_t this_block = calc_block_size(p_len, p_begin);
+    const uint64_t this_block = calc_block_size(this_piece_length, p_begin);
     // Update block tracker
     block_tracker[byte_index] |= (1u << bit_offset);
     // If all the blocks in a piece are downloaded, mark it in the bitfield and prepare
@@ -327,7 +327,7 @@ uint64_t handle_piece(const piece_t* piece, const uint32_t socket, const metainf
         const uint32_t p_bit_offset = 7 - (p_index % 8);
         client_bitfield[p_byte_index] |= (1u << p_bit_offset);
 
-        closing_files(metainfo.info->files, client_bitfield, p_index, metainfo.info->piece_length, (uint32_t)p_len);
+        closing_files(metainfo.info->files, client_bitfield, p_index, metainfo.info->piece_length, (uint32_t)this_piece_length);
     }
 
     return this_block;
