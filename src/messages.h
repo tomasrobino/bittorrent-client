@@ -3,6 +3,7 @@
 
 #include <netinet/in.h>
 #include "downloading.h"
+#include "messages_types.h"
 
 
 /**
@@ -152,6 +153,39 @@ void handle_request(const peer_t* peer, unsigned char* payload, LOG_CODE log_cod
  * @param log_code The level of logging to perform during the broadcast operation.
  */
 void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piece_index, LOG_CODE log_code);
+
+/**
+ * @brief Writes a specified number of bytes from a buffer to a given file.
+ *
+ * @param buffer Pointer to the buffer containing the data to be written.
+ * @param amount Number of bytes to write to the file.
+ * @param file Pointer to the file object where data will be written.
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
+ * @return The number of bytes successfully written, or -1 if an error occurred.
+ */
+int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG_CODE log_code);
+/**
+ * Processes a block of data downloaded from a peer. The function determines the piece and offset
+ * from the provided buffer, validates the input parameters, and processes the data within the
+ * linked list of file metadata.
+ *
+ * @param piece Pointer to the received buffer containing the block data as well as piece index
+ *               and byte offset in network byte order.
+ * @param piece_size The size of a single piece in bytes. This value is used to validate the offset.
+ * @param files_metainfo Pointer to the linked list of file metadata containing information
+ *                       about the files in the torrent and their respective byte ranges.
+ * @param log_code Logging level indicating the verbosity of the logging for debugging and error reporting.
+ *
+ * @return An integer status code:
+ *         - 0: Block processed successfully.
+ *         - 1: Invalid arguments (e.g., offset greater than piece size or piece size is 0).
+ *         - 2: Failed to open file.
+ *         - 3: Write error.
+ */
+int32_t process_block(const piece_t *piece, uint32_t piece_size,
+                      files_ll *files_metainfo, LOG_CODE log_code);
 
 /**
  * @brief Processes a received piece message from a peer and updates the client's download state.

@@ -2,7 +2,6 @@
 #define DOWNLOADING_H
 
 #include "downloading_types.h"
-#include "messages_types.h"
 #include "file.h"
 #include "predownload_udp.h"
 
@@ -31,39 +30,6 @@ int64_t calc_block_size(uint32_t piece_size, uint32_t byte_offset);
  * is responsible for freeing the allocated memory.
  */
 char *get_path(const ll *filepath, LOG_CODE log_code);
-
-/**
- * @brief Writes a specified number of bytes from a buffer to a given file.
- *
- * @param buffer Pointer to the buffer containing the data to be written.
- * @param amount Number of bytes to write to the file.
- * @param file Pointer to the file object where data will be written.
- * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
- *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
- *                 LOG_FULL (detailed logging).
- * @return The number of bytes successfully written, or -1 if an error occurred.
- */
-int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG_CODE log_code);
-/**
- * Processes a block of data downloaded from a peer. The function determines the piece and offset
- * from the provided buffer, validates the input parameters, and processes the data within the
- * linked list of file metadata.
- *
- * @param piece Pointer to the received buffer containing the block data as well as piece index
- *               and byte offset in network byte order.
- * @param piece_size The size of a single piece in bytes. This value is used to validate the offset.
- * @param files_metainfo Pointer to the linked list of file metadata containing information
- *                       about the files in the torrent and their respective byte ranges.
- * @param log_code Logging level indicating the verbosity of the logging for debugging and error reporting.
- *
- * @return An integer status code:
- *         - 0: Block processed successfully.
- *         - 1: Invalid arguments (e.g., offset greater than piece size or piece size is 0).
- *         - 2: Failed to open file.
- *         - 3: Write error.
- */
-int32_t process_block(const piece_t *piece, uint32_t piece_size,
-                      files_ll *files_metainfo, LOG_CODE log_code);
 
 /**
  * Determines if a specific piece of a torrent has been fully downloaded.
@@ -143,6 +109,7 @@ announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned 
  * @param peer A pointer to the peer_t structure representing the peer
  *             whose socket is to be read from. Contains state information
  *             for the peer, including the reception cache and pointers.
+ * @param epoll Epoll instance
  * @param log_code Specifies the level of logging. Acceptable values are
  *                 LOG_NO (no logging), LOG_ERR (log errors), LOG_SUMM (log summary),
  *                 or LOG_FULL (full logging).
@@ -161,6 +128,7 @@ bool read_from_socket(peer_t* peer, int32_t epoll, LOG_CODE log_code);
  * @param peer_list Pointer to an array of peers to reconnect.
  * @param peer_amount The total number of peers in the peer list.
  * @param last_peer The current count of handled peers, used to assign unique identifiers to new connections.
+ * @param epoll Epoll instance
  * @param log_code Controls the verbosity of error logging. Supported values are determined by the LOG_CODE enum.
  *                 For example, LOG_ERR will log errors during the connection process.
  * @return The updated value of last_peer, incremented for each successfully reset peer.
