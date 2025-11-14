@@ -30,6 +30,11 @@ typedef struct ll {
     char *val;
 } ll;
 
+typedef struct ll_uint64_t {
+    struct ll_uint64_t *next;
+    uint64_t val;
+} ll_uint64_t;
+
 /**
  * Structure containing arguments needed for performing a BitTorrent handshake
  * 

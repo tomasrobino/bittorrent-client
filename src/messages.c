@@ -208,6 +208,15 @@ int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* fil
     return bytes_written;
 }
 
+void free_ll_uint64_t(ll_uint64_t* ll) {
+    ll_uint64_t* current = ll;
+    while (current != nullptr) {
+        ll_uint64_t* next = current->next;
+        free(current);
+        current = next;
+    }
+}
+
 int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, const uint32_t this_piece_size,
                       files_ll *files_metainfo, const LOG_CODE log_code) {
     // Checking whether arguments are invalid
@@ -219,6 +228,14 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     int64_t asked_bytes = calc_block_size(this_piece_size, piece->begin);
     int64_t block_offset = 0;
+
+    // Amount of files that the block touches
+    uint32_t file_count = 0;
+    // Linked list to hold the bytes to be written to each file the block touches
+    ll_uint64_t* pending_bytes_ll = malloc(sizeof(ll_uint64_t));
+    pending_bytes_ll->val = 0;
+    pending_bytes_ll->next = nullptr;
+
 
     // Finding out to which file the block belongs
     files_ll* current = files_metainfo;
