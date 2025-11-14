@@ -224,12 +224,17 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     files_ll* current = files_metainfo;
     bool done = false;
     while (current != nullptr && !done) {
-        // If the file starts before or at the block
+        // If the block starts before the file ends
         if (byte_counter < current->byte_index+current->length) {
             // To know how many bytes remain in this file
             const int64_t local_bytes = current->length - (byte_counter-current->byte_index);
 
             // TODO allow me to revert partial block writes
+            // TODO maybe simply add the files to which i'll write to a list, and the amount of bytes that
+            // TODO will go to each one. Later, i write to all of them at once
+            // TODO more efficient because all writes are concurrent
+
+
             char* filepath_char = get_path(current->path, log_code);
             // If file not open yet
             if (current->file_ptr == nullptr) {
@@ -245,7 +250,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
                 }
             }
 
-            // Getting how many bytes to read to this file
+            // Getting how many bytes to write to this file
             int64_t this_file_ask;
             if (local_bytes >= asked_bytes) { // If the block ends before or at the same byte as the file
                 this_file_ask = asked_bytes;
