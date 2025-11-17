@@ -232,9 +232,10 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     // Amount of files that the block touches
     uint32_t file_count = 0;
     // Linked list to hold the bytes to be written to each file the block touches
-    ll_uint64_t* pending_bytes_ll = malloc(sizeof(ll_uint64_t));
-    pending_bytes_ll->val = 0;
-    pending_bytes_ll->next = nullptr;
+    ll_uint64_t* pending_bytes_head = malloc(sizeof(ll_uint64_t));
+    pending_bytes_head->val = 0;
+    pending_bytes_head->next = nullptr;
+    ll_uint64_t* pending_bytes_current = pending_bytes_head;
 
 
     // Finding out to which file the block belongs
@@ -263,6 +264,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
                 if (current->file_ptr == nullptr) {
                     if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece->index, piece->begin);
                     free(filepath_char);
+                    free_ll_uint64_t(pending_bytes_head);
                     return 2;
                 }
             }
@@ -282,6 +284,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
             if (bytes_written < 0) {
                 // Error when writing
                 free(filepath_char);
+                free_ll_uint64_t(pending_bytes_head);
                 return 3;
             }
             block_offset+=bytes_written;
@@ -293,6 +296,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
         }
         current = current->next;
     }
+    free_ll_uint64_t(pending_bytes_head);
     return 0;
 }
 
