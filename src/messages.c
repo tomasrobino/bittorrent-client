@@ -227,7 +227,6 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     int64_t byte_counter = (int64_t)piece->index*(int64_t)standard_piece_size + (int64_t)piece->begin;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     int64_t asked_bytes = calc_block_size(this_piece_size, piece->begin);
-    int64_t block_offset = 0;
 
     // Amount of files that the block touches
     uint32_t file_count = 0;
@@ -279,16 +278,17 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
             // Advancing file pointer to proper position
             fseeko(current->file_ptr, current->length-local_bytes, SEEK_SET);
 
-            // Writing to file
-            const int64_t bytes_written = write_block(piece->block+block_offset, this_file_ask, current->file_ptr, log_code);
-            if (bytes_written < 0) {
-                // Error when writing
-                free(filepath_char);
-                free_ll_uint64_t(pending_bytes_head);
-                return 3;
+            // Storing data for writing
+            if (file_count != 0) {
+                pending_bytes_current->next = malloc(sizeof(ll_uint64_t));
+                pending_bytes_current = pending_bytes_current->next;
             }
-            block_offset+=bytes_written;
+            pending_bytes_current->val = this_file_ask;
+            pending_bytes_current->next = nullptr;
+            file_count++;
 
+
+            // Updating counters
             asked_bytes -= this_file_ask;
             byte_counter += this_file_ask;
 
@@ -296,6 +296,16 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
         }
         current = current->next;
     }
+
+    // Writing to file
+    const int64_t bytes_written = write_block(piece->block+block_offset, this_file_ask, current->file_ptr, log_code);
+    if (bytes_written < 0) {
+        // Error when writing
+        free(filepath_char);
+        free_ll_uint64_t(pending_bytes_head);
+        return 3;
+    }
+
     free_ll_uint64_t(pending_bytes_head);
     return 0;
 }
