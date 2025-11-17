@@ -239,10 +239,13 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
 
     // Finding out to which file the block belongs
     files_ll* current = files_metainfo;
+    // Additional header for when do relevant files start
+    files_ll* relevant_head = files_metainfo;
     bool done = false;
     while (current != nullptr && !done) {
         // If the block starts before the file ends
         if (byte_counter < current->byte_index+current->length) {
+            relevant_head = current;
             // To know how many bytes remain in this file
             const int64_t local_bytes = current->length - (byte_counter-current->byte_index);
 
@@ -296,14 +299,22 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
         }
         current = current->next;
     }
+    pending_bytes_current = pending_bytes_head;
+    current = relevant_head;
 
+
+    int64_t block_offset = 0;
     // Writing to file
-    const int64_t bytes_written = write_block(piece->block+block_offset, this_file_ask, current->file_ptr, log_code);
-    if (bytes_written < 0) {
-        // Error when writing
-        free(filepath_char);
-        free_ll_uint64_t(pending_bytes_head);
-        return 3;
+    for (int i = 0; i < file_count; ++i) {
+        const int64_t bytes_written = write_block(piece->block+block_offset, pending_bytes_current->val, current->file_ptr, log_code);
+        if (bytes_written < 0) {
+            // Error when writing
+            free_ll_uint64_t(pending_bytes_head);
+            return 3;
+        }
+        pending_bytes_current = pending_bytes_current->next;
+        current = current->next;
+        block_offset += bytes_written;
     }
 
     free_ll_uint64_t(pending_bytes_head);
