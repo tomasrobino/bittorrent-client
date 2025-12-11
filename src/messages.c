@@ -260,13 +260,6 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
                     if (errno == ENOENT) {
                         // If the file doesn't exist, create it
                         current->file_ptr = fopen(filepath_char, "wb+");
-                    } else {
-                        if (!current->file_ptr) {
-                            if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece->index, piece->begin);
-                            free(filepath_char);
-                            free_ll_uint64_t(pending_bytes_head);
-                            return 2;
-                        }
                     }
                 }
             }
