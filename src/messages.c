@@ -249,7 +249,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
         if (byte_counter < current->byte_index+current->length) {
             relevant_head = current;
             // To know how many bytes remain in this file
-            const int64_t local_bytes = current->length - (byte_counter-current->byte_index);
+            const int64_t remaining_in_file = current->length - (byte_counter-current->byte_index);
 
             char* filepath_char = get_path(current->path, log_code);
             // If file not open yet
@@ -266,13 +266,13 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
 
             // Getting how many bytes to write to this file
             int64_t this_file_ask;
-            if (local_bytes >= asked_bytes) { // If the block ends before or at the same byte as the file
+            if (remaining_in_file >= asked_bytes) { // If the block ends before or at the same byte as the file
                 this_file_ask = asked_bytes;
                 // Since there are no other files in the block, done
                 done = true;
-            } else this_file_ask = local_bytes;
+            } else this_file_ask = remaining_in_file;
             // Advancing file pointer to proper position
-            fseeko(current->file_ptr, current->length-local_bytes, SEEK_SET);
+            fseeko(current->file_ptr, current->length-remaining_in_file, SEEK_SET);
 
             // Storing data for writing
             if (file_count != 0) {
