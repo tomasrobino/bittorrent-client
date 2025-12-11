@@ -232,6 +232,8 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     uint32_t file_count = 0;
     // Linked list to hold the bytes to be written to each file the block touches
     ll_uint64_t* pending_bytes_head = malloc(sizeof(ll_uint64_t));
+    if (pending_bytes_head == nullptr) return 1;
+
     pending_bytes_head->val = 0;
     pending_bytes_head->next = nullptr;
     ll_uint64_t* pending_bytes_current = pending_bytes_head;
@@ -249,25 +251,23 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
             // To know how many bytes remain in this file
             const int64_t local_bytes = current->length - (byte_counter-current->byte_index);
 
-            // TODO allow me to revert partial block writes
-            // TODO maybe simply add the files to which i'll write to a list, and the amount of bytes that
-            // TODO will go to each one. Later, i write to all of them at once
-            // TODO more efficient because all writes are concurrent
-
-
             char* filepath_char = get_path(current->path, log_code);
             // If file not open yet
-            if (current->file_ptr == nullptr) {
+            while (!current->file_ptr) {
                 current->file_ptr = fopen(filepath_char, "rb+");
-                // If the file doesn't exist, create it
-                if (current->file_ptr == nullptr) {
-                    current->file_ptr = fopen(filepath_char, "wb+");
-                }
-                if (current->file_ptr == nullptr) {
-                    if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece->index, piece->begin);
-                    free(filepath_char);
-                    free_ll_uint64_t(pending_bytes_head);
-                    return 2;
+                // If at first fopen() failed, try and try again
+                if (!current->file_ptr) {
+                    if (errno == ENOENT) {
+                        // If the file doesn't exist, create it
+                        current->file_ptr = fopen(filepath_char, "wb+");
+                    } else {
+                        if (!current->file_ptr) {
+                            if (log_code >= LOG_ERR) fprintf(stderr, "Failed to open file in process_block() for piece %d, and offset %d\n", piece->index, piece->begin);
+                            free(filepath_char);
+                            free_ll_uint64_t(pending_bytes_head);
+                            return 2;
+                        }
+                    }
                 }
             }
 
@@ -305,6 +305,9 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
 
     int64_t block_offset = 0;
     // Writing to file
+
+    // TODO allow me to revert partial block writes
+
     for (int i = 0; i < file_count; ++i) {
         const int64_t bytes_written = write_block(piece->block+block_offset, pending_bytes_current->val, current->file_ptr, log_code);
         if (bytes_written < 0) {
