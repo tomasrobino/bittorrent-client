@@ -270,12 +270,12 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
 
 
             // Getting how many bytes to write to this file
-            int64_t this_file_ask;
+            int64_t bytes_for_this_file;
             if (remaining_in_file >= asked_bytes) { // If the block ends before or at the same byte as the file
-                this_file_ask = asked_bytes;
+                bytes_for_this_file = asked_bytes;
                 // Since there are no other files in the block, done
                 done = true;
-            } else this_file_ask = remaining_in_file;
+            } else bytes_for_this_file = remaining_in_file;
             // Advancing file pointer to proper position
             fseeko(current->file_ptr, current->length-remaining_in_file, SEEK_SET);
 
@@ -284,14 +284,14 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
                 pending_bytes_current->next = malloc(sizeof(ll_uint64_t));
                 pending_bytes_current = pending_bytes_current->next;
             }
-            pending_bytes_current->val = this_file_ask;
+            pending_bytes_current->val = bytes_for_this_file;
             pending_bytes_current->next = nullptr;
             file_count++;
 
 
             // Updating counters
-            asked_bytes -= this_file_ask;
-            byte_counter += this_file_ask;
+            asked_bytes -= bytes_for_this_file;
+            byte_counter += bytes_for_this_file;
 
             free(filepath_char);
         }
@@ -306,7 +306,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
 
     // TODO allow me to revert partial block writes
 
-    for (int i = 0; i < file_count; ++i) {
+    for (uint32_t i = 0; i < file_count; ++i) {
         const int64_t bytes_written = write_block(piece->block+block_offset, pending_bytes_current->val, current->file_ptr, log_code);
         if (bytes_written < 0) {
             // Error when writing
