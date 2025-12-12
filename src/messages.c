@@ -220,11 +220,11 @@ void free_ll_uint64_t(ll_uint64_t* ll) {
 int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, const uint32_t this_piece_size,
                       files_ll *files_metainfo, const LOG_CODE log_code) {
     // Checking whether arguments are invalid
-    if (piece->begin >= standard_piece_size) return 1;
+    if (piece->begin >= this_piece_size) return 1;
     if (standard_piece_size == 0) return 1;
 
     // The absolute index of the present byte in the whole torrent
-    int64_t byte_counter = (int64_t)piece->index*(int64_t)standard_piece_size + (int64_t)piece->begin;
+    int64_t byte_counter = (int64_t)piece->index * (int64_t)standard_piece_size + (int64_t)piece->begin;
     // Actual amount of bytes the client's asking to download. Normally BLOCK_SIZE, but for the last block in a piece may be less
     int64_t asked_bytes = calc_block_size(this_piece_size, piece->begin);
 
@@ -232,7 +232,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     uint32_t file_count = 0;
     // Linked list to hold the bytes to be written to each file the block touches
     ll_uint64_t* pending_bytes_head = malloc(sizeof(ll_uint64_t));
-    if (pending_bytes_head == nullptr) return 1;
+    if (!pending_bytes_head) return 1;
 
     pending_bytes_head->val = 0;
     pending_bytes_head->next = nullptr;
@@ -255,7 +255,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
             // If file not open yet
             {
                 uint32_t count = 0;
-                while (!current->file_ptr ||count > MAX_FILE_ATTEMPTS) {
+                while (!current->file_ptr || count > MAX_FILE_ATTEMPTS) {
                     current->file_ptr = fopen(filepath_char, "rb+");
                     // If at first fopen() failed, try and try again
                     if (!current->file_ptr) {
@@ -265,6 +265,14 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
                         }
                     }
                     count++;
+                }
+
+
+                // Can't manage to open file
+                if (!current->file_ptr) {
+                    free(filepath_char);
+                    free_ll_uint64_t(pending_bytes_head);
+                    return 2;
                 }
             }
 
@@ -277,11 +285,16 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
                 done = true;
             } else bytes_for_this_file = remaining_in_file;
             // Advancing file pointer to proper position
-            fseeko(current->file_ptr, current->length-remaining_in_file, SEEK_SET);
+            fseeko(current->file_ptr, byte_counter - current->byte_index, SEEK_SET);
 
             // Storing data for writing
             if (file_count != 0) {
                 pending_bytes_current->next = malloc(sizeof(ll_uint64_t));
+                if (!pending_bytes_current->next) {
+                    free(filepath_char);
+                    free_ll_uint64_t(pending_bytes_head);
+                    return 1;
+                }
                 pending_bytes_current = pending_bytes_current->next;
             }
             pending_bytes_current->val = bytes_for_this_file;
