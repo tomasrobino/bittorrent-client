@@ -253,16 +253,21 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
 
             char* filepath_char = get_path(current->path, log_code);
             // If file not open yet
-            while (!current->file_ptr) {
-                current->file_ptr = fopen(filepath_char, "rb+");
-                // If at first fopen() failed, try and try again
-                if (!current->file_ptr) {
-                    if (errno == ENOENT) {
-                        // If the file doesn't exist, create it
-                        current->file_ptr = fopen(filepath_char, "wb+");
+            {
+                uint32_t count = 0;
+                while (!current->file_ptr ||count > MAX_FILE_ATTEMPTS) {
+                    current->file_ptr = fopen(filepath_char, "rb+");
+                    // If at first fopen() failed, try and try again
+                    if (!current->file_ptr) {
+                        if (errno == ENOENT) {
+                            // If the file doesn't exist, create it
+                            current->file_ptr = fopen(filepath_char, "wb+");
+                        }
                     }
+                    count++;
                 }
             }
+
 
             // Getting how many bytes to write to this file
             int64_t this_file_ask;

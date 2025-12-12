@@ -5,6 +5,7 @@
 #include "downloading.h"
 #include "messages_types.h"
 
+#define MAX_FILE_ATTEMPTS 5
 
 /**
  * Converts a bitfield into its corresponding hexadecimal string representation.
