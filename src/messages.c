@@ -247,7 +247,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     bool done = false;
     while (current != nullptr && !done) {
         // If the block starts before the file ends
-        if (byte_counter < current->byte_index+current->length) {
+        if (byte_counter - current->byte_index < current->length) {
             first_touched_file = current;
             // To know how many bytes remain in this file
             const int64_t remaining_in_file = current->length - (byte_counter-current->byte_index);
