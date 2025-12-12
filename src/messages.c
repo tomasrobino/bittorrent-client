@@ -243,12 +243,12 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     // Finding out to which file the block belongs
     files_ll* current = files_metainfo;
     // Additional header for when do relevant files start
-    files_ll* relevant_head = files_metainfo;
+    files_ll* first_touched_file = files_metainfo;
     bool done = false;
     while (current != nullptr && !done) {
         // If the block starts before the file ends
         if (byte_counter < current->byte_index+current->length) {
-            relevant_head = current;
+            first_touched_file = current;
             // To know how many bytes remain in this file
             const int64_t remaining_in_file = current->length - (byte_counter-current->byte_index);
 
@@ -319,7 +319,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
     }
 
     pending_bytes_current = pending_bytes_head;
-    current = relevant_head;
+    current = first_touched_file;
 
 
     int64_t block_offset = 0;
