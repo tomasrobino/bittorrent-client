@@ -327,6 +327,9 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
 
     // TODO allow me to revert partial block writes
 
+
+    // TODO THIS SHOULD BE ON A DIFFERENT THREAD FROM torrent()
+
     for (uint32_t i = 0; i < file_count; ++i) {
         const int64_t bytes_written = write_block(piece->block+block_offset, pending_bytes_current->val, current->file_ptr, log_code);
         if (bytes_written < 0) {
