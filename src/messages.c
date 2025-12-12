@@ -255,7 +255,7 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
             // If file not open yet
             {
                 uint32_t count = 0;
-                while (!current->file_ptr || count > MAX_FILE_ATTEMPTS) {
+                while (!current->file_ptr && count < MAX_FILE_ATTEMPTS) {
                     current->file_ptr = fopen(filepath_char, "rb+");
                     // If at first fopen() failed, try and try again
                     if (!current->file_ptr) {
