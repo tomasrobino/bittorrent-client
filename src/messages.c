@@ -311,6 +311,13 @@ int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, 
         }
         current = current->next;
     }
+
+    // Critical error. Should never happen
+    if (asked_bytes != 0) {
+        free_ll_uint64_t(pending_bytes_head);
+        return 4;
+    }
+
     pending_bytes_current = pending_bytes_head;
     current = relevant_head;
 
