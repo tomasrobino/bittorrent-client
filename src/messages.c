@@ -220,6 +220,7 @@ void free_ll_uint64_t(ll_uint64_t* ll) {
 int32_t process_block(const piece_t *piece, const uint32_t standard_piece_size, const uint32_t this_piece_size,
                       files_ll *files_metainfo, const LOG_CODE log_code) {
     // Checking whether arguments are invalid
+    if (!piece || !files_metainfo || !piece->block) return 1;
     if (piece->begin >= this_piece_size) return 1;
     if (standard_piece_size == 0) return 1;
 
