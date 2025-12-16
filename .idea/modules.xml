@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/bittorrent-c.iml" filepath="$PROJECT_DIR$/.idea/bittorrent-c.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/codecrafters-bittorrent-c.iml" filepath="$PROJECT_DIR$/.idea/codecrafters-bittorrent-c.iml" />
     </modules>
   </component>
 </project>
