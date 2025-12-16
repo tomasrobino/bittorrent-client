@@ -166,7 +166,7 @@ void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piec
  *                 LOG_FULL (detailed logging).
  * @return The number of bytes successfully written, or -1 if an error occurred.
  */
-int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG_CODE log_code);
+int64_t write_block(const unsigned char *buffer, uint64_t amount, FILE *file, LOG_CODE log_code);
 /**
  * Processes a block of data downloaded from a peer. The function determines the piece and offset
  * from the provided buffer, validates the input parameters, and processes the data within the

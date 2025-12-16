@@ -198,8 +198,8 @@ void broadcast_have(const peer_t* peer_array, const uint32_t peer_count, const u
     free(buffer);
 }
 
-int32_t write_block(const unsigned char* buffer, const int64_t amount, FILE* file, const LOG_CODE log_code) {
-    const int32_t bytes_written = (int32_t) fwrite(buffer, 1, amount, file);
+int64_t write_block(const unsigned char* buffer, const uint64_t amount, FILE* file, const LOG_CODE log_code) {
+    const uint32_t bytes_written = fwrite(buffer, 1, amount, file);
     if (bytes_written != amount) {
         if (log_code >= LOG_ERR) if (log_code == LOG_FULL) fprintf(stdout, "Failed to write to file %p\n", file);
         return -1;
