@@ -293,14 +293,18 @@ uint8_t write_state(const char* filename, const state_t* state) {
         bytes_written = fwrite(&state->piece_size, 1, sizeof(uint32_t), file);
     } while (bytes_written != sizeof(uint32_t));
     do {
-        bytes_written = fwrite(&state->bitfield, 1, sizeof(unsigned char*), file);
-    } while (bytes_written != sizeof(unsigned char*));
+        bytes_written = fwrite(state->bitfield, 1, ceil(state->piece_count / 8), file);
+    } while (bytes_written != ceil(state->piece_count / 8));
     fclose(file);
     return 0;
 }
 
 state_t* read_state(const char* filename) {
-    FILE* file;
+    FILE* file = fopen(filename, "wx+b");
+    if (file) {
+        fclose(file);
+        return nullptr;
+    }
     do {
         file = fopen(filename, "rb+");
         if (file) {
@@ -318,7 +322,7 @@ state_t* read_state(const char* filename) {
 
             const uint32_t byte_amount = ceil(state->piece_count / 8);
 
-            if (fread(&state->bitfield, 1, byte_amount, file) != byte_amount) {
+            if (fread(state->bitfield, 1, byte_amount, file) != byte_amount) {
                 free(state);
                 fclose(file);
                 return nullptr;
@@ -395,8 +399,17 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     // General bitfield. Each piece takes up 1 bit
     const uint32_t bitfield_byte_size = ceil(metainfo.info->piece_number / 8.0);
 
-
-
+    // The path is just for testing
+    state_t* state = read_state("state/state.txt");
+    if (state == nullptr) {
+        memcpy(&state->magic, "BTST", 4);
+        state->version = 1;
+        state->piece_count = metainfo.info->piece_number;
+        state->piece_size = metainfo.info->piece_length;
+        state->bitfield = malloc(bitfield_byte_size);
+        memset(state->bitfield, 0, bitfield_byte_size);
+        write_state("state/state.txt", state);
+    }
 
     unsigned char *bitfield = malloc(bitfield_byte_size);
     if (!bitfield) return -1;
