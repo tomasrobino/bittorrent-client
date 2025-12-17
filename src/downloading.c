@@ -275,9 +275,9 @@ uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_
 }
 
 state_t* read_state(const char* filename) {
-    errno = 1;
-    while (errno != 0) {
-        FILE* file = fopen(filename, "rb+");
+    FILE* file;
+    do {
+        file = fopen(filename, "rb+");
         if (file) {
             // Actually reading file
             unsigned char buffer[13];
@@ -301,7 +301,7 @@ state_t* read_state(const char* filename) {
             fclose(file);
             return state;
         }
-    }
+    } while (file == nullptr);
     return nullptr;
 }
 
