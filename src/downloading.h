@@ -136,6 +136,20 @@ bool read_from_socket(peer_t* peer, int32_t epoll, LOG_CODE log_code);
 uint32_t reconnect(peer_t* peer_list, uint32_t peer_amount, uint32_t last_peer, int32_t epoll, LOG_CODE log_code);
 
 /**
+ * @brief Writes and serializes the torrent download state to a file.
+ *
+ * This function saves the current torrent state to the specified file,
+ * including information about which pieces have been downloaded. The state
+ * is stored in a binary format containing a magic number, version, piece count,
+ * piece size, and a bitfield representing downloaded pieces.
+ *
+ * @param filename The path to the file where the serialized download state will be written.
+ * @param state A pointer to the state_t structure containing the download state to be serialized.
+ * @return 0 on success, non-zero value on failure (e.g., file cannot be opened or written).
+ */
+uint8_t write_state(const char* filename, const state_t* state);
+
+/**
  * @brief Reads and deserializes the torrent state from a file.
  *
  * This function loads a previously saved torrent state from the specified file,

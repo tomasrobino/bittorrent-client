@@ -274,6 +274,31 @@ uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_
     return last_peer;
 }
 
+uint8_t write_state(const char* filename, const state_t* state) {
+    FILE* file = fopen(filename, "wx+b");
+    if (errno == EEXIST) {
+        file = fopen(filename, "rb+");
+    }
+    uint32_t bytes_written;
+    do {
+        bytes_written = fwrite(&state->magic, 1, sizeof(uint32_t), file);
+    } while (bytes_written != sizeof(uint32_t));
+    do {
+        bytes_written = fwrite(&state->version, 1, sizeof(uint8_t), file);
+    } while (bytes_written != sizeof(uint8_t));
+    do {
+        bytes_written = fwrite(&state->piece_count, 1, sizeof(uint32_t), file);
+    } while (bytes_written != sizeof(uint32_t));
+    do {
+        bytes_written = fwrite(&state->piece_size, 1, sizeof(uint32_t), file);
+    } while (bytes_written != sizeof(uint32_t));
+    do {
+        bytes_written = fwrite(&state->bitfield, 1, sizeof(unsigned char*), file);
+    } while (bytes_written != sizeof(unsigned char*));
+    fclose(file);
+    return 0;
+}
+
 state_t* read_state(const char* filename) {
     FILE* file;
     do {
