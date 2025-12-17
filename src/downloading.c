@@ -274,58 +274,36 @@ uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_
     return last_peer;
 }
 
-typedef struct {
-    uint32_t magic;
-    uint8_t version;
-    uint32_t piece_count;
-    uint32_t piece_size;
-    unsigned char* bitfield;
-} state_t;
-
-state_t* write_state_open(const FILE* file) {
-    uint32_t magic;
-    uint8_t version;
-    uint32_t piece_count;
-    uint32_t piece_size;
-
-    if (fwrite())
-}
-
 state_t* read_state(const char* filename) {
-    errno = 0;
-    FILE* file = fopen(filename, "wb+x");
-    if (!file) {
-        if (errno == EEXIST) {
-            file = fopen(filename, "rb+");
-            if (file) {
-                // Actually reading file
-                unsigned char buffer[13];
-                if (fread(buffer, 1, 13, file) != 13) {
-                    fclose(file);
-                    return nullptr;
-                }
-                state_t* state = malloc(sizeof(state_t));
-                memcpy(&state->magic, buffer, 4);
-                memcpy(&state->version, buffer+4, 1);
-                memcpy(&state->piece_count, buffer+5, 4);
-                memcpy(&state->piece_size, buffer+9, 4);
-
-                const uint32_t byte_amount = ceil(state->piece_count / 8);
-
-                if (fread(&state->bitfield, 1, byte_amount, file) != byte_amount) {
-                    free(state);
-                    fclose(file);
-                    return nullptr;
-                }
+    errno = 1;
+    while (errno != 0) {
+        FILE* file = fopen(filename, "rb+");
+        if (file) {
+            // Actually reading file
+            unsigned char buffer[13];
+            if (fread(buffer, 1, 13, file) != 13) {
                 fclose(file);
-                return state;
+                return nullptr;
             }
-        }
-        return nullptr;
-    }
-    return write_state_open(file);
-}
+            state_t* state = malloc(sizeof(state_t));
+            memcpy(&state->magic, buffer, 4);
+            memcpy(&state->version, buffer+4, 1);
+            memcpy(&state->piece_count, buffer+5, 4);
+            memcpy(&state->piece_size, buffer+9, 4);
 
+            const uint32_t byte_amount = ceil(state->piece_count / 8);
+
+            if (fread(&state->bitfield, 1, byte_amount, file) != byte_amount) {
+                free(state);
+                fclose(file);
+                return nullptr;
+            }
+            fclose(file);
+            return state;
+        }
+    }
+    return nullptr;
+}
 
 
 int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
