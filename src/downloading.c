@@ -275,10 +275,7 @@ uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_
 }
 
 uint8_t write_state(const char* filename, const state_t* state) {
-    FILE* file = fopen(filename, "wx+b");
-    if (errno == EEXIST) {
-        file = fopen(filename, "rb+");
-    }
+    FILE* file = fopen(filename, "wb");
     uint32_t bytes_written;
     do {
         bytes_written = fwrite(&state->magic, 1, sizeof(uint32_t), file);
@@ -293,8 +290,8 @@ uint8_t write_state(const char* filename, const state_t* state) {
         bytes_written = fwrite(&state->piece_size, 1, sizeof(uint32_t), file);
     } while (bytes_written != sizeof(uint32_t));
     do {
-        bytes_written = fwrite(state->bitfield, 1, ceil(state->piece_count / 8), file);
-    } while (bytes_written != ceil(state->piece_count / 8));
+        bytes_written = fwrite(state->bitfield, 1, ceil(state->piece_count / 8.0), file);
+    } while (bytes_written != ceil(state->piece_count / 8.0));
     fclose(file);
     return 0;
 }
@@ -315,7 +312,7 @@ state_t* read_state(const char* filename) {
         const uint32_t bytes = fread(state, 1, STATE_T_CORE_SIZE, file);
         total_bytes_read += bytes;
     } while (total_bytes_read < STATE_T_CORE_SIZE);
-    const uint32_t bitfield_byte_amount = ceil(state->piece_count / 8);
+    const uint32_t bitfield_byte_amount = ceil(state->piece_count / 8.0);
     do {
         const uint32_t bytes = fread(state->bitfield, 1, bitfield_byte_amount, file);
         total_bytes_read += bytes;
@@ -324,9 +321,24 @@ state_t* read_state(const char* filename) {
     return state;
 }
 
-state_t* acquire_state(const char* filename) {
-    state_t* file = read_state(filename);
+state_t* init_state(const char* filename, const uint32_t piece_count, const uint32_t piece_size, unsigned char* bitfield) {
+    state_t* state = read_state(filename);
+    if (state != nullptr) {
+        return state;
+    }
+    if (errno == ENOENT) {
+        memcpy(&state->magic, "BTST", 4);
+        state->version = 1;
+        state->piece_count = piece_count;
+        state->piece_size = piece_size;
+        state->bitfield = bitfield;
+        return state;
+    }
 
+    while (errno != 0) {
+        state = read_state(filename);
+    }
+    return state;
 }
 
 int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
@@ -393,19 +405,8 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     // General bitfield. Each piece takes up 1 bit
     const uint32_t bitfield_byte_size = ceil(metainfo.info->piece_number / 8.0);
 
-    // The path is just for testing
-    state_t* state = read_state("state/state.txt");
-    if (state == nullptr) {
-        memcpy(&state->magic, "BTST", 4);
-        state->version = 1;
-        state->piece_count = metainfo.info->piece_number;
-        state->piece_size = metainfo.info->piece_length;
-        state->bitfield = malloc(bitfield_byte_size);
-        memset(state->bitfield, 0, bitfield_byte_size);
-        write_state("state/state.txt", state);
-    }
-
     unsigned char *bitfield = malloc(bitfield_byte_size);
+    state_t* state = init_state("state/state.txt", metainfo.info->piece_number, metainfo.info->piece_length, bitfield);
     if (!bitfield) return -1;
     memset(bitfield, 0, bitfield_byte_size);
     // Size in bytes of the block tracker
