@@ -300,40 +300,34 @@ uint8_t write_state(const char* filename, const state_t* state) {
 }
 
 state_t* read_state(const char* filename) {
-    FILE* file = fopen(filename, "wx+b");
-    if (file) {
+    errno = 0;
+    // Attempt to open file
+    FILE* file = fopen(filename, "rb");
+    if (!file) {
         fclose(file);
         return nullptr;
     }
+
+    // Actually reading file
+    uint32_t total_bytes_read = 0;
+    state_t* state = malloc(sizeof(state_t));
     do {
-        file = fopen(filename, "rb+");
-        if (file) {
-            // Actually reading file
-            unsigned char buffer[13];
-            if (fread(buffer, 1, 13, file) != 13) {
-                fclose(file);
-                return nullptr;
-            }
-            state_t* state = malloc(sizeof(state_t));
-            memcpy(&state->magic, buffer, 4);
-            memcpy(&state->version, buffer+4, 1);
-            memcpy(&state->piece_count, buffer+5, 4);
-            memcpy(&state->piece_size, buffer+9, 4);
+        const uint32_t bytes = fread(state, 1, STATE_T_CORE_SIZE, file);
+        total_bytes_read += bytes;
+    } while (total_bytes_read < STATE_T_CORE_SIZE);
+    const uint32_t bitfield_byte_amount = ceil(state->piece_count / 8);
+    do {
+        const uint32_t bytes = fread(state->bitfield, 1, bitfield_byte_amount, file);
+        total_bytes_read += bytes;
+    } while (total_bytes_read < bitfield_byte_amount);
 
-            const uint32_t byte_amount = ceil(state->piece_count / 8);
-
-            if (fread(state->bitfield, 1, byte_amount, file) != byte_amount) {
-                free(state);
-                fclose(file);
-                return nullptr;
-            }
-            fclose(file);
-            return state;
-        }
-    } while (file == nullptr);
-    return nullptr;
+    return state;
 }
 
+state_t* acquire_state(const char* filename) {
+    state_t* file = read_state(filename);
+
+}
 
 int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
     uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;

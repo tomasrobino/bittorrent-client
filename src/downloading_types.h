@@ -20,6 +20,9 @@
 /// @brief Amount of block requests to queue for each peer
 #define QUEUE_SIZE 5
 
+/// @brief Size of state_t minus padding, and bitfield pointer
+#define STATE_T_CORE_SIZE 13
+
 
 /// @brief Represents the persistent download state for a torrent
 typedef struct {

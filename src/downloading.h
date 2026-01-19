@@ -5,7 +5,6 @@
 #include "file.h"
 #include "predownload_udp.h"
 
-
 /**
  * Calculates the size of a block to be downloaded based on the piece size and byte offset.
  * The block size is typically a fixed value (BLOCK_SIZE), except for the last block in the piece,
