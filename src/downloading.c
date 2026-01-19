@@ -5,7 +5,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
 #include <math.h>
@@ -161,9 +160,7 @@ void closing_files(const files_ll *files, const unsigned char *bitfield, const u
     }
 }
 
-announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id,
-                                            const uint64_t downloaded, const uint64_t left, const uint64_t uploaded,
-                                            const uint32_t event, const uint32_t key, const LOG_CODE log_code) {
+announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id, torrent_stats_t* torrent_stats, const LOG_CODE log_code) {
     // For storing socket that successfully connected
     int32_t successful_index = 0;
     int32_t* successful_index_pt = &successful_index;
@@ -188,8 +185,7 @@ announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const uns
     }
     announce_response_t *announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd,
                                                                   connection_id, metainfo.info->hash, peer_id,
-                                                                  downloaded, left, uploaded, event, key,
-                                                                  decode_bencode_int(
+                                                                  torrent_stats, decode_bencode_int(
                                                                       connection_data.split_addr->port, nullptr, log_code), log_code);
     if (announce_response == nullptr) {
         // Invalid response from tracker or error
@@ -274,10 +270,79 @@ uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_
     return last_peer;
 }
 
+uint8_t write_state(const char* filename, const state_t* state) {
+    FILE* file = fopen(filename, "wb");
+    uint32_t bytes_written;
+    do {
+        bytes_written = fwrite(&state->magic, 1, sizeof(uint32_t), file);
+    } while (bytes_written != sizeof(uint32_t));
+    do {
+        bytes_written = fwrite(&state->version, 1, sizeof(uint8_t), file);
+    } while (bytes_written != sizeof(uint8_t));
+    do {
+        bytes_written = fwrite(&state->piece_count, 1, sizeof(uint32_t), file);
+    } while (bytes_written != sizeof(uint32_t));
+    do {
+        bytes_written = fwrite(&state->piece_size, 1, sizeof(uint32_t), file);
+    } while (bytes_written != sizeof(uint32_t));
+    do {
+        bytes_written = fwrite(state->bitfield, 1, ceil(state->piece_count / 8.0), file);
+    } while (bytes_written != ceil(state->piece_count / 8.0));
+    fclose(file);
+    return 0;
+}
+
+state_t* read_state(const char* filename) {
+    errno = 0;
+    // Attempt to open file
+    FILE* file = fopen(filename, "rb");
+    if (!file) return nullptr;
+
+    // Actually reading file
+    uint32_t total_bytes_read = 0;
+    state_t* state = malloc(sizeof(state_t));
+    do {
+        const uint32_t bytes = fread(state, 1, STATE_T_CORE_SIZE, file);
+        total_bytes_read += bytes;
+    } while (total_bytes_read < STATE_T_CORE_SIZE);
+    const uint32_t bitfield_byte_amount = ceil(state->piece_count / 8.0);
+    do {
+        const uint32_t bytes = fread(state->bitfield, 1, bitfield_byte_amount, file);
+        total_bytes_read += bytes;
+    } while (total_bytes_read < bitfield_byte_amount);
+
+    return state;
+}
+
+state_t* init_state(const char* filename, const uint32_t piece_count, const uint32_t piece_size, unsigned char* bitfield) {
+    state_t* state = read_state(filename);
+    if (state != nullptr) {
+        return state;
+    }
+    if (errno == ENOENT) {
+        state = malloc(sizeof(state_t));
+        memcpy(&state->magic, "BTST", 4);
+        state->version = 1;
+        state->piece_count = piece_count;
+        state->piece_size = piece_size;
+        state->bitfield = bitfield;
+        return state;
+    }
+
+    while (errno != 0) {
+        state = read_state(filename);
+    }
+    return state;
+}
+
 int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
-    uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
-    uint32_t event = 0, key = arc4random();
-    announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key, log_code);
+    torrent_stats_t* torrent_stats = malloc(sizeof(torrent_stats_t));
+    torrent_stats->downloaded = 0;
+    torrent_stats->left = metainfo.info->length;
+    torrent_stats->uploaded = 0;
+    torrent_stats->event = 0;
+    torrent_stats->key = arc4random();
+    announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, torrent_stats, log_code);
     if (announce_response == nullptr) return -1;
     // Creating TCP sockets for all peers
     /*
@@ -337,7 +402,9 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     struct epoll_event epoll_events[MAX_EVENTS];
     // General bitfield. Each piece takes up 1 bit
     const uint32_t bitfield_byte_size = ceil(metainfo.info->piece_number / 8.0);
+
     unsigned char *bitfield = malloc(bitfield_byte_size);
+    state_t* state = init_state("state/state.txt", metainfo.info->piece_number, metainfo.info->piece_length, bitfield);
     if (!bitfield) return -1;
     memset(bitfield, 0, bitfield_byte_size);
     // Size in bytes of the block tracker
@@ -375,7 +442,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
      *  MAIN PEER INTERACTION LOOP
      *
      */
-    while (left > 0) {
+    while (torrent_stats->left > 0) {
         const int32_t nfds = epoll_wait(epoll, epoll_events, MAX_EVENTS, EPOLL_TIMEOUT);
         if (nfds == -1) {
             if (log_code >= LOG_ERR) fprintf(stderr, "Error in epoll_wait\n");
@@ -573,8 +640,8 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     case PIECE:
                         const uint64_t download_size = handle_piece((piece_t*)message->payload, peer->socket, metainfo, bitfield, block_tracker,
                                                                     blocks_per_piece, log_code);
-                        downloaded += download_size;
-                        left -= download_size;
+                        torrent_stats->downloaded += download_size;
+                        torrent_stats->left -= download_size;
                         const uint32_t piece_index = ntohl(( (piece_t*)message->payload )->index);
                         broadcast_have(peer_array, peer_amount, piece_index, log_code);
                         break;
@@ -591,6 +658,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
             }
         }
 
+        write_state("state/state.txt", state);
 
         for (int i = 0; i < peer_amount; ++i) {
             if (peer_array[i].status == PEER_CLOSED && difftime(time(nullptr), peer_array[i].last_msg) >= 10) {
