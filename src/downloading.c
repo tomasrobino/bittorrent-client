@@ -658,6 +658,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
             }
         }
 
+        write_state("state/state.txt", state);
 
         for (int i = 0; i < peer_amount; ++i) {
             if (peer_array[i].status == PEER_CLOSED && difftime(time(nullptr), peer_array[i].last_msg) >= 10) {
