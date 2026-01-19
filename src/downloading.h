@@ -93,7 +93,7 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, uint32_
  *                 LOG_FULL (detailed logging).
  * @return A pointer to an announce_response_t structure containing the tracker's response, or nullptr if the request fails.
  */
-announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned char *peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key, LOG_CODE log_code);
+announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned char *peer_id, torrent_stats_t* torrent_stats, LOG_CODE log_code);
 
 
 /**

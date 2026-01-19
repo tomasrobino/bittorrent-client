@@ -23,16 +23,6 @@
 /// @brief Size of state_t minus padding, and bitfield pointer
 #define STATE_T_CORE_SIZE 13
 
-
-/// @brief Represents the persistent download state for a torrent
-typedef struct {
-    uint32_t magic; /**< Magic number to identify valid state files */
-    uint8_t version; /**< State file format version */
-    uint32_t piece_count; /**< Total number of pieces in the torrent */
-    uint32_t piece_size; /**< Size of each piece in bytes */
-    unsigned char* bitfield; /**< Bit array representing which pieces have been downloaded */
-} state_t;
-
 /// @brief Enum for peer statuses
 typedef enum {
     PEER_CLOSED, /** This peer's socket has been closed */
@@ -45,6 +35,24 @@ typedef enum {
     PEER_AWAITING_PAYLOAD, /**< Already received message length and id, so now waiting for the payload */
     PEER_BITFIELD_RECEIVED, /**< Received bitfield from peer */
 } PEER_STATUS;
+
+/// @brief Represents the persistent download state for a torrent
+typedef struct {
+    uint32_t magic; /**< Magic number to identify valid state files */
+    uint8_t version; /**< State file format version */
+    uint32_t piece_count; /**< Total number of pieces in the torrent */
+    uint32_t piece_size; /**< Size of each piece in bytes */
+    unsigned char* bitfield; /**< Bit array representing which pieces have been downloaded */
+} state_t;
+
+
+typedef struct {
+    uint32_t downloaded;
+    uint32_t left;
+    uint32_t uploaded;
+    uint32_t event;
+    uint32_t key;
+} torrent_stats_t;
 
 /// @brief Represents peer data and state in a BitTorrent connection
 typedef struct {

@@ -2,6 +2,7 @@
 #define CONNECTION
 #include <netinet/in.h>
 
+#include "downloading_types.h"
 #include "file.h"
 
 /** Amount of times to try connecting to tracker
@@ -247,11 +248,7 @@ announce_response_t* announce_request_udp(
     uint64_t connection_id,
     const unsigned char info_hash[],
     const unsigned char peer_id[],
-    uint64_t downloaded,
-    uint64_t left,
-    uint64_t uploaded,
-    uint32_t event,
-    uint32_t key,
+    const torrent_stats_t* torrent_stats,
     uint16_t port,
     LOG_CODE log_code
 );

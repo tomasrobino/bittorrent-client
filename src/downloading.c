@@ -161,9 +161,7 @@ void closing_files(const files_ll *files, const unsigned char *bitfield, const u
     }
 }
 
-announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id,
-                                            const uint64_t downloaded, const uint64_t left, const uint64_t uploaded,
-                                            const uint32_t event, const uint32_t key, const LOG_CODE log_code) {
+announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id, torrent_stats_t* torrent_stats, const LOG_CODE log_code) {
     // For storing socket that successfully connected
     int32_t successful_index = 0;
     int32_t* successful_index_pt = &successful_index;
@@ -188,8 +186,7 @@ announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const uns
     }
     announce_response_t *announce_response = announce_request_udp(connection_data.server_addr, connection_data.sockfd,
                                                                   connection_id, metainfo.info->hash, peer_id,
-                                                                  downloaded, left, uploaded, event, key,
-                                                                  decode_bencode_int(
+                                                                  torrent_stats, decode_bencode_int(
                                                                       connection_data.split_addr->port, nullptr, log_code), log_code);
     if (announce_response == nullptr) {
         // Invalid response from tracker or error
@@ -300,10 +297,7 @@ state_t* read_state(const char* filename) {
     errno = 0;
     // Attempt to open file
     FILE* file = fopen(filename, "rb");
-    if (!file) {
-        fclose(file);
-        return nullptr;
-    }
+    if (!file) return nullptr;
 
     // Actually reading file
     uint32_t total_bytes_read = 0;
@@ -327,6 +321,7 @@ state_t* init_state(const char* filename, const uint32_t piece_count, const uint
         return state;
     }
     if (errno == ENOENT) {
+        state = malloc(sizeof(state_t));
         memcpy(&state->magic, "BTST", 4);
         state->version = 1;
         state->piece_count = piece_count;
@@ -342,9 +337,13 @@ state_t* init_state(const char* filename, const uint32_t piece_count, const uint
 }
 
 int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const LOG_CODE log_code) {
-    uint64_t downloaded = 0, left = metainfo.info->length, uploaded = 0;
-    uint32_t event = 0, key = arc4random();
-    announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, downloaded, left, uploaded, event, key, log_code);
+    torrent_stats_t* torrent_stats = malloc(sizeof(torrent_stats_t));
+    torrent_stats->downloaded = 0;
+    torrent_stats->left = metainfo.info->length;
+    torrent_stats->uploaded = 0;
+    torrent_stats->event = 0;
+    torrent_stats->key = arc4random();
+    announce_response_t* announce_response = handle_predownload_udp(metainfo, peer_id, torrent_stats, log_code);
     if (announce_response == nullptr) return -1;
     // Creating TCP sockets for all peers
     /*
@@ -444,7 +443,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
      *  MAIN PEER INTERACTION LOOP
      *
      */
-    while (left > 0) {
+    while (torrent_stats->left > 0) {
         const int32_t nfds = epoll_wait(epoll, epoll_events, MAX_EVENTS, EPOLL_TIMEOUT);
         if (nfds == -1) {
             if (log_code >= LOG_ERR) fprintf(stderr, "Error in epoll_wait\n");
@@ -642,8 +641,8 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
                     case PIECE:
                         const uint64_t download_size = handle_piece((piece_t*)message->payload, peer->socket, metainfo, bitfield, block_tracker,
                                                                     blocks_per_piece, log_code);
-                        downloaded += download_size;
-                        left -= download_size;
+                        torrent_stats->downloaded += download_size;
+                        torrent_stats->left -= download_size;
                         const uint32_t piece_index = ntohl(( (piece_t*)message->payload )->index);
                         broadcast_have(peer_array, peer_amount, piece_index, log_code);
                         break;
