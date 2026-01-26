@@ -1,51 +1,9 @@
 #ifndef DOWNLOADING_H
 #define DOWNLOADING_H
+
+#include "downloading_types.h"
 #include "file.h"
 #include "predownload_udp.h"
-
-/// @brief Maximum events cached by epoll
-#define MAX_EVENTS 128
-/// @brief Maximum amount of time epoll will wait for sockets to be ready (in milliseconds)
-#define EPOLL_TIMEOUT 5000
-/// @brief Download block size in bytes (16KB)
-#define BLOCK_SIZE 16384
-/// @brief Maximum amount of bytes to be transmited in any request or response
-#define MAX_TRANS_SIZE (BLOCK_SIZE+9)
-// TODO Temporal solution, this should be changed to be adjusted dynamically
-
-/// @brief Amount of block requests to queue for each peer
-#define QUEUE_SIZE 5
-/// @brief Enum for peer statuses
-typedef enum {
-    PEER_CLOSED, /** This peer's socket has been closed */
-    PEER_NOTHING, /**< Untouched peer */
-    PEER_CONNECTION_SUCCESS, /**< Peer connected */
-    PEER_CONNECTION_FAILURE, /**< Peer failed connection */
-    PEER_HANDSHAKE_SENT, /**< Handshake sent to peer */
-    PEER_HANDSHAKE_SUCCESS, /**< Handshake completed successfully */
-    PEER_AWAITING_ID, /**< Already received message length, so now waiting for id */
-    PEER_AWAITING_PAYLOAD, /**< Already received message length and id, so now waiting for the payload */
-    PEER_BITFIELD_RECEIVED, /**< Received bitfield from peer */
-} PEER_STATUS;
-
-/// @brief Represents peer data and state in a BitTorrent connection
-typedef struct {
-    int socket; /**< Socket file descriptor for this peer connection */
-    int reception_target; /**< The amount of bytes this peer is expecting to receive */
-    int reception_pointer; /**< How many bytes were already red into reception_cache for this reception_target */
-    bool am_choking; /**< Whether we are choking the peer */
-    bool am_interested; /**< Whether we are interested in peer's pieces */
-    bool peer_choking; /**< Whether we are choked the peer */
-    bool peer_interested; /**< Whether peer is interested in our pieces */
-    unsigned char *bitfield; /**< Bit array representing the pieces this peer has */
-    unsigned char *id; /**< 20-byte string peer ID used during handshake */
-    unsigned char reception_cache[MAX_TRANS_SIZE]; /**< Cache for storing read bytes before interpreting them
-                                                    * TODO Maybe make this dynamic, to save on RAM
-                                                    */
-    PEER_STATUS status; /**< Current status of the peer connection */
-    time_t last_msg; /**< Timestamp of last message received from peer */
-    struct sockaddr_in* address;
-} peer_t;
 
 /**
  * Calculates the size of a block to be downloaded based on the piece size and byte offset.
@@ -71,39 +29,6 @@ int64_t calc_block_size(uint32_t piece_size, uint32_t byte_offset);
  * is responsible for freeing the allocated memory.
  */
 char *get_path(const ll *filepath, LOG_CODE log_code);
-
-/**
- * @brief Writes a specified number of bytes from a buffer to a given file.
- *
- * @param buffer Pointer to the buffer containing the data to be written.
- * @param amount Number of bytes to write to the file.
- * @param file Pointer to the file object where data will be written.
- * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
- *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
- *                 LOG_FULL (detailed logging).
- * @return The number of bytes successfully written, or -1 if an error occurred.
- */
-int32_t write_block(const unsigned char *buffer, int64_t amount, FILE *file, LOG_CODE log_code);
-/**
- * Processes a block of data downloaded from a peer. The function determines the piece and offset
- * from the provided buffer, validates the input parameters, and processes the data within the
- * linked list of file metadata.
- *
- * @param buffer Pointer to the received buffer containing the block data as well as piece index
- *               and byte offset in network byte order.
- * @param piece_size The size of a single piece in bytes. This value is used to validate the offset.
- * @param files_metainfo Pointer to the linked list of file metadata containing information
- *                       about the files in the torrent and their respective byte ranges.
- * @param log_code Logging level indicating the verbosity of the logging for debugging and error reporting.
- *
- * @return An integer status code:
- *         - 0: Block processed successfully.
- *         - 1: Invalid arguments (e.g., offset greater than piece size or piece size is 0).
- *         - 2: Failed to open file.
- *         - 3: Write error.
- */
-int32_t process_block(const unsigned char *buffer, uint32_t piece_size,
-                      files_ll *files_metainfo, LOG_CODE log_code);
 
 /**
  * Determines if a specific piece of a torrent has been fully downloaded.
@@ -168,7 +93,7 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, uint32_
  *                 LOG_FULL (detailed logging).
  * @return A pointer to an announce_response_t structure containing the tracker's response, or nullptr if the request fails.
  */
-announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned char *peer_id, uint64_t downloaded, uint64_t left, uint64_t uploaded, uint32_t event, uint32_t key, LOG_CODE log_code);
+announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned char *peer_id, torrent_stats_t* torrent_stats, LOG_CODE log_code);
 
 
 /**
@@ -183,6 +108,7 @@ announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned 
  * @param peer A pointer to the peer_t structure representing the peer
  *             whose socket is to be read from. Contains state information
  *             for the peer, including the reception cache and pointers.
+ * @param epoll Epoll instance
  * @param log_code Specifies the level of logging. Acceptable values are
  *                 LOG_NO (no logging), LOG_ERR (log errors), LOG_SUMM (log summary),
  *                 or LOG_FULL (full logging).
@@ -201,12 +127,55 @@ bool read_from_socket(peer_t* peer, int32_t epoll, LOG_CODE log_code);
  * @param peer_list Pointer to an array of peers to reconnect.
  * @param peer_amount The total number of peers in the peer list.
  * @param last_peer The current count of handled peers, used to assign unique identifiers to new connections.
+ * @param epoll Epoll instance
  * @param log_code Controls the verbosity of error logging. Supported values are determined by the LOG_CODE enum.
  *                 For example, LOG_ERR will log errors during the connection process.
  * @return The updated value of last_peer, incremented for each successfully reset peer.
  */
 uint32_t reconnect(peer_t* peer_list, uint32_t peer_amount, uint32_t last_peer, int32_t epoll, LOG_CODE log_code);
 
+/**
+ * @brief Writes and serializes the torrent download state to a file.
+ *
+ * This function saves the current torrent state to the specified file,
+ * including information about which pieces have been downloaded. The state
+ * is stored in a binary format containing a magic number, version, piece count,
+ * piece size, and a bitfield representing downloaded pieces.
+ *
+ * @param filename The path to the file where the serialized download state will be written.
+ * @param state A pointer to the state_t structure containing the download state to be serialized.
+ * @return 0 on success, non-zero value on failure (e.g., file cannot be opened or written).
+ */
+uint8_t write_state(const char* filename, const state_t* state);
+
+/**
+ * @brief Reads and deserializes the torrent state from a file.
+ *
+ * This function loads a previously saved torrent state from the specified file,
+ * which includes information about which pieces have been downloaded. The state
+ * is stored in a binary format containing a magic number, version, piece count,
+ * piece size, and a bitfield representing downloaded pieces.
+ *
+ * @param filename The path to the file containing the serialized download state.
+ * @return A pointer to a dynamically allocated state_t structure containing the
+ *         deserialized state, or NULL if the file cannot be read or the state is invalid.
+ *         The caller is responsible for freeing the allocated memory.
+ */
+state_t* read_state(const char* filename);
+
+/**
+ * Initializes the state of a torrent download by reading from an existing state file or creating a new one
+ * if the file does not exist. If an existing state file is found, its content is loaded and returned.
+ * If the file does not exist, a new state is created and initialized with given parameters.
+ *
+ * @param filename The path to the state file. If the file exists, it will be read to initialize the state.
+ * @param piece_count The total number of pieces in the torrent. Used when creating a new state.
+ * @param piece_size The size of each piece in bytes. Used when creating a new state.
+ * @param bitfield A pre-allocated bitfield array representing which pieces have been downloaded. Used when creating a new state.
+ * @return A pointer to the initialized state object. If reading the file or allocating memory fails, the behavior depends
+ *         on the underlying implementation of the read_state function and memory allocation.
+ */
+state_t* init_state(const char* filename, uint32_t piece_count, uint32_t piece_size, unsigned char* bitfield);
 /**
  * @brief Downloads & uploads torrent
  * @param metainfo The torrent metainfo extracted from the .torrent file

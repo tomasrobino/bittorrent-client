@@ -14,7 +14,7 @@
 typedef struct files_ll {
     struct files_ll *next; /**< Pointer to next node in the list */
     int64_t length; /**< Length of the file in bytes */
-    ll *path; /**< Linked list containing the file path components */
+    ll *path; /**< Linked list containing the file path components. Does not contain the slash */
     int64_t byte_index; /**< Byte index of the file in the entire torrent */
     FILE* file_ptr; /**< Pointer to file if it's open */
 } files_ll;

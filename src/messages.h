@@ -1,68 +1,12 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
+
 #include <netinet/in.h>
-
 #include "downloading.h"
-#include "util.h"
+#include "messages_types.h"
 
-// Handshake length
-#define HANDSHAKE_LEN 68
-// Bittorrent message length's size
-#define MESSAGE_LENGTH_SIZE 4
-// Bittorrent message size without payload (only length and id).
-#define MESSAGE_LENGTH_AND_ID_SIZE 5
-/**
- * Enumeration of BitTorrent protocol message types.
- * Each value represents a specific message ID that can be sent between peers:
- * CHOKE (0): Indicates the peer is choking the client
- * UNCHOKE (1): Indicates the peer is unchoking the client
- * INTERESTED (2): Client is interested in downloading from peer
- * NOT_INTERESTED (3): Client is not interested in downloading from peer
- * HAVE (4): Peer has successfully downloaded and verified a piece
- * BITFIELD (5): Represents pieces that peer has (sent right after handshake)
- * REQUEST (6): Request to download a piece from peer
- * PIECE (7): Contains the actual piece data being transferred
- * CANCEL (8): Cancels a previously requested piece
- * PORT (9): DHT port number the peer is listening on
- */
-typedef enum {
-    MSG_ERROR = -1,
-    CHOKE,
-    UNCHOKE,
-    INTERESTED,
-    NOT_INTERESTED,
-    HAVE,
-    BITFIELD,
-    REQUEST,
-    PIECE,
-    CANCEL,
-    PORT
-} MESSAGE_ID;
+#define MAX_FILE_ATTEMPTS 5
 
-typedef int8_t MESSAGE_ID_t;
-/**
- * Structure representing a BitTorrent protocol message
- * @param length Length of the message in bytes, excluding the length field itself
- * @param id Message ID identifying the type of message (e.g. choke, interested)
- * @param payload Message payload data (can be NULL for messages without payload)
- */
-typedef struct {
-    uint32_t length;
-    MESSAGE_ID_t id;
-    unsigned char *payload;
-} bittorrent_message_t;
-
-typedef struct {
-    uint32_t index;
-    uint32_t begin;
-    uint32_t length;
-} request_t;
-
-typedef struct {
-    uint32_t index;
-    uint32_t begin;
-    unsigned char* block;
-} piece_t;
 /**
  * Converts a bitfield into its corresponding hexadecimal string representation.
  *
@@ -212,6 +156,40 @@ void handle_request(const peer_t* peer, unsigned char* payload, LOG_CODE log_cod
 void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piece_index, LOG_CODE log_code);
 
 /**
+ * @brief Writes a specified number of bytes from a buffer to a given file.
+ *
+ * @param buffer Pointer to the buffer containing the data to be written.
+ * @param amount Number of bytes to write to the file.
+ * @param file Pointer to the file object where data will be written.
+ * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
+ *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
+ *                 LOG_FULL (detailed logging).
+ * @return The number of bytes successfully written, or -1 if an error occurred.
+ */
+int64_t write_block(const unsigned char *buffer, uint64_t amount, FILE *file, LOG_CODE log_code);
+/**
+ * Processes a block of data downloaded from a peer. The function determines the piece and offset
+ * from the provided buffer, validates the input parameters, and processes the data within the
+ * linked list of file metadata.
+ *
+ * @param piece Pointer to the received buffer containing the block data as well as piece index
+ *               and byte offset in network byte order.
+ * @param standard_piece_size The size of a single piece in bytes. This value is used to validate the offset.
+ * @param this_piece_size
+ * @param files_metainfo Pointer to the linked list of file metadata containing information
+ *                       about the files in the torrent and their respective byte ranges.
+ * @param log_code Logging level indicating the verbosity of the logging for debugging and error reporting.
+ *
+ * @return An integer status code:
+ *         - 0: Block processed successfully.
+ *         - 1: Invalid arguments (e.g., offset greater than piece size or piece size is 0).
+ *         - 2: Failed to open file.
+ *         - 3: Write error.
+ */
+int32_t process_block(const piece_t *piece, uint32_t standard_piece_size,
+                      uint32_t this_piece_size, files_ll *files_metainfo, LOG_CODE log_code);
+
+/**
  * @brief Processes a received piece message from a peer and updates the client's download state.
  *
  * This function handles an incoming PIECE message by:
@@ -220,8 +198,6 @@ void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piec
  * - Checking if the entire piece is complete
  * - Updating the client's bitfield when a piece is fully received
  *
- * @param peer Pointer to the peer_t structure representing the sending peer
- * @param piece Pointer to the piece_t structure containing the piece data and metadata
  * @param metainfo The metainfo_t structure containing torrent file information
  * @param client_bitfield Pointer to the client's bitfield tracking downloaded pieces
  * @param block_tracker Pointer to the array tracking received blocks within pieces
@@ -230,7 +206,7 @@ void broadcast_have(const peer_t* peer_array, uint32_t peer_count, uint32_t piec
  *
  * @return The number of bytes successfully processed from the piece message
  */
-uint64_t handle_piece(const peer_t* peer, const piece_t* piece, metainfo_t metainfo, unsigned char* client_bitfield,
+uint64_t handle_piece(const piece_t* piece, uint32_t socket, metainfo_t metainfo, unsigned char* client_bitfield,
                       unsigned char* block_tracker, uint32_t blocks_per_piece, LOG_CODE log_code);
 
 #endif //MESSAGES_H
