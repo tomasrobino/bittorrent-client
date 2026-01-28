@@ -4,15 +4,6 @@
 #include "unity.h"
 #include "../src/file.h"
 
-
-void setUp(void) {
-    // set stuff up here
-}
-
-void tearDown(void) {
-    // clean stuff up here
-}
-
 void test_sha1_to_hex(void) {
     const unsigned char sha1[20] = {
         0x12,0x34,0x56,0x78,0x9a,0xbc,0xde,0xf0,0x11,0x22,
@@ -232,47 +223,4 @@ void test_info_t_piece_zero(void) {
     info.piece_number = 0;
     TEST_ASSERT_EQUAL(0, info.piece_length);
     TEST_ASSERT_EQUAL(0, info.piece_number);
-}
-
-
-
-int main(void) {
-    UNITY_BEGIN();
-
-    // SHA1 tests
-    RUN_TEST(test_sha1_to_hex);
-    RUN_TEST(test_sha1_to_hex_all_zeros);
-    RUN_TEST(test_sha1_to_hex_all_ff);
-    RUN_TEST(test_sha1_to_hex_alternating);
-
-    // free_announce_list tests
-    RUN_TEST(test_free_announce_list);
-    RUN_TEST(test_free_announce_list_null);
-    RUN_TEST(test_free_announce_list_single_node);
-    RUN_TEST(test_free_announce_list_multiple_nodes);
-
-    // parse_metainfo tests
-    RUN_TEST(test_parse_metainfo);
-    RUN_TEST(test_parse_metainfo_empty_string);
-    RUN_TEST(test_parse_metainfo_invalid_bencode);
-    RUN_TEST(test_parse_metainfo_missing_name);
-    RUN_TEST(test_parse_metainfo_private_flag);
-    RUN_TEST(test_parse_metainfo_empty_info);
-
-    // free_info_files_list tests
-    RUN_TEST(test_free_info_files_list);
-    RUN_TEST(test_free_info_files_list_null);
-    RUN_TEST(test_free_info_files_list_nested_path);
-    RUN_TEST(test_free_info_files_list_multiple_nodes);
-
-    // free_metainfo tests
-    RUN_TEST(test_free_metainfo);
-    RUN_TEST(test_free_metainfo_with_files);
-    RUN_TEST(test_free_metainfo_with_announce_list);
-
-    // info_t tests
-    RUN_TEST(test_info_t_zero_lengths);
-    RUN_TEST(test_info_t_piece_zero);
-
-    return UNITY_END();
 }
