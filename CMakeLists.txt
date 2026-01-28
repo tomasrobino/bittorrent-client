@@ -2,16 +2,13 @@ cmake_minimum_required(VERSION 3.13)
 
 project(bittorrent-client)
 enable_testing()
-#add_subdirectory(test)
-
-file(GLOB_RECURSE SOURCE_FILES src/*.c src/*.h)
-
+include(FetchContent)
 set(CMAKE_C_STANDARD 23) # Enable the C23 standard
-
 find_package(OpenSSL REQUIRED)
 find_package(CURL REQUIRED)
 
-add_executable(bittorrent ${SOURCE_FILES}
+# creating bittorent_core library
+add_library(bittorrent_core ${SOURCE_FILES}
         src/util.h
         src/parsing.c
         src/basic_bencode.c
@@ -32,17 +29,46 @@ add_executable(bittorrent ${SOURCE_FILES}
 )
 
 # Link OpenSSL, CURL and Math library
-target_link_libraries(bittorrent PRIVATE OpenSSL::Crypto CURL::libcurl m)
+target_link_libraries(bittorrent_core PRIVATE OpenSSL::Crypto CURL::libcurl m )
 
-configure_file("${CMAKE_SOURCE_DIR}/test-files/Antro [FitGirl Repack].torrent" "${CMAKE_BINARY_DIR}/test-files/Antro [FitGirl Repack].torrent" COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/test-files/big-buck-bunny.torrent ${CMAKE_BINARY_DIR}/test-files/big-buck-bunny.torrent COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/test-files/cosmos-laundromat.torrent ${CMAKE_BINARY_DIR}/test-files/cosmos-laundromat.torrent COPYONLY)
-configure_file("${CMAKE_SOURCE_DIR}/test-files/Dragons Reef [FitGirl Repack].torrent" "${CMAKE_BINARY_DIR}/test-files/Dragons Reef [FitGirl Repack].torrent" COPYONLY)
-configure_file("${CMAKE_SOURCE_DIR}/test-files/LIMINAL SHIFT [FitGirl Repack].torrent" "${CMAKE_BINARY_DIR}/test-files/LIMINAL SHIFT [FitGirl Repack].torrent" COPYONLY)
-configure_file("${CMAKE_SOURCE_DIR}/test-files/Parcel Simulator [FitGirl Repack].torrent" "${CMAKE_BINARY_DIR}/test-files/Parcel Simulator [FitGirl Repack].torrent" COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/test-files/sample.torrent ${CMAKE_BINARY_DIR}/test-files/sample.torrent COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/test-files/sintel.torrent ${CMAKE_BINARY_DIR}/test-files/sintel.torrent COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/test-files/tears-of-steel.torrent ${CMAKE_BINARY_DIR}/test-files/tears-of-steel.torrent COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/test-files/torrentdyne_tolerant_goblin_http_ipv4.probe.torrent ${CMAKE_BINARY_DIR}/test-files/torrentdyne_tolerant_goblin_http_ipv4.probe.torrent COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/test-files/torrentdyne_tolerant_goblin_http_ipv6.probe.torrent ${CMAKE_BINARY_DIR}/test-files/torrentdyne_tolerant_goblin_http_ipv6.probe.torrent COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/test-files/wired-cd.torrent ${CMAKE_BINARY_DIR}/test-files/wired-cd.torrent COPYONLY)
+# building main executable
+add_executable(bittorrent src/main.c)
+
+# linking bittorrent with bittorrent_core
+target_link_libraries(bittorrent PRIVATE bittorrent_core)
+
+# fetch Unity
+FetchContent_Declare(
+        unity
+        GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
+        GIT_TAG v2.5.2
+)
+FetchContent_MakeAvailable(unity)
+
+# creating bittorrent_tests executable
+add_executable(bittorrent_tests
+        test/test_parsing.c
+        test/test_basic_bencode.c
+        test/test_magnet.c
+        test/test_file.c
+        test/test_predownload_udp.c
+        test/test_downloading.c
+        test/test_messages.c
+        test/test_util.c
+)
+
+# linking bittorrent_tests with bittorrent_core
+target_link_libraries(bittorrent_tests PRIVATE unity bittorrent_core)
+
+# making tests recognizable to ctest
+add_test(
+        NAME bittorrent_tests
+        COMMAND bittorrent_tests
+)
+
+file(GLOB TORRENT_FILES "${CMAKE_SOURCE_DIR}/test-files/*.torrent")
+
+foreach(torrent ${TORRENT_FILES})
+    get_filename_component(fname ${torrent} NAME)
+    configure_file(${torrent} ${CMAKE_BINARY_DIR}/test-files/${fname} COPYONLY)
+endforeach()
