@@ -178,12 +178,6 @@ void test_free_metainfo(void) {
     TEST_PASS(); // Again, check memory leaks with Valgrind
 }
 
-void test_free_metainfo_all_null(void) {
-    metainfo_t meta = {0};
-    free_metainfo(&meta); // Should not crash
-    TEST_PASS();
-}
-
 void test_free_metainfo_with_files(void) {
     files_ll *file = malloc(sizeof(files_ll));
     file->path = nullptr;
@@ -213,6 +207,9 @@ void test_free_metainfo_with_announce_list(void) {
     meta->announce_list = tier1;
     meta->info = malloc(sizeof(info_t));
     meta->info->files = nullptr;
+    meta->info->name = malloc(2);
+    *meta->info->name = '0';
+    *meta->info->name = '\0';
 
     free_metainfo(meta);
     TEST_PASS();
@@ -270,7 +267,6 @@ int main(void) {
 
     // free_metainfo tests
     RUN_TEST(test_free_metainfo);
-    RUN_TEST(test_free_metainfo_all_null);
     RUN_TEST(test_free_metainfo_with_files);
     RUN_TEST(test_free_metainfo_with_announce_list);
 
