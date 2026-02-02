@@ -58,6 +58,7 @@ add_executable(bittorrent_tests
         test/test_runner.c
         test/test_util.h
         test/test_file.h
+        test/test_messages.h
 )
 
 # linking bittorrent_tests with bittorrent_core
