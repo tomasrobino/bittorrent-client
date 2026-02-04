@@ -231,24 +231,21 @@ uint64_t connect_udp(int32_t amount, announce_list_ll* current, int32_t *success
  * @param connection_id Returned from connect response of the tracker
  * @param info_hash Info hash of the torrent
  * @param peer_id ID of this peer
- * @param downloaded Amount downloaded
- * @param left Amount left to download
- * @param uploaded Amount uploaded
- * @param event
- * @param key Torrent key
+ * @param torrent_stats Pointer to structure containing torrent statistics including
+ *                      downloaded bytes, bytes left, uploaded bytes, event type, and key
  * @param port Tracker port
  * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
  *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
  *                 LOG_FULL (detailed logging).
  * @return The announce response from the server or nullptr if an error ocurred
  */
-announce_response_t* announce_request_udp(
+announce_response_t *announce_request_udp(
     const struct sockaddr *server_addr,
     int32_t sockfd,
     uint64_t connection_id,
     const unsigned char info_hash[],
     const unsigned char peer_id[],
-    const torrent_stats_t* torrent_stats,
+    const torrent_stats_t *torrent_stats,
     uint16_t port,
     LOG_CODE log_code
 );

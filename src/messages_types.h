@@ -47,7 +47,7 @@ typedef int8_t MESSAGE_ID_t;
 /**
  * Structure representing a BitTorrent protocol message
  * @param length Length of the message in bytes, excluding the length field itself
- * @param id Message ID identifying the type of message (e.g. choke, interested)
+ * @param id Message ID identifying the type of message (e.g., choke, interested)
  * @param payload Message payload data (can be NULL for messages without payload)
  */
 typedef struct {
