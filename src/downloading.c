@@ -11,8 +11,10 @@
 #include <time.h>
 
 #include "downloading.h"
+
+#include "basic_bencode.h"
 #include "predownload_udp.h"
-#include "whole_bencode.h"
+#include "parsing.h"
 #include "messages.h"
 
 int64_t calc_block_size(const uint32_t piece_size, const uint32_t byte_offset) {
@@ -160,7 +162,7 @@ void closing_files(const files_ll *files, const unsigned char *bitfield, const u
     }
 }
 
-announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id, torrent_stats_t* torrent_stats, const LOG_CODE log_code) {
+announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const unsigned char *peer_id, const torrent_stats_t* torrent_stats, const LOG_CODE log_code) {
     // For storing socket that successfully connected
     int32_t successful_index = 0;
     int32_t* successful_index_pt = &successful_index;

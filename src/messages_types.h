@@ -5,8 +5,6 @@
 #ifndef BITTORRENT_CLIENT_MESSAGES_TYPES_H
 #define BITTORRENT_CLIENT_MESSAGES_TYPES_H
 
-#include <stdint.h>
-
 
 // Handshake length
 #define HANDSHAKE_LEN 68

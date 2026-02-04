@@ -1,8 +1,10 @@
 // Project header files
-#include "whole_bencode.h"
+#include "parsing.h"
 
 #include <stdlib.h>
 #include <string.h>
+
+#include "basic_bencode.h"
 
 announce_list_ll* decode_announce_list(const char* announce_list, uint64_t *index, const LOG_CODE log_code) {
     if (announce_list[0] == 'l') {

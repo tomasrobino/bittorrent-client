@@ -12,7 +12,7 @@ add_library(bittorrent_core ${SOURCE_FILES}
         src/util.h
         src/parsing.c
         src/basic_bencode.c
-        src/whole_bencode.h
+        src/parsing.h
         src/magnet.c
         src/file.c
         src/predownload_udp.c
@@ -26,6 +26,7 @@ add_library(bittorrent_core ${SOURCE_FILES}
         src/util.c
         src/downloading_types.h
         src/messages_types.h
+        src/basic_bencode.h
 )
 
 # Link OpenSSL, CURL and Math library

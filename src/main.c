@@ -1,7 +1,7 @@
 // Project header files
 #include <errno.h>
 
-#include "whole_bencode.h"
+#include "parsing.h"
 
 #include <math.h>
 #include <stdio.h>

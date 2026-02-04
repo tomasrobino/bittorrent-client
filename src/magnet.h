@@ -1,7 +1,6 @@
 #ifndef BITTORRENT_CLIENT_MAGNET_H
 #define BITTORRENT_CLIENT_MAGNET_H
 
-#include <stdint.h>
 
 /**
  * Enum representing different attributes of a magnet URI

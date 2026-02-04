@@ -3,8 +3,10 @@
 #include <string.h>
 #include <curl/curl.h>
 
-#include "whole_bencode.h"
+#include "parsing.h"
 #include "magnet.h"
+
+#include "basic_bencode.h"
 
 magnet_data* process_magnet(const char* magnet, const LOG_CODE log_code) {
     const int32_t length = (int32_t) strlen(magnet);
