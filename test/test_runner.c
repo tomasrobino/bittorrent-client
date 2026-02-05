@@ -2,6 +2,7 @@
 #include "test_util.h"
 #include "test_file.h"
 #include "test_messages.h"
+#include "test_basic_bencode.h"
 
 void setUp(void) {
     // set stuff up here
@@ -101,6 +102,49 @@ int main(void) {
     RUN_TEST(test_write_block_normal);
     RUN_TEST(test_write_block_zero);
     RUN_TEST(test_write_block_null_file);
+
+    /* basic_bencode.h */
+
+    // String decoding tests
+    RUN_TEST(test_decode_bencode_string_valid_simple);
+    RUN_TEST(test_decode_bencode_string_valid_empty);
+    RUN_TEST(test_decode_bencode_string_valid_with_spaces);
+    RUN_TEST(test_decode_bencode_string_valid_with_special_chars);
+    RUN_TEST(test_decode_bencode_string_valid_single_char);
+    RUN_TEST(test_decode_bencode_string_valid_long_string);
+    RUN_TEST(test_decode_bencode_string_valid_numbers_in_string);
+
+    // Integer decoding tests
+    RUN_TEST(test_decode_bencode_int_valid_positive);
+    RUN_TEST(test_decode_bencode_int_valid_zero);
+    RUN_TEST(test_decode_bencode_int_valid_large_number);
+    RUN_TEST(test_decode_bencode_int_valid_with_continuation);
+    RUN_TEST(test_decode_bencode_int_null_endptr);
+    RUN_TEST(test_decode_bencode_int_invalid_format_no_i);
+    RUN_TEST(test_decode_bencode_int_invalid_format_no_e);
+    RUN_TEST(test_decode_bencode_int_invalid_not_a_number);
+    RUN_TEST(test_decode_bencode_int_empty_number);
+
+    // List decoding tests
+    RUN_TEST(test_decode_bencode_list_valid_empty);
+    RUN_TEST(test_decode_bencode_list_valid_single_string);
+    RUN_TEST(test_decode_bencode_list_valid_single_int);
+    RUN_TEST(test_decode_bencode_list_valid_multiple_strings);
+    RUN_TEST(test_decode_bencode_list_valid_mixed_types);
+    RUN_TEST(test_decode_bencode_list_valid_nested_list);
+    RUN_TEST(test_decode_bencode_list_invalid_no_l);
+    RUN_TEST(test_decode_bencode_list_invalid_no_e);
+    RUN_TEST(test_decode_bencode_list_null_length_pointer);
+    RUN_TEST(test_decode_bencode_list_valid_length_output);
+
+    // Free list tests
+    RUN_TEST(test_free_bencode_list_null);
+    RUN_TEST(test_free_bencode_list_single_element);
+    RUN_TEST(test_free_bencode_list_multiple_elements);
+
+    // Integration tests
+    RUN_TEST(test_integration_parse_complex_list);
+    RUN_TEST(test_integration_logging_modes);
 
     return UNITY_END();
 }
