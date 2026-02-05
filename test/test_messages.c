@@ -113,7 +113,7 @@ void test_process_bitfield_zero_size(void) {
 // read_message_length()
 
 void test_read_message_length_keep_alive(void) {
-    unsigned char buffer[4] = {0,0,0,0};
+    unsigned char* buffer = malloc(4);
     time_t t = 0;
 
     TEST_ASSERT_FALSE(read_message_length(buffer, &t));
