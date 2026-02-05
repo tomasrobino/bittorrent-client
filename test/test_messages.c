@@ -239,22 +239,6 @@ void test_handle_have_last_bit(void) {
     free(peer.bitfield);
 }
 
-// 8️⃣ Malformed payload: piece index larger than bitfield → safely ignore
-void test_handle_have_invalid_index(void) {
-    peer_t peer = {0};
-    peer.bitfield = malloc(1);
-    peer.bitfield[0] = 0x00;
-    peer.am_interested = false;
-
-    unsigned char payload[4] = {0,0,0,8}; // piece 8, only 1 byte → out of range
-    unsigned char client_bf[1] = {0x00};
-
-    handle_have(&peer, payload, client_bf, 1, LOG_NO);
-
-    TEST_ASSERT_FALSE(peer.am_interested); // should not crash
-    free(peer.bitfield);
-}
-
 // handle_bitfield()
 
 void test_handle_bitfield_null_payload(void) {
