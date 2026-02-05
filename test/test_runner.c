@@ -3,6 +3,7 @@
 #include "test_file.h"
 #include "test_messages.h"
 #include "test_basic_bencode.h"
+#include "test_parsing.h"
 
 void setUp(void) {
     // set stuff up here
@@ -150,6 +151,60 @@ int main(void) {
     RUN_TEST(test_integration_parse_complex_list);
     RUN_TEST(test_integration_logging_modes);
     */
+
+    /* parsing.h */
+
+    // decode_announce_list tests
+    RUN_TEST(test_decode_announce_list_valid_single_tracker);
+    RUN_TEST(test_decode_announce_list_valid_multiple_trackers);
+    RUN_TEST(test_decode_announce_list_valid_multiple_urls_per_tier);
+    RUN_TEST(test_decode_announce_list_valid_empty_list);
+    RUN_TEST(test_decode_announce_list_valid_nested_empty_lists);
+    RUN_TEST(test_decode_announce_list_null_index_pointer);
+    RUN_TEST(test_decode_announce_list_invalid_format_no_list);
+    RUN_TEST(test_decode_announce_list_invalid_format_unclosed);
+    RUN_TEST(test_decode_announce_list_invalid_format_malformed_inner);
+    RUN_TEST(test_decode_announce_list_valid_index_tracking);
+    RUN_TEST(test_decode_announce_list_valid_udp_tracker);
+    RUN_TEST(test_decode_announce_list_valid_mixed_protocols);
+    RUN_TEST(test_decode_announce_list_logging_modes);
+
+    // read_info_files single file tests
+    RUN_TEST(test_read_info_files_single_file_valid_simple);
+    RUN_TEST(test_read_info_files_single_file_valid_large_file);
+    RUN_TEST(test_read_info_files_single_file_valid_zero_length);
+    RUN_TEST(test_read_info_files_single_file_null_index);
+    RUN_TEST(test_read_info_files_single_file_invalid_no_length);
+    RUN_TEST(test_read_info_files_single_file_invalid_no_name);
+    RUN_TEST(test_read_info_files_single_file_invalid_malformed);
+    RUN_TEST(test_read_info_files_single_file_index_tracking);
+
+    // read_info_files multiple files tests
+    RUN_TEST(test_read_info_files_multiple_files_valid_two_files);
+    RUN_TEST(test_read_info_files_multiple_files_valid_single_file);
+    RUN_TEST(test_read_info_files_multiple_files_valid_nested_path);
+    RUN_TEST(test_read_info_files_multiple_files_valid_deep_nesting);
+    RUN_TEST(test_read_info_files_multiple_files_valid_empty_files_list);
+    RUN_TEST(test_read_info_files_multiple_files_valid_many_files);
+    RUN_TEST(test_read_info_files_multiple_files_null_index);
+    RUN_TEST(test_read_info_files_multiple_files_invalid_no_files_key);
+    RUN_TEST(test_read_info_files_multiple_files_invalid_no_length);
+    RUN_TEST(test_read_info_files_multiple_files_invalid_no_path);
+    RUN_TEST(test_read_info_files_multiple_files_invalid_malformed);
+    RUN_TEST(test_read_info_files_multiple_files_index_tracking);
+
+    // Edge case tests
+    RUN_TEST(test_read_info_files_edge_case_very_long_filename);
+    RUN_TEST(test_read_info_files_edge_case_special_chars_in_name);
+    RUN_TEST(test_read_info_files_edge_case_max_uint64_length);
+
+    // Logging mode tests
+    RUN_TEST(test_read_info_files_logging_modes_single);
+    RUN_TEST(test_read_info_files_logging_modes_multiple);
+
+    // Integration tests
+    RUN_TEST(test_integration_announce_list_complex_structure);
+    RUN_TEST(test_integration_files_list_mixed_sizes);
 
     return UNITY_END();
 }

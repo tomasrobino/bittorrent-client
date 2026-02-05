@@ -1,5 +1,5 @@
-#ifndef WHOLE_BENCODE_H
-#define WHOLE_BENCODE_H
+#ifndef PARSING_H
+#define PARSING_H
 #include "file.h"
 #include "util.h"
 
@@ -29,4 +29,4 @@ announce_list_ll* decode_announce_list(const char* announce_list, uint64_t *inde
  *         or nullptr if parsing fails.
  */
 files_ll* read_info_files(const char* bencode, bool multiple, uint64_t *index, LOG_CODE log_code);
-#endif //WHOLE_BENCODE_H
+#endif //PARSING_H
