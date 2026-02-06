@@ -281,6 +281,8 @@ uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_
 }
 
 uint8_t write_state(const char* filename, const state_t* state) {
+    if (!filename || !state) return 1;
+
     FILE* file = fopen(filename, "wb");
     uint32_t bytes_written;
     do {
