@@ -45,8 +45,8 @@ void test_write_block_normal(void);
 void test_write_block_zero(void);
 void test_write_block_null_file(void);
 
-/* TODO
- * Write tests for the following functions. They require mocking
+/* TODO: Write tests for the following functions. They require mocking
+ *
  * try_connect()
  * send_handshake()
  * handle_request()
