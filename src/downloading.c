@@ -66,6 +66,8 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
 }
 
 bool piece_complete(const unsigned char *block_tracker, const uint32_t piece_index, const uint32_t piece_size, const int64_t torrent_size) {
+    if (!block_tracker) return false;
+
     uint32_t this_piece_size = piece_size;
     if ( ((int64_t)piece_index+1) * (int64_t)piece_size > torrent_size ) {
         this_piece_size = torrent_size - (int64_t)piece_index * (int64_t)piece_size;
