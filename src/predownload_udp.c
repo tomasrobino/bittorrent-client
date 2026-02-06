@@ -249,6 +249,9 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], int32_t sockf
 }
 
 uint64_t connect_udp(int32_t amount, announce_list_ll* current, int32_t *successful_index_pt, connection_data_t* connection_data, const LOG_CODE log_code) {
+    if (amount == 0 || !current || !connection_data) return 0;
+
+
     const int successful_index = *successful_index_pt;
     // Creating outer list arrays
     address_t** split_addr_array[amount];
