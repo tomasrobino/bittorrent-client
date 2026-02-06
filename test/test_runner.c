@@ -100,12 +100,9 @@ int main(void) {
     RUN_TEST(test_handle_bitfield_null_payload);
 
     // write_block tests
-    // TODO: This will be enabled once block writing is working
-    /*
     RUN_TEST(test_write_block_normal);
     RUN_TEST(test_write_block_zero);
     RUN_TEST(test_write_block_null_file);
-    */
 
     /* basic_bencode.h */
 
@@ -130,7 +127,6 @@ int main(void) {
     RUN_TEST(test_decode_bencode_int_empty_number);
 
     // List decoding tests
-    /* TODO: basic_bencode isn't a proper bencode parser
     RUN_TEST(test_decode_bencode_list_valid_empty);
     RUN_TEST(test_decode_bencode_list_valid_single_string);
     RUN_TEST(test_decode_bencode_list_valid_single_int);
@@ -151,7 +147,6 @@ int main(void) {
     // Integration tests
     RUN_TEST(test_integration_parse_complex_list);
     RUN_TEST(test_integration_logging_modes);
-    */
 
     /* parsing.h */
 
