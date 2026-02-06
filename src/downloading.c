@@ -211,6 +211,8 @@ announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const uns
 }
 
 bool read_from_socket(peer_t* peer, const int32_t epoll, const LOG_CODE log_code) {
+    if (!peer) return false;
+
     errno = 0;
     while (peer->reception_pointer < peer->reception_target && errno != EAGAIN && errno != EWOULDBLOCK ) {
         errno = 0;
@@ -238,6 +240,8 @@ bool read_from_socket(peer_t* peer, const int32_t epoll, const LOG_CODE log_code
 }
 
 uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_peer, const int32_t epoll, const LOG_CODE log_code) {
+    if (!peer_list) return 0;
+
     for (int i = 0; i < peer_amount; ++i) {
         peer_t* peer = &peer_list[i];
         if (peer->status == PEER_CLOSED) {
