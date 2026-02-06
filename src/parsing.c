@@ -39,6 +39,13 @@ announce_list_ll* decode_announce_list(const char* announce_list, uint64_t *inde
 }
 
 files_ll* read_info_files(const char* bencode, const bool multiple, uint64_t *index, const LOG_CODE log_code) {
+    // Defensive programming
+    // Checking whether "length", "path", and "name" exist at all
+    if (!(strstr(bencode, "length") && strstr(bencode, "path") && strstr(bencode, "name"))) {
+        return nullptr;
+    }
+
+
     files_ll *head = malloc(sizeof(files_ll));
     head->path = nullptr;
     head->next = nullptr;
