@@ -122,6 +122,8 @@ char* url_to_ip(address_t* address, const LOG_CODE log_code) {
 }
 
 int32_t *try_request_udp(const int32_t amount, int32_t sockfd[], const void *req[], const size_t req_size, const struct sockaddr *server_addr[], const LOG_CODE log_code) {
+    if (!sockfd || !req || amount == 0) return nullptr;
+
     struct pollfd pfd[amount];
     memset(pfd, 0, amount*sizeof(struct pollfd));
     for (int i = 0; i < amount; ++i) {
