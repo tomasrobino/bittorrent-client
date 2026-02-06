@@ -366,6 +366,9 @@ announce_response_t *announce_request_udp(const struct sockaddr *server_addr, in
                                           const uint64_t connection_id, const unsigned char info_hash[],
                                           const unsigned char peer_id[], const torrent_stats_t* torrent_stats,
                                           const uint16_t port, const LOG_CODE log_code) {
+    if (!server_addr || sockfd == 0 || !info_hash || !peer_id || !torrent_stats) return nullptr;
+
+
     announce_request_t req = {0};
     // Convert to network endianness
     req.connection_id = htobe64(connection_id);
