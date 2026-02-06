@@ -12,9 +12,9 @@
 #include <unistd.h>
 
 #include "util.h"
-#include "whole_bencode.h"
 #include "predownload_udp.h"
 
+#include "basic_bencode.h"
 #include "downloading_types.h"
 #include "file.h"
 

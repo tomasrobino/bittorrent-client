@@ -1,6 +1,7 @@
 #ifndef BITTORRENT_CLIENT_MAGNET_H
 #define BITTORRENT_CLIENT_MAGNET_H
 
+
 /**
  * Enum representing different attributes of a magnet URI
  * For further documentation: https://en.wikipedia.org/wiki/Magnet_URI_scheme

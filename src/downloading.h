@@ -83,17 +83,14 @@ void closing_files(const files_ll* files, const unsigned char* bitfield, uint32_
  *
  * @param metainfo A structure containing metadata of the torrent file, including tracker information.
  * @param peer_id A unique identifier for the peer that is making the request.
- * @param downloaded The total amount of data downloaded by the client, in bytes.
- * @param left The amount of data left to download, in bytes.
- * @param uploaded The total amount of data uploaded by the client, in bytes.
- * @param event A numeric value representing the event type (e.g., start, stop, complete).
- * @param key A random numerical key used to verify the announce request.
+ * @param torrent_stats Pointer to structure containing torrent statistics including
+ *                      downloaded bytes, bytes left, uploaded bytes, event type, and key
  * @param log_code Controls the verbosity of logging output. Can be LOG_NO (no logging),
  *                 LOG_ERR (error logging), LOG_SUMM (summary logging), or
  *                 LOG_FULL (detailed logging).
  * @return A pointer to an announce_response_t structure containing the tracker's response, or nullptr if the request fails.
  */
-announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned char *peer_id, torrent_stats_t* torrent_stats, LOG_CODE log_code);
+announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned char *peer_id, const torrent_stats_t* torrent_stats, LOG_CODE log_code);
 
 
 /**
@@ -112,7 +109,7 @@ announce_response_t* handle_predownload_udp(metainfo_t metainfo, const unsigned 
  * @param log_code Specifies the level of logging. Acceptable values are
  *                 LOG_NO (no logging), LOG_ERR (log errors), LOG_SUMM (log summary),
  *                 or LOG_FULL (full logging).
- * @return true if data was successfully read or no errors occurred that
+ * @return True if data was successfully read or no errors occurred that
  *         require terminating the connection. Returns false if an unrecoverable
  *         error occurs or if the remote peer has closed the connection.
  */

@@ -4,7 +4,9 @@
 #include <stdio.h>
 
 #include "file.h"
-#include "whole_bencode.h"
+
+#include "basic_bencode.h"
+#include "parsing.h"
 
 void free_announce_list(announce_list_ll* list) {
     while (list != nullptr) {

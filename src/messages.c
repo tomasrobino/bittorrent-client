@@ -58,6 +58,7 @@ bool check_handshake(const unsigned char* info_hash, const unsigned char* buffer
 }
 
 unsigned char* process_bitfield(const unsigned char* client_bitfield, const unsigned char* foreign_bitfield, const uint32_t size) {
+    if (size < 1) return nullptr;
     const uint32_t byte_size = ceil(size/8.0);
     unsigned char* pending_bits = malloc(byte_size);
     for (int32_t i = 0; i < byte_size; ++i) {
@@ -103,6 +104,8 @@ void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char
 
 void handle_bitfield(peer_t *peer, const unsigned char *payload, const unsigned char *client_bitfield,
                      const uint32_t bitfield_byte_size, const LOG_CODE log_code) {
+    if (payload == nullptr) return;
+
     peer->status = PEER_BITFIELD_RECEIVED;
 
     if (peer->bitfield == nullptr) {
