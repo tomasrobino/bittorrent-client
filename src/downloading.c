@@ -327,6 +327,8 @@ state_t* read_state(const char* filename) {
 }
 
 state_t* init_state(const char* filename, const uint32_t piece_count, const uint32_t piece_size, unsigned char* bitfield) {
+    if (!filename || piece_count == 0 || piece_size == 0) return nullptr;
+
     state_t* state = read_state(filename);
     if (state != nullptr) {
         return state;
