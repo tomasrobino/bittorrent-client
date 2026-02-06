@@ -77,6 +77,8 @@ void shuffle_address_array(address_t* array[], int32_t length) {
 }
 
 char* url_to_ip(address_t* address, const LOG_CODE log_code) {
+    if (!address) return nullptr;
+
     struct addrinfo hints = {0}, *res;
     hints.ai_family = AF_UNSPEC;
     char* ip = nullptr;
