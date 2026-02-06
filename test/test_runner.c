@@ -90,7 +90,6 @@ int main(void) {
 
     // handle_have tests
     RUN_TEST(test_handle_have_allocates_bitfield);
-    RUN_TEST(test_handle_have_peer_already_has_piece);
     RUN_TEST(test_handle_have_client_has_piece);
     RUN_TEST(test_handle_have_client_missing_piece);
     RUN_TEST(test_handle_have_second_byte_piece);

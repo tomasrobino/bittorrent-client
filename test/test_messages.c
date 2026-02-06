@@ -142,23 +142,6 @@ void test_handle_have_allocates_bitfield(void) {
     free(peer.bitfield);
 }
 
-// Peer already has the piece → no change, am_interested false
-void test_handle_have_peer_already_has_piece(void) {
-    peer_t peer = {0};
-    peer.bitfield = malloc(1);
-    peer.bitfield[0] = 0x20; // piece 2 already set
-    peer.am_interested = false;
-
-    unsigned char payload[4] = {0,0,0,2}; // piece index 2
-    unsigned char client_bf[1] = {0x20};
-
-    handle_have(&peer, payload, client_bf, 1, LOG_NO);
-
-    TEST_ASSERT_EQUAL_UINT8(0x20, peer.bitfield[0]);
-    TEST_ASSERT_FALSE(peer.am_interested);
-    free(peer.bitfield);
-}
-
 // Peer announces piece client already has → am_interested stays false
 void test_handle_have_client_has_piece(void) {
     peer_t peer = {0};

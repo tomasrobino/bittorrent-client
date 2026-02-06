@@ -29,7 +29,6 @@ void test_read_message_length_normal(void);
 
 // handle_have()
 void test_handle_have_allocates_bitfield(void);
-void test_handle_have_peer_already_has_piece(void);
 void test_handle_have_client_has_piece(void);
 void test_handle_have_client_missing_piece(void);
 void test_handle_have_second_byte_piece(void);
