@@ -523,6 +523,8 @@ announce_response_t *announce_request_udp(const struct sockaddr *server_addr, in
 
 scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, int32_t sockfd, const uint64_t connection_id, const char info_hash[], uint32_t
                                       torrent_amount, const LOG_CODE log_code) {
+    if (!server_addr || !info_hash || torrent_amount == 0) return nullptr;
+
     scrape_request_t req;
     req.connection_id = htobe64(connection_id);
     req.action = htobe32(2);
