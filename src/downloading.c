@@ -29,6 +29,7 @@ int64_t calc_block_size(const uint32_t piece_size, const uint32_t byte_offset) {
 }
 
 char* get_path(const ll* filepath, const LOG_CODE log_code) {
+    if (!filepath) return nullptr;
     // Getting the amount of chars in the complete filepath
     int32_t filepath_size = 0;
     const ll* filepath_ptr = filepath;
