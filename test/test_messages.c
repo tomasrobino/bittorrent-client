@@ -142,7 +142,7 @@ void test_handle_have_allocates_bitfield(void) {
     free(peer.bitfield);
 }
 
-// 2️⃣ Peer already has the piece → no change, am_interested false
+// Peer already has the piece → no change, am_interested false
 void test_handle_have_peer_already_has_piece(void) {
     peer_t peer = {0};
     peer.bitfield = malloc(1);
@@ -159,7 +159,7 @@ void test_handle_have_peer_already_has_piece(void) {
     free(peer.bitfield);
 }
 
-// 3️⃣ Peer announces piece client already has → am_interested stays false
+// Peer announces piece client already has → am_interested stays false
 void test_handle_have_client_has_piece(void) {
     peer_t peer = {0};
     peer.bitfield = malloc(1);
@@ -176,7 +176,7 @@ void test_handle_have_client_has_piece(void) {
     free(peer.bitfield);
 }
 
-// 4️⃣ Peer announces piece client doesn’t have → am_interested becomes true
+// Peer announces piece client doesn’t have → am_interested becomes true
 void test_handle_have_client_missing_piece(void) {
     peer_t peer = {0};
     peer.bitfield = malloc(1);
@@ -192,7 +192,7 @@ void test_handle_have_client_missing_piece(void) {
     free(peer.bitfield);
 }
 
-// 5️⃣ Multi-byte bitfield, piece in second byte
+// Multi-byte bitfield, piece in second byte
 void test_handle_have_second_byte_piece(void) {
     peer_t peer = {0};
     peer.bitfield = malloc(2);
@@ -208,7 +208,7 @@ void test_handle_have_second_byte_piece(void) {
     free(peer.bitfield);
 }
 
-// 6️⃣ Edge: piece index = 0 (first bit of first byte)
+// Edge: piece index = 0 (first bit of first byte)
 void test_handle_have_piece_index_zero(void) {
     peer_t peer = {0};
     peer.bitfield = malloc(1);
@@ -224,7 +224,7 @@ void test_handle_have_piece_index_zero(void) {
     free(peer.bitfield);
 }
 
-// 7️⃣ Edge: last bit of last byte (e.g., piece 15 in 2-byte bitfield)
+// Edge: last bit of last byte (e.g., piece 15 in 2-byte bitfield)
 void test_handle_have_last_bit(void) {
     peer_t peer = {0};
     peer.bitfield = malloc(2);
