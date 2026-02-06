@@ -150,12 +150,12 @@ void test_handle_have_client_has_piece(void) {
     peer.am_interested = false;
 
     unsigned char payload[4] = {0,0,0,1}; // piece 1
-    unsigned char client_bf[1] = {0x02}; // client already has piece 1
+    unsigned char client_bf[1] = {0x40}; // client already has piece 1
 
     handle_have(&peer, payload, client_bf, 1, LOG_NO);
 
     TEST_ASSERT_FALSE(peer.am_interested);
-    TEST_ASSERT_EQUAL_UINT8(0x02, peer.bitfield[0] & 0x02); // bitfield updated
+    TEST_ASSERT_EQUAL_UINT8(0x40, peer.bitfield[0] & 0x40); // bitfield updated
     free(peer.bitfield);
 }
 
