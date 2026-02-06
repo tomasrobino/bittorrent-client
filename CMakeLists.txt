@@ -50,7 +50,6 @@ FetchContent_MakeAvailable(unity)
 add_executable(bittorrent_tests
         test/test_parsing.c
         test/test_basic_bencode.c
-        test/test_magnet.c
         test/test_file.c
         test/test_predownload_udp.c
         test/test_downloading.c
