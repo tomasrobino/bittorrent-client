@@ -26,34 +26,105 @@ address_t* split_address(const char* address) {
 
     if (strncmp(address, "udp", 3) == 0) {
         ret_address->protocol = UDP;
-    } else if (strncmp(address, "http", 4) == 0 && address[4] != 's') {
-        ret_address->protocol = HTTP;
-    } else if (address[4] == 's') {
-        ret_address->protocol = HTTPS;
-    } else return nullptr;
-    const char* start = strchr(address, '/') + 2;
-    const char* end = strchr(start, ':');
-    if (end) {
-        // has port
-        ret_address->host = malloc(sizeof(char)*(end-start+1));
-        strncpy(ret_address->host, start, end-start);
-        ret_address->host[end-start] = '\0';
 
-        start = end+1;
-        end = strchr(start, '/');
-        int dif;
-        if (end == NULL) {
-            dif = (int) strlen(start);
+        const char* start = strchr(address, '/');
+        if (start) {
+            start+=2;
         } else {
-            dif = (int) (end-start);
+            free(ret_address);
+            return nullptr;
         }
-        ret_address->port = (char*) start;
-        ret_address->port = malloc(sizeof(char)* (dif+1) );
-        strncpy(ret_address->port, start, dif);
-        ret_address->port[dif] = '\0';
+
+        const char* end = strchr(start, ']');
+        // ipv6 doesn't have square brackets
+        if (!end) {
+            end = strchr(start, ':');
+            if (end) {
+                // has port
+                ret_address->host = malloc(sizeof(char)*(end-start+1));
+                strncpy(ret_address->host, start, end-start);
+                ret_address->host[end-start] = '\0';
+
+                start = end+1;
+                end = strchr(start, '/');
+                int dif;
+                if (end == NULL) {
+                    dif = (int) strlen(start);
+                } else {
+                    dif = (int) (end-start);
+                }
+                ret_address->port = (char*) start;
+                ret_address->port = malloc(sizeof(char)* (dif+1) );
+                strncpy(ret_address->port, start, dif);
+                ret_address->port[dif] = '\0';
+            } else {
+                // no port
+                ret_address->port = nullptr;
+            }
+        } else {
+            // ipv6 does have square brackets
+            start = strchr(start, '[');
+            if (!start) {
+                free(ret_address);
+                return nullptr;
+            }
+            start++;
+            ret_address->host = malloc(sizeof(char)*(end-start+1));
+            strncpy(ret_address->host, start, end-start);
+            ret_address->host[end-start] = '\0';
+
+            start = end+2;
+            end = strchr(start, '/');
+            int dif;
+            if (end == NULL) {
+                dif = (int) strlen(start);
+            } else {
+                dif = (int) (end-start);
+            }
+            ret_address->port = (char*) start;
+            ret_address->port = malloc(sizeof(char)* (dif+1) );
+            strncpy(ret_address->port, start, dif);
+            ret_address->port[dif] = '\0';
+        }
     } else {
-        // no port
-        ret_address->port = nullptr;
+        if (strncmp(address, "http", 4) == 0 && address[4] != 's') {
+            ret_address->protocol = HTTP;
+        } else if (address[4] == 's') {
+            ret_address->protocol = HTTPS;
+        } else return nullptr;
+
+        const char* start = strchr(address, '/');
+
+        if (start) {
+            start+=2;
+        } else {
+            free(ret_address);
+            return nullptr;
+        }
+
+        const char* end = strchr(start, ':');
+        if (end) {
+            // has port
+            ret_address->host = malloc(sizeof(char)*(end-start+1));
+            strncpy(ret_address->host, start, end-start);
+            ret_address->host[end-start] = '\0';
+
+            start = end+1;
+            end = strchr(start, '/');
+            int dif;
+            if (end == NULL) {
+                dif = (int) strlen(start);
+            } else {
+                dif = (int) (end-start);
+            }
+            ret_address->port = (char*) start;
+            ret_address->port = malloc(sizeof(char)* (dif+1) );
+            strncpy(ret_address->port, start, dif);
+            ret_address->port[dif] = '\0';
+        } else {
+            // no port
+            ret_address->port = nullptr;
+        }
     }
     return ret_address;
 }
