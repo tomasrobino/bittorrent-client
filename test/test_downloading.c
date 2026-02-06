@@ -90,7 +90,7 @@ void test_calc_block_size_offset_near_end(void) {
 // ============================================================================
 
 void test_get_path_single_segment(void) {
-    ll segment = {.next = NULL, .val = "file.txt"};
+    ll segment = {.next = nullptr, .val = "file.txt"};
 
     char *result = get_path(&segment, LOG_NO);
 
@@ -101,7 +101,7 @@ void test_get_path_single_segment(void) {
 }
 
 void test_get_path_two_segments(void) {
-    ll segment2 = {.next = NULL, .val = "file.txt"};
+    ll segment2 = {.next = nullptr, .val = "file.txt"};
     ll segment1 = {.next = &segment2, .val = "folder"};
 
     char *result = get_path(&segment1, LOG_NO);
@@ -115,7 +115,7 @@ void test_get_path_two_segments(void) {
 }
 
 void test_get_path_multiple_segments(void) {
-    ll segment3 = {.next = NULL, .val = "file.txt"};
+    ll segment3 = {.next = nullptr, .val = "file.txt"};
     ll segment2 = {.next = &segment3, .val = "subfolder"};
     ll segment1 = {.next = &segment2, .val = "folder"};
 
@@ -128,7 +128,7 @@ void test_get_path_multiple_segments(void) {
 }
 
 void test_get_path_deep_nesting(void) {
-    ll seg5 = {.next = NULL, .val = "file.txt"};
+    ll seg5 = {.next = nullptr, .val = "file.txt"};
     ll seg4 = {.next = &seg5, .val = "level3"};
     ll seg3 = {.next = &seg4, .val = "level2"};
     ll seg2 = {.next = &seg3, .val = "level1"};
@@ -143,13 +143,13 @@ void test_get_path_deep_nesting(void) {
 }
 
 void test_get_path_null_filepath(void) {
-    char *result = get_path(NULL, LOG_NO);
+    char *result = get_path(nullptr, LOG_NO);
 
     TEST_ASSERT_NULL(result);
 }
 
 void test_get_path_logging_modes(void) {
-    ll segment = {.next = NULL, .val = "file.txt"};
+    ll segment = {.next = nullptr, .val = "file.txt"};
 
     char *r1 = get_path(&segment, LOG_NO);
     char *r2 = get_path(&segment, LOG_ERR);
@@ -231,7 +231,7 @@ void test_piece_complete_null_block_tracker(void) {
     uint32_t piece_size = BLOCK_SIZE;
     int64_t torrent_size = BLOCK_SIZE;
 
-    bool result = piece_complete(NULL, piece_index, piece_size, torrent_size);
+    bool result = piece_complete(nullptr, piece_index, piece_size, torrent_size);
 
     TEST_ASSERT_FALSE(result);
 }
@@ -313,7 +313,7 @@ void test_are_bits_set_middle_range(void) {
 }
 
 void test_are_bits_set_null_bitfield(void) {
-    bool result = are_bits_set(NULL, 0, 7);
+    bool result = are_bits_set(nullptr, 0, 7);
 
     TEST_ASSERT_FALSE(result);
 }
@@ -334,7 +334,7 @@ void test_closing_files_null_files(void) {
     unsigned char bitfield[1] = {0xFF};
 
     // Should not crash
-    closing_files(NULL, bitfield, 0, BLOCK_SIZE, BLOCK_SIZE);
+    closing_files(nullptr, bitfield, 0, BLOCK_SIZE, BLOCK_SIZE);
     TEST_PASS();
 }
 
@@ -370,7 +370,7 @@ void test_handle_predownload_udp_null_peer_id(void) {
     metainfo_t metainfo = {0};
     torrent_stats_t stats = {0, 1024, 0, 0, 12345};
 
-    announce_response_t *result = handle_predownload_udp(metainfo, NULL, &stats, LOG_NO);
+    announce_response_t *result = handle_predownload_udp(metainfo, nullptr, &stats, LOG_NO);
 
     TEST_ASSERT_NULL(result);
 }
@@ -379,7 +379,7 @@ void test_handle_predownload_udp_null_torrent_stats(void) {
     metainfo_t metainfo = {0};
     unsigned char peer_id[20] = {0};
 
-    announce_response_t *result = handle_predownload_udp(metainfo, peer_id, NULL, LOG_NO);
+    announce_response_t *result = handle_predownload_udp(metainfo, peer_id, nullptr, LOG_NO);
 
     TEST_ASSERT_NULL(result);
 }
@@ -396,7 +396,7 @@ void test_handle_predownload_udp_logging_modes(void) {
 void test_read_from_socket_null_peer(void) {
     int32_t epoll = 1;
 
-    bool result = read_from_socket(NULL, epoll, LOG_NO);
+    bool result = read_from_socket(nullptr, epoll, LOG_NO);
 
     TEST_ASSERT_FALSE(result);
 }
@@ -429,7 +429,7 @@ void test_read_from_socket_partial_read(void) {
 // ============================================================================
 
 void test_reconnect_null_peer_list(void) {
-    uint32_t result = reconnect(NULL, 10, 0, 1, LOG_NO);
+    uint32_t result = reconnect(nullptr, 10, 0, 1, LOG_NO);
 
     TEST_ASSERT_EQUAL_UINT32(0, result);
 }
@@ -467,13 +467,13 @@ void test_reconnect_some_closed_peers(void) {
 void test_write_state_null_filename(void) {
     state_t state = {0};
 
-    uint8_t result = write_state(NULL, &state);
+    uint8_t result = write_state(nullptr, &state);
 
     TEST_ASSERT_NOT_EQUAL_UINT8(0, result);
 }
 
 void test_write_state_null_state(void) {
-    uint8_t result = write_state("test_state.dat", NULL);
+    uint8_t result = write_state("test_state.dat", nullptr);
 
     TEST_ASSERT_NOT_EQUAL_UINT8(0, result);
 }
@@ -518,7 +518,7 @@ void test_write_state_large_state(void) {
 // ============================================================================
 
 void test_read_state_null_filename(void) {
-    state_t *result = read_state(NULL);
+    state_t *result = read_state(nullptr);
 
     TEST_ASSERT_NULL(result);
 }
@@ -617,13 +617,13 @@ void test_init_state_existing_file(void) {
 void test_init_state_null_filename(void) {
     unsigned char bitfield[1] = {0x00};
 
-    state_t *result = init_state(NULL, 1, BLOCK_SIZE, bitfield);
+    state_t *result = init_state(nullptr, 1, BLOCK_SIZE, bitfield);
 
     TEST_ASSERT_NULL(result);
 }
 
 void test_init_state_null_bitfield(void) {
-    state_t *result = init_state("test_init_null_bf.dat", 1, BLOCK_SIZE, NULL);
+    state_t *result = init_state("test_init_null_bf.dat", 1, BLOCK_SIZE, nullptr);
 
     TEST_ASSERT_NULL(result);
 
@@ -637,7 +637,7 @@ void test_init_state_zero_piece_count(void) {
     state_t *result = init_state("test_init_zero.dat", 0, BLOCK_SIZE, bitfield);
 
     // Behavior depends on implementation
-    // May return NULL or create with 0 pieces
+    // May return nullptr or create with 0 pieces
 
     if (result) {
         free(result->bitfield);
@@ -655,7 +655,7 @@ void test_init_state_zero_piece_count(void) {
 void test_torrent_null_peer_id(void) {
     metainfo_t metainfo = {0};
 
-    int32_t result = torrent(metainfo, NULL, LOG_NO);
+    int32_t result = torrent(metainfo, nullptr, LOG_NO);
 
     TEST_ASSERT_NOT_EQUAL_INT32(0, result);
 }
