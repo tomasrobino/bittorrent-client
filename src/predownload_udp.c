@@ -20,6 +20,7 @@
 
 address_t* split_address(const char* address) {
     if (!address) return nullptr;
+    if (!strstr(address, "://")) return nullptr;
 
     address_t* ret_address = malloc(sizeof(address_t));
     memset(ret_address, 0, sizeof(address_t));

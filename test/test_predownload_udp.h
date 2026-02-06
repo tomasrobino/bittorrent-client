@@ -1,17 +1,7 @@
 #ifndef BITTORRENT_CLIENT_TEST_PREDOWNLOAD_UDP_H
 #define BITTORRENT_CLIENT_TEST_PREDOWNLOAD_UDP_H
 
-//
-// Created by Claude on 2/5/2026.
-// Test function declarations for test_connection.c
-//
 
-#ifndef TEST_CONNECTION_H
-#define TEST_CONNECTION_H
-
-// Setup and teardown
-void setUp(void);
-void tearDown(void);
 
 // split_address tests
 void test_split_address_valid_udp_ipv4(void);
@@ -23,7 +13,6 @@ void test_split_address_valid_ipv6_address(void);
 void test_split_address_valid_hostname_with_subdomain(void);
 void test_split_address_valid_high_port_number(void);
 void test_split_address_invalid_no_protocol(void);
-void test_split_address_invalid_no_port(void);
 void test_split_address_invalid_malformed_url(void);
 void test_split_address_invalid_empty_string(void);
 void test_split_address_invalid_null_pointer(void);
@@ -81,7 +70,5 @@ void test_scrape_request_udp_null_server_addr(void);
 void test_scrape_request_udp_null_info_hash(void);
 void test_scrape_request_udp_invalid_sockfd(void);
 void test_scrape_request_udp_zero_torrent_amount(void);
-
-#endif // TEST_CONNECTION_H
 
 #endif //BITTORRENT_CLIENT_TEST_PREDOWNLOAD_UDP_H

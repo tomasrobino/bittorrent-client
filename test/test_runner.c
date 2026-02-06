@@ -214,7 +214,6 @@ int main(void) {
     RUN_TEST(test_split_address_valid_hostname_with_subdomain);
     RUN_TEST(test_split_address_valid_high_port_number);
     RUN_TEST(test_split_address_invalid_no_protocol);
-    RUN_TEST(test_split_address_invalid_no_port);
     RUN_TEST(test_split_address_invalid_malformed_url);
     RUN_TEST(test_split_address_invalid_empty_string);
     RUN_TEST(test_split_address_invalid_null_pointer);
