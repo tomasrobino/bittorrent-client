@@ -63,6 +63,7 @@ add_executable(bittorrent_tests
         test/test_basic_bencode.h
         test/test_parsing.h
         test/test_predownload_udp.h
+        test/test_downloading.h
 )
 
 # linking bittorrent_tests with bittorrent_core

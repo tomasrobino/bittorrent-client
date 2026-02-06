@@ -5,6 +5,7 @@
 #include "test_basic_bencode.h"
 #include "test_parsing.h"
 #include "test_predownload_udp.h"
+#include "test_downloading.h"
 
 void setUp(void) {
     // set stuff up here
@@ -271,6 +272,98 @@ int main(void) {
     RUN_TEST(test_scrape_request_udp_null_info_hash);
     RUN_TEST(test_scrape_request_udp_invalid_sockfd);
     RUN_TEST(test_scrape_request_udp_zero_torrent_amount);
+
+    /* downloading.h */
+
+        // calc_block_size tests
+    RUN_TEST(test_calc_block_size_regular_block);
+    RUN_TEST(test_calc_block_size_second_block);
+    RUN_TEST(test_calc_block_size_last_block_full_size);
+    RUN_TEST(test_calc_block_size_last_block_partial);
+    RUN_TEST(test_calc_block_size_small_piece);
+    RUN_TEST(test_calc_block_size_exact_block_size_piece);
+    RUN_TEST(test_calc_block_size_zero_offset);
+    RUN_TEST(test_calc_block_size_offset_near_end);
+
+    // get_path tests
+    RUN_TEST(test_get_path_single_segment);
+    RUN_TEST(test_get_path_two_segments);
+    RUN_TEST(test_get_path_multiple_segments);
+    RUN_TEST(test_get_path_deep_nesting);
+    RUN_TEST(test_get_path_null_filepath);
+    RUN_TEST(test_get_path_logging_modes);
+
+    // piece_complete tests
+    RUN_TEST(test_piece_complete_single_block_piece_complete);
+    RUN_TEST(test_piece_complete_single_block_piece_incomplete);
+    RUN_TEST(test_piece_complete_multi_block_piece_complete);
+    RUN_TEST(test_piece_complete_multi_block_piece_partial);
+    RUN_TEST(test_piece_complete_last_piece_smaller);
+    RUN_TEST(test_piece_complete_null_block_tracker);
+
+    // are_bits_set tests
+    RUN_TEST(test_are_bits_set_all_set_single_byte);
+    RUN_TEST(test_are_bits_set_none_set);
+    RUN_TEST(test_are_bits_set_partial);
+    RUN_TEST(test_are_bits_set_partial_fail);
+    RUN_TEST(test_are_bits_set_single_bit_set);
+    RUN_TEST(test_are_bits_set_single_bit_not_set);
+    RUN_TEST(test_are_bits_set_cross_byte_boundary);
+    RUN_TEST(test_are_bits_set_cross_byte_boundary_partial);
+    RUN_TEST(test_are_bits_set_middle_range);
+    RUN_TEST(test_are_bits_set_null_bitfield);
+    RUN_TEST(test_are_bits_set_start_greater_than_end);
+
+    // closing_files tests
+    RUN_TEST(test_closing_files_null_files);
+    RUN_TEST(test_closing_files_null_bitfield);
+    RUN_TEST(test_closing_files_single_file_complete);
+    RUN_TEST(test_closing_files_single_file_incomplete);
+    RUN_TEST(test_closing_files_multiple_files);
+
+    // handle_predownload_udp tests
+    RUN_TEST(test_handle_predownload_udp_valid_request);
+    RUN_TEST(test_handle_predownload_udp_null_peer_id);
+    RUN_TEST(test_handle_predownload_udp_null_torrent_stats);
+    RUN_TEST(test_handle_predownload_udp_logging_modes);
+
+    // read_from_socket tests
+    RUN_TEST(test_read_from_socket_null_peer);
+    RUN_TEST(test_read_from_socket_invalid_epoll);
+    RUN_TEST(test_read_from_socket_valid_operation);
+    RUN_TEST(test_read_from_socket_connection_closed);
+    RUN_TEST(test_read_from_socket_partial_read);
+
+    // reconnect tests
+    RUN_TEST(test_reconnect_null_peer_list);
+    RUN_TEST(test_reconnect_zero_peer_amount);
+    RUN_TEST(test_reconnect_invalid_epoll);
+    RUN_TEST(test_reconnect_no_closed_peers);
+    RUN_TEST(test_reconnect_some_closed_peers);
+
+    // write_state tests
+    RUN_TEST(test_write_state_null_filename);
+    RUN_TEST(test_write_state_null_state);
+    RUN_TEST(test_write_state_valid_state);
+    RUN_TEST(test_write_state_large_state);
+
+    // read_state tests
+    RUN_TEST(test_read_state_null_filename);
+    RUN_TEST(test_read_state_nonexistent_file);
+    RUN_TEST(test_read_state_valid_file);
+    RUN_TEST(test_read_state_corrupted_file);
+
+    // init_state tests
+    RUN_TEST(test_init_state_new_file);
+    RUN_TEST(test_init_state_existing_file);
+    RUN_TEST(test_init_state_null_filename);
+    RUN_TEST(test_init_state_null_bitfield);
+    RUN_TEST(test_init_state_zero_piece_count);
+
+    // torrent tests
+    RUN_TEST(test_torrent_null_peer_id);
+    RUN_TEST(test_torrent_invalid_metainfo);
+    RUN_TEST(test_torrent_full_integration);
 
     return UNITY_END();
 }
