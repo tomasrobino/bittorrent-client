@@ -4,6 +4,7 @@
 #include "test_messages.h"
 #include "test_basic_bencode.h"
 #include "test_parsing.h"
+#include "test_predownload_udp.h"
 
 void setUp(void) {
     // set stuff up here
@@ -205,6 +206,76 @@ int main(void) {
     // Integration tests
     RUN_TEST(test_integration_announce_list_complex_structure);
     RUN_TEST(test_integration_files_list_mixed_sizes);
+
+    /* predownload_udp.h */
+
+    RUN_TEST(test_split_address_valid_udp_ipv4);
+    RUN_TEST(test_split_address_valid_http_ipv4);
+    RUN_TEST(test_split_address_valid_https_ipv4);
+    RUN_TEST(test_split_address_valid_udp_default_port);
+    RUN_TEST(test_split_address_valid_ipv4_address);
+    RUN_TEST(test_split_address_valid_ipv6_address);
+    RUN_TEST(test_split_address_valid_hostname_with_subdomain);
+    RUN_TEST(test_split_address_valid_high_port_number);
+    RUN_TEST(test_split_address_invalid_no_protocol);
+    RUN_TEST(test_split_address_invalid_no_port);
+    RUN_TEST(test_split_address_invalid_malformed_url);
+    RUN_TEST(test_split_address_invalid_empty_string);
+    RUN_TEST(test_split_address_invalid_null_pointer);
+
+    // shuffle_address_array tests
+    RUN_TEST(test_shuffle_address_array_single_element);
+    RUN_TEST(test_shuffle_address_array_two_elements);
+    RUN_TEST(test_shuffle_address_array_multiple_elements);
+    RUN_TEST(test_shuffle_address_array_zero_length);
+    RUN_TEST(test_shuffle_address_array_null_array);
+
+    // url_to_ip tests
+    RUN_TEST(test_url_to_ip_valid_ipv4_address);
+    RUN_TEST(test_url_to_ip_valid_ipv6_address);
+    RUN_TEST(test_url_to_ip_valid_hostname_resolution);
+    RUN_TEST(test_url_to_ip_invalid_hostname);
+    RUN_TEST(test_url_to_ip_null_address);
+    RUN_TEST(test_url_to_ip_logging_modes);
+
+    // try_request_udp tests
+    RUN_TEST(test_try_request_udp_single_tracker_success);
+    RUN_TEST(test_try_request_udp_multiple_trackers);
+    RUN_TEST(test_try_request_udp_all_fail);
+    RUN_TEST(test_try_request_udp_null_sockfd);
+    RUN_TEST(test_try_request_udp_null_request);
+    RUN_TEST(test_try_request_udp_zero_amount);
+
+    // connect_request_udp tests
+    RUN_TEST(test_connect_request_udp_valid_single_tracker);
+    RUN_TEST(test_connect_request_udp_valid_multiple_trackers);
+    RUN_TEST(test_connect_request_udp_null_successful_index);
+    RUN_TEST(test_connect_request_udp_null_sockfd);
+    RUN_TEST(test_connect_request_udp_zero_amount);
+
+    // connect_udp tests
+    RUN_TEST(test_connect_udp_valid_single_tracker);
+    RUN_TEST(test_connect_udp_valid_multiple_trackers);
+    RUN_TEST(test_connect_udp_null_announce_list);
+    RUN_TEST(test_connect_udp_null_connection_data);
+    RUN_TEST(test_connect_udp_zero_amount);
+
+    // announce_request_udp tests
+    RUN_TEST(test_announce_request_udp_valid_request);
+    RUN_TEST(test_announce_request_udp_null_server_addr);
+    RUN_TEST(test_announce_request_udp_null_info_hash);
+    RUN_TEST(test_announce_request_udp_null_peer_id);
+    RUN_TEST(test_announce_request_udp_null_torrent_stats);
+    RUN_TEST(test_announce_request_udp_invalid_sockfd);
+    RUN_TEST(test_announce_request_udp_zero_connection_id);
+
+    // scrape_request_udp tests
+    RUN_TEST(test_scrape_request_udp_valid_single_torrent);
+    RUN_TEST(test_scrape_request_udp_valid_multiple_torrents);
+    RUN_TEST(test_scrape_request_udp_null_server_addr);
+    RUN_TEST(test_scrape_request_udp_null_info_hash);
+    RUN_TEST(test_scrape_request_udp_invalid_sockfd);
+    RUN_TEST(test_scrape_request_udp_zero_torrent_amount);
 
     return UNITY_END();
 }
