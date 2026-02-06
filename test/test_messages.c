@@ -214,8 +214,8 @@ void test_handle_have_last_bit(void) {
     memset(peer.bitfield, 0, 2);
     peer.am_interested = false;
 
-    unsigned char payload[4] = {0,0,0,15}; // piece 15 → last bit of second byte
-    unsigned char client_bf[2] = {0xFF, 0x7F}; // client missing last bit
+    unsigned char payload[4] = {0,0,0,15}; // piece 15
+    unsigned char client_bf[2] = {0xFF, 0xFE}; // client missing piece 15
 
     handle_have(&peer, payload, client_bf, 2, LOG_NO);
 
