@@ -46,7 +46,11 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
     while (filepath_ptr != nullptr) {
         memcpy(return_charpath + filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
         filepath_size += (int32_t)strlen(filepath_ptr->val);
-        return_charpath[filepath_size] = '/';
+
+        if (filepath_ptr->next != nullptr) {
+            return_charpath[filepath_size] = '/';
+            filepath_size++;
+        }
 
         // Creating directories
         if (filepath_ptr->next != nullptr && stat(return_charpath, &st) == -1) {
