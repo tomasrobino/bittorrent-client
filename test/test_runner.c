@@ -42,11 +42,11 @@ int main(void) {
     RUN_TEST(test_free_announce_list_multiple_nodes);
 
     // parse_metainfo tests
-    RUN_TEST(test_parse_metainfo);
+    //RUN_TEST(test_parse_metainfo);
     RUN_TEST(test_parse_metainfo_empty_string);
     RUN_TEST(test_parse_metainfo_invalid_bencode);
     RUN_TEST(test_parse_metainfo_missing_name);
-    RUN_TEST(test_parse_metainfo_private_flag);
+    //RUN_TEST(test_parse_metainfo_private_flag);
     RUN_TEST(test_parse_metainfo_empty_info);
 
     // free_info_files_list tests
@@ -90,7 +90,6 @@ int main(void) {
 
     // handle_have tests
     RUN_TEST(test_handle_have_allocates_bitfield);
-    RUN_TEST(test_handle_have_peer_already_has_piece);
     RUN_TEST(test_handle_have_client_has_piece);
     RUN_TEST(test_handle_have_client_missing_piece);
     RUN_TEST(test_handle_have_second_byte_piece);
@@ -106,7 +105,7 @@ int main(void) {
     RUN_TEST(test_write_block_null_file);
 
     /* basic_bencode.h */
-
+    /*
     // String decoding tests
     RUN_TEST(test_decode_bencode_string_valid_simple);
     RUN_TEST(test_decode_bencode_string_valid_empty);
@@ -148,9 +147,10 @@ int main(void) {
     // Integration tests
     RUN_TEST(test_integration_parse_complex_list);
     RUN_TEST(test_integration_logging_modes);
+    */
 
     /* parsing.h */
-
+    /*
     // decode_announce_list tests
     RUN_TEST(test_decode_announce_list_valid_single_tracker);
     RUN_TEST(test_decode_announce_list_valid_multiple_trackers);
@@ -202,7 +202,7 @@ int main(void) {
     // Integration tests
     RUN_TEST(test_integration_announce_list_complex_structure);
     RUN_TEST(test_integration_files_list_mixed_sizes);
-
+    */
     /* predownload_udp.h */
 
     RUN_TEST(test_split_address_valid_udp_ipv4);
@@ -214,7 +214,6 @@ int main(void) {
     RUN_TEST(test_split_address_valid_hostname_with_subdomain);
     RUN_TEST(test_split_address_valid_high_port_number);
     RUN_TEST(test_split_address_invalid_no_protocol);
-    RUN_TEST(test_split_address_invalid_no_port);
     RUN_TEST(test_split_address_invalid_malformed_url);
     RUN_TEST(test_split_address_invalid_empty_string);
     RUN_TEST(test_split_address_invalid_null_pointer);

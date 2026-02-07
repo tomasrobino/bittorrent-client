@@ -29,6 +29,7 @@ int64_t calc_block_size(const uint32_t piece_size, const uint32_t byte_offset) {
 }
 
 char* get_path(const ll* filepath, const LOG_CODE log_code) {
+    if (!filepath) return nullptr;
     // Getting the amount of chars in the complete filepath
     int32_t filepath_size = 0;
     const ll* filepath_ptr = filepath;
@@ -46,7 +47,11 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
     while (filepath_ptr != nullptr) {
         memcpy(return_charpath + filepath_size, filepath_ptr->val, strlen(filepath_ptr->val));
         filepath_size += (int32_t)strlen(filepath_ptr->val);
-        return_charpath[filepath_size] = '/';
+
+        if (filepath_ptr->next != nullptr) {
+            return_charpath[filepath_size] = '/';
+            filepath_size++;
+        }
 
         // Creating directories
         if (filepath_ptr->next != nullptr && stat(return_charpath, &st) == -1) {
@@ -66,6 +71,8 @@ char* get_path(const ll* filepath, const LOG_CODE log_code) {
 }
 
 bool piece_complete(const unsigned char *block_tracker, const uint32_t piece_index, const uint32_t piece_size, const int64_t torrent_size) {
+    if (!block_tracker) return false;
+
     uint32_t this_piece_size = piece_size;
     if ( ((int64_t)piece_index+1) * (int64_t)piece_size > torrent_size ) {
         this_piece_size = torrent_size - (int64_t)piece_index * (int64_t)piece_size;
@@ -87,6 +94,8 @@ bool piece_complete(const unsigned char *block_tracker, const uint32_t piece_ind
 }
 
 bool are_bits_set(const unsigned char *bitfield, const uint32_t start, const uint32_t end) {
+    if (!bitfield || start > end) return false;
+
     const uint32_t start_byte = start / 8;
     const uint32_t end_byte = end / 8;
     const uint32_t start_bit = start % 8;
@@ -207,6 +216,8 @@ announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const uns
 }
 
 bool read_from_socket(peer_t* peer, const int32_t epoll, const LOG_CODE log_code) {
+    if (!peer || epoll < 0) return false;
+
     errno = 0;
     while (peer->reception_pointer < peer->reception_target && errno != EAGAIN && errno != EWOULDBLOCK ) {
         errno = 0;
@@ -234,6 +245,8 @@ bool read_from_socket(peer_t* peer, const int32_t epoll, const LOG_CODE log_code
 }
 
 uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_peer, const int32_t epoll, const LOG_CODE log_code) {
+    if (!peer_list || epoll < 0) return 0;
+
     for (int i = 0; i < peer_amount; ++i) {
         peer_t* peer = &peer_list[i];
         if (peer->status == PEER_CLOSED) {
@@ -273,6 +286,8 @@ uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_
 }
 
 uint8_t write_state(const char* filename, const state_t* state) {
+    if (!filename || !state) return 1;
+
     FILE* file = fopen(filename, "wb");
     uint32_t bytes_written;
     do {
@@ -317,6 +332,8 @@ state_t* read_state(const char* filename) {
 }
 
 state_t* init_state(const char* filename, const uint32_t piece_count, const uint32_t piece_size, unsigned char* bitfield) {
+    if (!filename || piece_count == 0 || piece_size == 0 || !bitfield) return nullptr;
+
     state_t* state = read_state(filename);
     if (state != nullptr) {
         return state;

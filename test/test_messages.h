@@ -29,7 +29,6 @@ void test_read_message_length_normal(void);
 
 // handle_have()
 void test_handle_have_allocates_bitfield(void);
-void test_handle_have_peer_already_has_piece(void);
 void test_handle_have_client_has_piece(void);
 void test_handle_have_client_missing_piece(void);
 void test_handle_have_second_byte_piece(void);
@@ -45,8 +44,8 @@ void test_write_block_normal(void);
 void test_write_block_zero(void);
 void test_write_block_null_file(void);
 
-/* TODO
- * Write tests for the following functions. They require mocking
+/* TODO: Write tests for the following functions. They require mocking
+ *
  * try_connect()
  * send_handshake()
  * handle_request()

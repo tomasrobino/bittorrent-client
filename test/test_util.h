@@ -5,8 +5,6 @@
 #ifndef BITTORRENT_CLIENT_TEST_UTIL_H
 #define BITTORRENT_CLIENT_TEST_UTIL_H
 
-#pragma once
-
 void test_is_digit_normal_digits(void);
 void test_is_digit_outside_digits(void);
 void test_is_digit_letters(void);

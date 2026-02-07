@@ -104,7 +104,6 @@ void handle_have(peer_t *peer, const unsigned char *payload, const unsigned char
 
 void handle_bitfield(peer_t *peer, const unsigned char *payload, const unsigned char *client_bitfield,
                      const uint32_t bitfield_byte_size, const LOG_CODE log_code) {
-    if (payload == nullptr) return;
 
     peer->status = PEER_BITFIELD_RECEIVED;
 

@@ -19,44 +19,120 @@
 #include "file.h"
 
 address_t* split_address(const char* address) {
+    if (!address) return nullptr;
+    if (!strstr(address, "://")) return nullptr;
+
     address_t* ret_address = malloc(sizeof(address_t));
     memset(ret_address, 0, sizeof(address_t));
 
     if (strncmp(address, "udp", 3) == 0) {
         ret_address->protocol = UDP;
-    } else if (strncmp(address, "http", 4) == 0 && address[4] != 's') {
-        ret_address->protocol = HTTP;
-    } else if (address[4] == 's') {
-        ret_address->protocol = HTTPS;
-    } else return nullptr;
-    const char* start = strchr(address, '/') + 2;
-    const char* end = strchr(start, ':');
-    if (end) {
-        // has port
-        ret_address->host = malloc(sizeof(char)*(end-start+1));
-        strncpy(ret_address->host, start, end-start);
-        ret_address->host[end-start] = '\0';
 
-        start = end+1;
-        end = strchr(start, '/');
-        int dif;
-        if (end == NULL) {
-            dif = (int) strlen(start);
+        const char* start = strchr(address, '/');
+        if (start) {
+            start+=2;
         } else {
-            dif = (int) (end-start);
+            free(ret_address);
+            return nullptr;
         }
-        ret_address->port = (char*) start;
-        ret_address->port = malloc(sizeof(char)* (dif+1) );
-        strncpy(ret_address->port, start, dif);
-        ret_address->port[dif] = '\0';
+
+        const char* end = strchr(start, ']');
+        // ipv6 doesn't have square brackets
+        if (!end) {
+            end = strchr(start, ':');
+            if (end) {
+                // has port
+                ret_address->host = malloc(sizeof(char)*(end-start+1));
+                strncpy(ret_address->host, start, end-start);
+                ret_address->host[end-start] = '\0';
+
+                start = end+1;
+                end = strchr(start, '/');
+                int dif;
+                if (end == NULL) {
+                    dif = (int) strlen(start);
+                } else {
+                    dif = (int) (end-start);
+                }
+                ret_address->port = (char*) start;
+                ret_address->port = malloc(sizeof(char)* (dif+1) );
+                strncpy(ret_address->port, start, dif);
+                ret_address->port[dif] = '\0';
+            } else {
+                // no port
+                ret_address->port = nullptr;
+            }
+        } else {
+            // ipv6 does have square brackets
+            start = strchr(start, '[');
+            if (!start) {
+                free(ret_address);
+                return nullptr;
+            }
+            start++;
+            ret_address->host = malloc(sizeof(char)*(end-start+1));
+            strncpy(ret_address->host, start, end-start);
+            ret_address->host[end-start] = '\0';
+
+            start = end+2;
+            end = strchr(start, '/');
+            int dif;
+            if (end == NULL) {
+                dif = (int) strlen(start);
+            } else {
+                dif = (int) (end-start);
+            }
+            ret_address->port = (char*) start;
+            ret_address->port = malloc(sizeof(char)* (dif+1) );
+            strncpy(ret_address->port, start, dif);
+            ret_address->port[dif] = '\0';
+        }
     } else {
-        // no port
-        ret_address->port = nullptr;
+        if (strncmp(address, "http", 4) == 0 && address[4] != 's') {
+            ret_address->protocol = HTTP;
+        } else if (address[4] == 's') {
+            ret_address->protocol = HTTPS;
+        } else return nullptr;
+
+        const char* start = strchr(address, '/');
+
+        if (start) {
+            start+=2;
+        } else {
+            free(ret_address);
+            return nullptr;
+        }
+
+        const char* end = strchr(start, ':');
+        if (end) {
+            // has port
+            ret_address->host = malloc(sizeof(char)*(end-start+1));
+            strncpy(ret_address->host, start, end-start);
+            ret_address->host[end-start] = '\0';
+
+            start = end+1;
+            end = strchr(start, '/');
+            int dif;
+            if (end == NULL) {
+                dif = (int) strlen(start);
+            } else {
+                dif = (int) (end-start);
+            }
+            ret_address->port = (char*) start;
+            ret_address->port = malloc(sizeof(char)* (dif+1) );
+            strncpy(ret_address->port, start, dif);
+            ret_address->port[dif] = '\0';
+        } else {
+            // no port
+            ret_address->port = nullptr;
+        }
     }
     return ret_address;
 }
 
 void shuffle_address_array(address_t* array[], int32_t length) {
+    if (!array) return;
+
     if (length > 1) {
         static unsigned int seed = 0;
         if (seed == 0) {
@@ -73,6 +149,8 @@ void shuffle_address_array(address_t* array[], int32_t length) {
 }
 
 char* url_to_ip(address_t* address, const LOG_CODE log_code) {
+    if (!address) return nullptr;
+
     struct addrinfo hints = {0}, *res;
     hints.ai_family = AF_UNSPEC;
     char* ip = nullptr;
@@ -116,6 +194,8 @@ char* url_to_ip(address_t* address, const LOG_CODE log_code) {
 }
 
 int32_t *try_request_udp(const int32_t amount, int32_t sockfd[], const void *req[], const size_t req_size, const struct sockaddr *server_addr[], const LOG_CODE log_code) {
+    if (!sockfd || !req || amount == 0) return nullptr;
+
     struct pollfd pfd[amount];
     memset(pfd, 0, amount*sizeof(struct pollfd));
     for (int i = 0; i < amount; ++i) {
@@ -241,6 +321,9 @@ uint64_t connect_request_udp(const struct sockaddr *server_addr[], int32_t sockf
 }
 
 uint64_t connect_udp(int32_t amount, announce_list_ll* current, int32_t *successful_index_pt, connection_data_t* connection_data, const LOG_CODE log_code) {
+    if (amount == 0 || !current || !connection_data) return 0;
+
+
     const int successful_index = *successful_index_pt;
     // Creating outer list arrays
     address_t** split_addr_array[amount];
@@ -355,6 +438,9 @@ announce_response_t *announce_request_udp(const struct sockaddr *server_addr, in
                                           const uint64_t connection_id, const unsigned char info_hash[],
                                           const unsigned char peer_id[], const torrent_stats_t* torrent_stats,
                                           const uint16_t port, const LOG_CODE log_code) {
+    if (!server_addr || sockfd == 0 || !info_hash || !peer_id || !torrent_stats) return nullptr;
+
+
     announce_request_t req = {0};
     // Convert to network endianness
     req.connection_id = htobe64(connection_id);
@@ -509,6 +595,8 @@ announce_response_t *announce_request_udp(const struct sockaddr *server_addr, in
 
 scrape_response_t* scrape_request_udp(const struct sockaddr *server_addr, int32_t sockfd, const uint64_t connection_id, const char info_hash[], uint32_t
                                       torrent_amount, const LOG_CODE log_code) {
+    if (!server_addr || !info_hash || torrent_amount == 0) return nullptr;
+
     scrape_request_t req;
     req.connection_id = htobe64(connection_id);
     req.action = htobe32(2);

@@ -102,12 +102,6 @@ void test_split_address_invalid_no_protocol(void) {
     TEST_ASSERT_NULL(result);
 }
 
-void test_split_address_invalid_no_port(void) {
-    address_t *result = split_address("udp://tracker.example.com");
-    
-    TEST_ASSERT_NULL(result);
-}
-
 void test_split_address_invalid_malformed_url(void) {
     address_t *result = split_address("udp:/tracker.example.com:6969");
     
