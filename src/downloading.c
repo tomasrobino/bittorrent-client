@@ -216,7 +216,7 @@ announce_response_t *handle_predownload_udp(const metainfo_t metainfo, const uns
 }
 
 bool read_from_socket(peer_t* peer, const int32_t epoll, const LOG_CODE log_code) {
-    if (!peer) return false;
+    if (!peer || epoll < 0) return false;
 
     errno = 0;
     while (peer->reception_pointer < peer->reception_target && errno != EAGAIN && errno != EWOULDBLOCK ) {
