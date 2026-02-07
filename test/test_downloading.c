@@ -216,10 +216,10 @@ void test_piece_complete_multi_block_piece_partial(void) {
 }
 
 void test_piece_complete_last_piece_smaller(void) {
-    unsigned char block_tracker[2] = {0xFF, 0x01}; // Only first bit of second byte
+    unsigned char block_tracker[2] = {0xFF, 0x80}; // block 8 downloaded
     uint32_t piece_index = 1;
     uint32_t piece_size = BLOCK_SIZE * 8;
-    int64_t torrent_size = BLOCK_SIZE * 9; // Last piece is 1 block
+    int64_t torrent_size = BLOCK_SIZE * 9; // last piece is 1 block
 
     bool result = piece_complete(block_tracker, piece_index, piece_size, torrent_size);
 
