@@ -1,8 +1,6 @@
 #ifndef BITTORRENT_CLIENT_TEST_PREDOWNLOAD_UDP_H
 #define BITTORRENT_CLIENT_TEST_PREDOWNLOAD_UDP_H
 
-
-
 // split_address tests
 void test_split_address_valid_udp_ipv4(void);
 void test_split_address_valid_http_ipv4(void);

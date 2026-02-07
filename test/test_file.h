@@ -5,8 +5,6 @@
 #ifndef BITTORRENT_CLIENT_TEST_FILE_H
 #define BITTORRENT_CLIENT_TEST_FILE_H
 
-#pragma once
-
 void test_sha1_to_hex(void);
 void test_sha1_to_hex_all_zeros(void);
 void test_sha1_to_hex_all_ff(void);
