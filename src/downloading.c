@@ -245,7 +245,7 @@ bool read_from_socket(peer_t* peer, const int32_t epoll, const LOG_CODE log_code
 }
 
 uint32_t reconnect(peer_t* peer_list, const uint32_t peer_amount, uint32_t last_peer, const int32_t epoll, const LOG_CODE log_code) {
-    if (!peer_list) return 0;
+    if (!peer_list || epoll < 0) return 0;
 
     for (int i = 0; i < peer_amount; ++i) {
         peer_t* peer = &peer_list[i];
