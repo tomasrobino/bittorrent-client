@@ -94,7 +94,7 @@ bool piece_complete(const unsigned char *block_tracker, const uint32_t piece_ind
 }
 
 bool are_bits_set(const unsigned char *bitfield, const uint32_t start, const uint32_t end) {
-    if (!bitfield) return false;
+    if (!bitfield || start > end) return false;
 
     const uint32_t start_byte = start / 8;
     const uint32_t end_byte = end / 8;
