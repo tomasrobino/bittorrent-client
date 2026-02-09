@@ -29,6 +29,8 @@ add_library(bittorrent_core ${SOURCE_FILES}
         src/basic_bencode.h
         src/thread_runners.c
         src/thread_runners.h
+        src/disk.c
+        src/disk.h
 )
 
 # Link OpenSSL, CURL and Math library
