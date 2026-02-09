@@ -48,6 +48,7 @@ state_t* read_state(const char* filename) {
         total_bytes_read += bytes;
     } while (total_bytes_read < STATE_T_CORE_SIZE);
     const uint32_t bitfield_byte_amount = ceil(state->piece_count / 8.0);
+    state->bitfield = malloc(bitfield_byte_amount);
     do {
         const uint32_t bytes = fread(state->bitfield, 1, bitfield_byte_amount, file);
         total_bytes_read += bytes;
