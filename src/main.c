@@ -8,14 +8,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <pthread.h>
 
 #include "predownload_udp.h"
-#include "downloading.h"
 #include "magnet.h"
+#include "thread_runners.h"
 
 int32_t main(const int32_t argc, char* argv[]) {
     // Generating peer id
-    unsigned char peer_id[21] = CLIENT_ID;
+    unsigned char* peer_id = calloc(21, 1);
+    memcpy(peer_id, CLIENT_ID, 9);
     peer_id[20] = '\0';
     arc4random_buf(peer_id+8, 12);
 
@@ -27,6 +29,7 @@ int32_t main(const int32_t argc, char* argv[]) {
 
     if (argc < 3) {
         fprintf(stderr, "Usage: bittorrent-client.sh <command> <args>\n");
+        free(peer_id);
         return 1;
     }
     // Logging
@@ -55,6 +58,7 @@ int32_t main(const int32_t argc, char* argv[]) {
             free_magnet_data(data);
         } else {
             if (log_code >= LOG_ERR) fprintf(stderr, "Invalid link: %s\n", command);
+            free(peer_id);
             return 1;
         }
     } else if (strcmp(command, "file") == 0) {
@@ -77,18 +81,35 @@ int32_t main(const int32_t argc, char* argv[]) {
             const int32_t mk_res = mkdir("download-folder", 0755);
             if (mk_res == -1 && errno != 0 && errno != 17) {
                 if (log_code >= LOG_ERR) fprintf(stderr, "Error when creating torrent directory. Errno: %d", errno);
+                free(peer_id);
                 return 2;
             }
             metainfo_t* metainfo = parse_metainfo(buffer, length, log_code);
             if (metainfo != nullptr) {
-                torrent(*metainfo, peer_id, log_code);
+                pthread_t disk_thread;
+                pthread_create(&disk_thread, nullptr, disk_runner, nullptr);
+
+                torrent_args_t* torrent_args = calloc(sizeof(torrent_args_t), 1);
+                torrent_args->metainfo = metainfo;
+                torrent_args->peer_id = peer_id;
+                torrent_args->log_code = log_code;
+                pthread_t torrent_thread;
+                pthread_create(&torrent_thread, nullptr, torrent_runner, torrent_args);
+
+
+                pthread_join(torrent_thread, nullptr);
+                pthread_join(disk_thread, nullptr);
+                free(torrent_args);
                 free_metainfo(metainfo);
             }
             free(buffer);
         } else if (log_code >= LOG_ERR) fprintf(stderr, "File reading buffer error");
     } else {
         if (log_code >= LOG_ERR) fprintf(stderr, "Unknown command: %s\n", command);
+        free(peer_id);
         return 1;
     }
+    free(peer_id);
     return 0;
 }
+
