@@ -23,6 +23,9 @@
 /// @brief Size of state_t minus padding, and bitfield pointer
 #define STATE_T_CORE_SIZE 13
 
+/// @brief Pathname for state file
+#define STATE_FILE_LOCATION "state/state.txt"
+
 /// @brief Enum for peer statuses
 typedef enum {
     PEER_CLOSED, /** This peer's socket has been closed */

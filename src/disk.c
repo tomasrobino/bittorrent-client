@@ -13,6 +13,7 @@ uint8_t write_state(const char* filename, const state_t* state) {
     if (!filename || !state) return 1;
 
     FILE* file = fopen(filename, "wb");
+    if (!file) return 1;
     uint32_t bytes_written;
     do {
         bytes_written = fwrite(&state->magic, 1, sizeof(uint32_t), file);

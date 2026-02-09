@@ -355,7 +355,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
     const uint32_t bitfield_byte_size = ceil(metainfo.info->piece_number / 8.0);
 
     unsigned char *bitfield = malloc(bitfield_byte_size);
-    state_t* state = init_state("state/state.txt", metainfo.info->piece_number, metainfo.info->piece_length, bitfield);
+    state_t* state = init_state(STATE_FILE_LOCATION, metainfo.info->piece_number, metainfo.info->piece_length, bitfield);
     if (!bitfield) return -1;
     memset(bitfield, 0, bitfield_byte_size);
     // Size in bytes of the block tracker
@@ -609,7 +609,7 @@ int32_t torrent(const metainfo_t metainfo, const unsigned char *peer_id, const L
             }
         }
 
-        write_state("state/state.txt", state);
+        write_state(STATE_FILE_LOCATION, state);
 
         for (int i = 0; i < peer_amount; ++i) {
             if (peer_array[i].status == PEER_CLOSED && difftime(time(nullptr), peer_array[i].last_msg) >= 10) {
