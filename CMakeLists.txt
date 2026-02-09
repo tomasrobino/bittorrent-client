@@ -79,6 +79,7 @@ add_test(
 )
 
 file(GLOB TORRENT_FILES "${CMAKE_SOURCE_DIR}/test-files/*.torrent")
+file(COPY state DESTINATION ${CMAKE_BINARY_DIR})
 
 foreach(torrent ${TORRENT_FILES})
     get_filename_component(fname ${torrent} NAME)
