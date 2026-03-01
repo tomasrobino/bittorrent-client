@@ -9,6 +9,9 @@ find_package(CURL REQUIRED)
 
 # creating bittorent_core library
 add_library(bittorrent_core ${SOURCE_FILES}
+        src/downloading_types.h
+        src/disk.c
+        src/disk.h
         src/util.h
         src/parsing.c
         src/basic_bencode.c
@@ -24,13 +27,10 @@ add_library(bittorrent_core ${SOURCE_FILES}
         src/file.h
         src/magnet.h
         src/util.c
-        src/downloading_types.h
         src/messages_types.h
         src/basic_bencode.h
         src/thread_runners.c
         src/thread_runners.h
-        src/disk.c
-        src/disk.h
 )
 
 # Link OpenSSL, CURL and Math library

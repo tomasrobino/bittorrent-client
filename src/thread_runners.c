@@ -3,7 +3,9 @@
 #include "downloading.h"
 
 void *disk_runner(void *arg) {
+    while (true) {
 
+    }
     return nullptr;
 }
 

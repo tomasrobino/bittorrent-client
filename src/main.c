@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <pthread.h>
 
+#include "basic_bencode.h"
 #include "predownload_udp.h"
 #include "magnet.h"
 #include "thread_runners.h"
@@ -86,19 +87,26 @@ int32_t main(const int32_t argc, char* argv[]) {
             }
             metainfo_t* metainfo = parse_metainfo(buffer, length, log_code);
             if (metainfo != nullptr) {
+                pthread_t torrent_threads[1];
+                torrent_args_t* torrent_args = calloc(sizeof(torrent_args_t), 1);
+
+                for (int i = 0; i < 1; ++i) {
+                    torrent_args->metainfo = metainfo;
+                    torrent_args->peer_id = peer_id;
+                    torrent_args->thread_id = i;
+                    torrent_args->log_code = log_code;
+
+                    pthread_create(&torrent_threads[i], nullptr, torrent_runner, torrent_args);
+                }
+
+
                 pthread_t disk_thread;
                 pthread_create(&disk_thread, nullptr, disk_runner, nullptr);
-
-                torrent_args_t* torrent_args = calloc(sizeof(torrent_args_t), 1);
-                torrent_args->metainfo = metainfo;
-                torrent_args->peer_id = peer_id;
-                torrent_args->log_code = log_code;
-                pthread_t torrent_thread;
-                pthread_create(&torrent_thread, nullptr, torrent_runner, torrent_args);
-
-
-                pthread_join(torrent_thread, nullptr);
+                for (int i = 0; i < 1; ++i) {
+                    pthread_join(torrent_threads[i], nullptr);
+                }
                 pthread_join(disk_thread, nullptr);
+
                 free(torrent_args);
                 free_metainfo(metainfo);
             }
@@ -112,4 +120,3 @@ int32_t main(const int32_t argc, char* argv[]) {
     free(peer_id);
     return 0;
 }
-

@@ -5,6 +5,7 @@
 typedef struct {
     metainfo_t* metainfo;
     const unsigned char* peer_id;
+    uint8_t thread_id;
     LOG_CODE log_code;
 } torrent_args_t;
 
