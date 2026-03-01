@@ -6,9 +6,8 @@
 #include "downloading.h"
 
 void enqueue(queue* queue, uint32_t id, uint32_t value) {
-    ll* new = malloc(sizeof(ll));
-    new->val = malloc(sizeof(uint32_t));
-    *(uint32_t*)new->val = id * 100 + value;
+    ll_queue_member_t* new = malloc(sizeof(ll_queue_member_t));
+    new->torrent_id = id;
     new->next = nullptr;
 
     pthread_mutex_lock(&queue->lock);
@@ -23,7 +22,7 @@ void enqueue(queue* queue, uint32_t id, uint32_t value) {
     pthread_cond_signal(&queue->condition);
     pthread_mutex_unlock(&queue->lock);
 
-    printf("Producer %d produced %d\n", id, *(uint32_t*)new->val);
+    printf("Producer %d produced %d\n", id, new->torrent_id);
 }
 
 uint32_t dequeue(queue* queue) {
@@ -33,11 +32,11 @@ uint32_t dequeue(queue* queue) {
         pthread_cond_wait(&queue->condition, &queue->lock);
     }
 
-    ll* temp = queue->head;
-    uint32_t value = *(uint32_t*)temp->val;
+    ll_queue_member_t* temp = queue->head;
+    uint32_t value = temp->torrent_id;
 
     queue->head = queue->head->next;
-    if (queue->head == NULL)
+    if (queue->head == nullptr)
         queue->tail = nullptr;
 
     pthread_mutex_unlock(&queue->lock);
