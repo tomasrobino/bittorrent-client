@@ -46,14 +46,6 @@ uint32_t dequeue(queue* queue) {
     return value;
 }
 
-void *disk_runner(void *arg) {
-    disk_args_t* disk_args = arg;
-    while (true) {
-        dequeue(disk_args->queue);
-    }
-    return nullptr;
-}
-
 void *torrent_runner(void *arg) {
     const torrent_args_t* torrent_args = arg;
     queue* queue = torrent_args->queue;
@@ -64,5 +56,13 @@ void *torrent_runner(void *arg) {
 
 
     //torrent(*torrent_args->metainfo, torrent_args->peer_id, torrent_args->log_code);
+    return nullptr;
+}
+
+void *disk_runner(void *arg) {
+    disk_args_t* disk_args = arg;
+    while (true) {
+        dequeue(disk_args->queue);
+    }
     return nullptr;
 }
