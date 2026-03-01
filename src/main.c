@@ -1,8 +1,5 @@
 // Project header files
 #include <errno.h>
-
-#include "parsing.h"
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,10 +7,14 @@
 #include <sys/stat.h>
 #include <pthread.h>
 
-#include "basic_bencode.h"
+#include "parsing.h"
 #include "predownload_udp.h"
 #include "magnet.h"
 #include "thread_runners.h"
+
+// Global variables for thread locks
+
+
 
 int32_t main(const int32_t argc, char* argv[]) {
     // Generating peer id
@@ -87,27 +88,45 @@ int32_t main(const int32_t argc, char* argv[]) {
             }
             metainfo_t* metainfo = parse_metainfo(buffer, length, log_code);
             if (metainfo != nullptr) {
-                pthread_t torrent_threads[1];
-                torrent_args_t* torrent_args = calloc(sizeof(torrent_args_t), 1);
+                //TODO This constant is only temporary, until the argument parsing for multiple torrents is done
+                const uint8_t torrent_amount = 1;
 
-                for (int i = 0; i < 1; ++i) {
-                    torrent_args->metainfo = metainfo;
-                    torrent_args->peer_id = peer_id;
-                    torrent_args->thread_id = i;
-                    torrent_args->log_code = log_code;
 
-                    pthread_create(&torrent_threads[i], nullptr, torrent_runner, torrent_args);
+                /*
+                 *
+                 * Creating disk and torrent threads
+                 *
+                 */
+
+                // Pending storage queue
+                queue queue = {nullptr, nullptr, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
+
+                // torrent thread structs
+                pthread_t torrent_threads[torrent_amount];
+
+                torrent_args_t torrent_args_array[torrent_amount];
+
+                for (int i = 0; i < torrent_amount; ++i) {
+                    torrent_threads[i] = i;
+
+                    torrent_args_array[i].metainfo = metainfo;
+                    torrent_args_array[i].peer_id = peer_id;
+                    torrent_args_array[i].thread_id = i;
+                    torrent_args_array[i].queue = &queue;
+                    torrent_args_array[i].log_code = log_code;
+
+                    pthread_create(&torrent_threads[i], nullptr, torrent_runner, &torrent_args_array[i]);
                 }
 
 
                 pthread_t disk_thread;
-                pthread_create(&disk_thread, nullptr, disk_runner, nullptr);
-                for (int i = 0; i < 1; ++i) {
+                disk_args_t disk_args = {&queue};
+                pthread_create(&disk_thread, nullptr, disk_runner, &disk_args);
+                for (int i = 0; i < torrent_amount; ++i) {
                     pthread_join(torrent_threads[i], nullptr);
                 }
                 pthread_join(disk_thread, nullptr);
 
-                free(torrent_args);
                 free_metainfo(metainfo);
             }
             free(buffer);
