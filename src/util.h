@@ -27,7 +27,7 @@ typedef enum {
  */
 typedef struct ll {
     struct ll *next;
-    char *val;
+    void *val;
 } ll;
 
 typedef struct ll_uint64_t {

@@ -37,7 +37,7 @@ ll* decode_bencode_list(const char* bencoded_list, uint32_t *length, const LOG_C
             }
             current->val = malloc(element_length + 1);
             strncpy(current->val, bencoded_list+start, element_length);
-            current->val[element_length] = '\0';
+            ((char*)current->val)[element_length] = '\0';
             element_num++;
             start+=element_length;
         }

@@ -91,7 +91,7 @@ files_ll* read_info_files(const char* bencode, const bool multiple, uint64_t *in
                 current->path->next = nullptr;
                 current->path->val = malloc(sizeof(char)*(amount+1));
                 strncpy(current->path->val, endptr+1, amount);
-                current->path->val[amount] = '\0';
+                ((char*)current->path->val)[amount] = '\0';
                 start+=amount;
             } else return nullptr;
         }
