@@ -18,7 +18,7 @@ typedef struct {
     ll_queue_member_t* tail;
     pthread_mutex_t lock;
     pthread_cond_t condition;
-} queue;
+} queue_t;
 
 /**
  * @brief Arguments structure for torrent worker threads.
@@ -34,12 +34,12 @@ typedef struct {
     metainfo_t *metainfo; /**< Pointer to torrent metadata including trackers and file information */
     const unsigned char *peer_id; /**< 20-byte unique identifier for this BitTorrent client instance */
     uint8_t thread_id; /**< Numeric identifier for this torrent worker thread (0-based index) */
-    queue* queue;
+    queue_t* queue;
     LOG_CODE log_code; /**< Logging verbosity level for this thread's operations */
 } torrent_args_t;
 
 typedef struct {
-    queue* queue;
+    queue_t* queue;
 } disk_args_t;
 
 void *disk_runner(void *arg);

@@ -5,7 +5,7 @@
 
 #include "downloading.h"
 
-void enqueue(queue* queue, uint32_t id, uint32_t value) {
+void enqueue(queue_t* queue, uint32_t id, uint32_t value) {
     ll_queue_member_t* new = malloc(sizeof(ll_queue_member_t));
     new->torrent_id = id;
     new->next = nullptr;
@@ -25,7 +25,7 @@ void enqueue(queue* queue, uint32_t id, uint32_t value) {
     printf("Producer %d produced %d\n", id, new->torrent_id);
 }
 
-uint32_t dequeue(queue* queue) {
+uint32_t dequeue(queue_t* queue) {
     pthread_mutex_lock(&queue->lock);
 
     while (queue->head == NULL) {
@@ -47,7 +47,7 @@ uint32_t dequeue(queue* queue) {
 
 void *torrent_runner(void *arg) {
     const torrent_args_t* torrent_args = arg;
-    queue* queue = torrent_args->queue;
+    queue_t* queue = torrent_args->queue;
 
     for (int i = 0; i < 5; i++) {
         enqueue(queue, torrent_args->thread_id, i);

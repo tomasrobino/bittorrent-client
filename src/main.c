@@ -99,7 +99,7 @@ int32_t main(const int32_t argc, char* argv[]) {
                  */
 
                 // Pending storage queue
-                queue queue = {nullptr, nullptr, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
+                queue_t queue = {nullptr, nullptr, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
 
                 // torrent thread structs
                 pthread_t torrent_threads[torrent_amount];
