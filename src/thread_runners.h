@@ -13,6 +13,10 @@ typedef struct ll_queue_member_t {
     uint8_t torrent_id; /**< ID of the torrent this refers to */
 } ll_queue_member_t;
 
+
+/**
+ * Queue is shared among all torrent threads and disk thread
+ */
 typedef struct {
     ll_queue_member_t* head;
     ll_queue_member_t* tail;

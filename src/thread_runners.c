@@ -5,6 +5,12 @@
 
 #include "downloading.h"
 
+/**
+ * Puts element in queue
+ * @param queue
+ * @param id
+ * @param value
+ */
 void enqueue(queue_t* queue, uint32_t id, uint32_t value) {
     ll_queue_member_t* new = malloc(sizeof(ll_queue_member_t));
     new->torrent_id = id;
@@ -25,6 +31,11 @@ void enqueue(queue_t* queue, uint32_t id, uint32_t value) {
     printf("Producer %d produced %d\n", id, new->torrent_id);
 }
 
+/**
+ * Removes element from queue
+ * @param queue
+ * @return
+ */
 uint32_t dequeue(queue_t* queue) {
     pthread_mutex_lock(&queue->lock);
 
@@ -45,6 +56,12 @@ uint32_t dequeue(queue_t* queue) {
     return value;
 }
 
+
+/**
+ * Thread for each concurrent torrent, when it has something to save to disk, calls enqueue() which puts it in the queue
+ * @param arg
+ * @return
+ */
 void *torrent_runner(void *arg) {
     const torrent_args_t* torrent_args = arg;
     queue_t* queue = torrent_args->queue;
@@ -58,6 +75,12 @@ void *torrent_runner(void *arg) {
     return nullptr;
 }
 
+
+/**
+ * Thread for saving to disk. reads queue elements, saves them to disk, and calls dequeue()
+ * @param arg
+ * @return
+ */
 void *disk_runner(void *arg) {
     disk_args_t* disk_args = arg;
     while (true) {
