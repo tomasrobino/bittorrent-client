@@ -1,6 +1,8 @@
 #ifndef DOWNLOADING_H
 #define DOWNLOADING_H
 
+#include <netinet/in.h>
+
 #include "downloading_types.h"
 #include "file.h"
 #include "predownload_udp.h"
@@ -130,6 +132,96 @@ bool read_from_socket(peer_t* peer, int32_t epoll, LOG_CODE log_code);
  * @return The updated value of last_peer, incremented for each successfully reset peer.
  */
 uint32_t reconnect(peer_t* peer_list, uint32_t peer_amount, uint32_t last_peer, int32_t epoll, LOG_CODE log_code);
+
+/**
+ * Runtime context used by the torrent download pipeline.
+ * It owns all long-lived resources needed by `torrent()`, including sockets,
+ * peer state, trackers, download bitmaps, and persisted download state.
+ */
+typedef struct {
+    torrent_stats_t *torrent_stats;
+    announce_response_t *announce_response;
+    uint32_t peer_amount;
+    int32_t *peer_socket_array;
+    struct sockaddr_in *peer_addr_array;
+    int32_t epoll;
+    int32_t next_peer_index;
+    unsigned char *bitfield;
+    uint32_t bitfield_byte_size;
+    state_t *state;
+    unsigned char *block_tracker;
+    uint32_t block_tracker_bytesize;
+    uint32_t blocks_per_piece;
+    peer_t *peer_array;
+} torrent_ctx_t;
+
+/**
+ * Counts the number of peers returned by the tracker announce response.
+ *
+ * @param announce_response Tracker announce response containing the linked peer list.
+ * @return Total amount of peers in the response.
+ */
+uint32_t count_peers(const announce_response_t *announce_response);
+
+/**
+ * Frees a tracker announce response and its linked peer list.
+ *
+ * @param announce_response Response object to release. Null is allowed.
+ */
+void free_announce_response(announce_response_t *announce_response);
+
+/**
+ * Releases all resources stored in a torrent runtime context.
+ * This includes socket descriptors, dynamic buffers, peer arrays, tracker data,
+ * and torrent statistics.
+ *
+ * @param ctx Context to clean. Null is allowed.
+ */
+void cleanup_torrent_ctx(torrent_ctx_t *ctx);
+
+/**
+ * Initializes torrent statistics and performs tracker predownload/announce.
+ *
+ * @param metainfo Torrent metadata parsed from the .torrent file.
+ * @param peer_id Local peer id used in tracker requests.
+ * @param log_code Logging level.
+ * @param ctx Context to initialize.
+ * @return true on success, false if allocation or tracker communication fails.
+ */
+bool init_torrent_stats_and_tracker(metainfo_t metainfo, const unsigned char *peer_id, LOG_CODE log_code, torrent_ctx_t *ctx);
+
+/**
+ * Initializes peer sockets, addresses, and epoll registration using tracker peers.
+ *
+ * @param ctx Initialized context containing announce response.
+ * @param log_code Logging level.
+ * @return true on success, false on allocation/socket/init failures.
+ */
+bool init_peer_connections(torrent_ctx_t *ctx, LOG_CODE log_code);
+
+/**
+ * Initializes in-memory download tracking data:
+ * - client bitfield
+ * - block tracker
+ * - per-peer runtime structures
+ * - persisted state abstraction
+ *
+ * @param metainfo Torrent metadata.
+ * @param ctx Context to initialize.
+ * @return true on success, false on allocation/init failures.
+ */
+bool init_download_buffers(metainfo_t metainfo, torrent_ctx_t *ctx);
+
+/**
+ * Runs the main epoll-driven peer interaction loop until download completion.
+ *
+ * @param ctx Fully initialized torrent runtime context.
+ * @param metainfo Torrent metadata.
+ * @param peer_id Local peer id.
+ * @param log_code Logging level.
+ * @return 0 on success, non-zero on failure.
+ */
+int32_t run_main_peer_loop(torrent_ctx_t *ctx, metainfo_t metainfo, const unsigned char *peer_id, LOG_CODE log_code);
 
 /**
  * @brief Downloads & uploads torrent
