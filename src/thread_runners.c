@@ -11,7 +11,7 @@
  * @param id
  * @param value
  */
-void enqueue(queue_t* queue, uint32_t id, uint32_t value) {
+void enqueue(queue_t* queue, const uint32_t id, const uint32_t value) {
     ll_queue_member_t* new = malloc(sizeof(ll_queue_member_t));
     new->torrent_id = id;
     new->next = nullptr;
@@ -19,7 +19,8 @@ void enqueue(queue_t* queue, uint32_t id, uint32_t value) {
     pthread_mutex_lock(&queue->lock);
 
     if (queue->tail == NULL) {
-        queue->head = queue->tail = new;
+        queue->head = new;
+        queue->tail = new;
     } else {
         queue->tail->next = new;
         queue->tail = new;
@@ -44,7 +45,7 @@ uint32_t dequeue(queue_t* queue) {
     }
 
     ll_queue_member_t* temp = queue->head;
-    uint32_t value = temp->torrent_id;
+    const uint32_t value = temp->torrent_id;
 
     queue->head = queue->head->next;
     if (queue->head == nullptr)
@@ -77,7 +78,7 @@ void *torrent_runner(void *arg) {
 
 
 /**
- * Thread for saving to disk. reads queue elements, saves them to disk, and calls dequeue()
+ * Thread for saving to disk. Reads queue elements, saves them to disk, and calls dequeue()
  * @param arg
  * @return
  */
