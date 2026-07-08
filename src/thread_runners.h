@@ -61,8 +61,18 @@ void enqueue(queue_t* queue, uint32_t id, uint32_t value);
  */
 uint32_t dequeue(queue_t* queue);
 
+/**
+ * Thread for saving to disk. Reads queue elements, saves them to disk, and calls dequeue()
+ * @param arg
+ * @return
+ */
 void *disk_runner(void *arg);
 
+/**
+ * Thread for each concurrent torrent, when it has something to save to disk, calls enqueue() which puts it in the queue
+ * @param arg
+ * @return
+ */
 void *torrent_runner(void *arg);
 
 #endif //BITTORRENT_CLIENT_THREAD_RUNNERS_H

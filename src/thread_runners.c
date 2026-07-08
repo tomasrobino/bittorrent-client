@@ -46,12 +46,6 @@ uint32_t dequeue(queue_t* queue) {
     return value;
 }
 
-
-/**
- * Thread for each concurrent torrent, when it has something to save to disk, calls enqueue() which puts it in the queue
- * @param arg
- * @return
- */
 void *torrent_runner(void *arg) {
     const torrent_args_t* torrent_args = arg;
     queue_t* queue = torrent_args->queue;
@@ -65,12 +59,6 @@ void *torrent_runner(void *arg) {
     return nullptr;
 }
 
-
-/**
- * Thread for saving to disk. Reads queue elements, saves them to disk, and calls dequeue()
- * @param arg
- * @return
- */
 void *disk_runner(void *arg) {
     disk_args_t* disk_args = arg;
     while (true) {
