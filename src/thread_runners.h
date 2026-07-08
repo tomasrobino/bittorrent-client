@@ -46,6 +46,21 @@ typedef struct {
     queue_t* queue;
 } disk_args_t;
 
+/**
+ * Puts element in queue
+ * @param queue
+ * @param id
+ * @param value
+ */
+void enqueue(queue_t* queue, uint32_t id, uint32_t value);
+
+/**
+ * Removes element from queue
+ * @param queue
+ * @return
+ */
+uint32_t dequeue(queue_t* queue);
+
 void *disk_runner(void *arg);
 
 void *torrent_runner(void *arg);

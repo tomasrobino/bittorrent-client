@@ -5,12 +5,6 @@
 
 #include "downloading.h"
 
-/**
- * Puts element in queue
- * @param queue
- * @param id
- * @param value
- */
 void enqueue(queue_t* queue, const uint32_t id, const uint32_t value) {
     ll_queue_member_t* new = malloc(sizeof(ll_queue_member_t));
     new->torrent_id = id;
@@ -32,11 +26,6 @@ void enqueue(queue_t* queue, const uint32_t id, const uint32_t value) {
     printf("Producer %d produced %d\n", id, new->torrent_id);
 }
 
-/**
- * Removes element from queue
- * @param queue
- * @return
- */
 uint32_t dequeue(queue_t* queue) {
     pthread_mutex_lock(&queue->lock);
 
